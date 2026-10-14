@@ -143,6 +143,14 @@ class ApplicationContracts(unittest.TestCase):
         self.assertLess(self.calls.index('reset'),self.calls.index('microphone'))
         self.assertEqual(self.controller.core.snapshot().gpu_slot,old)
 
+    def test_dictation_preemption_keeps_escape_bound_to_new_recording(self):
+        self.controller.command('read'); self.pump()
+        self.controller.command('dictation'); self.pump()
+        snapshot=self.controller.core.snapshot()
+        self.assertEqual(snapshot.job.kind,c.JobKind.DICTATION)
+        self.assertTrue(snapshot.escape_reserved)
+        self.assertTrue(self.controller.inputs.escape)
+
     def test_diagnostic_is_whitelist_and_ram_expiry_clears_ui(self):
         self.dictation_ready()
         request, generation = self.pool.inference[-1]

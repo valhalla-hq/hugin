@@ -127,7 +127,7 @@ class Controller:
         if isinstance(event,(_Started,c.EngineFault,c.EngineTerminal)):
             key = (type(event),event.operation)
         elif isinstance(event,_Closed): key = (type(event),event.engine,event.incarnation)
-        elif isinstance(event,(c.RecordingStarted,c.RecordingStopped)):
+        elif isinstance(event,(c.RecordingStarted,c.RecordingStopped,c.AudioReset)):
             key = (type(event),event.job)
         if key is not None:
             with self._lock:
@@ -339,8 +339,11 @@ class Controller:
             self._token(effect.job).set()
             try:
                 self.output.stop(); self._audio_job = None
-                self.handle(c.AudioReset(effect.job))
-            except HuginError: self.handle(c.AudioReset(effect.job,False))
+                reset=True
+            except HuginError: reset=False
+            # Complete the old effect batch before this ACK starts a new job.
+            # Reentrant dispatch could disable the new job's Escape binding.
+            self._post(c.AudioReset(effect.job,reset))
         elif isinstance(effect,c.BeginEngine):
             self._begin(effect)
         elif isinstance(effect,c.CancelEngine):
