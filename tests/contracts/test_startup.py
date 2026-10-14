@@ -2,6 +2,7 @@
 from contextlib import ExitStack
 from pathlib import Path
 import queue
+import threading
 from types import ModuleType,SimpleNamespace as NS
 import unittest
 from unittest.mock import patch
@@ -134,6 +135,7 @@ class WindowCleanupContracts(unittest.TestCase):
         window=HuginWindow.__new__(HuginWindow);calls=[]
         window._alive=True;window._tray=NS(error=HuginError('input_failed','tray_loop'))
         window.failure=None;window._commands=queue.Queue();window._updates=queue.Queue()
+        window._stop_requested=threading.Event()
         window.root=NS(after=lambda *args:None);window.on_action=lambda *args:calls.append(args)
         window._pump();window._pump()
         self.assertEqual(calls,[('quit',None)])
@@ -163,3 +165,53 @@ class WindowCleanupContracts(unittest.TestCase):
         window._alive=True;window._closed=False
         window.stop();window.stop()
         self.assertEqual(calls,['tray','root'])
+
+
+class WindowPumpContracts(unittest.TestCase):
+    def setUp(self):
+        from hugin.ui import HuginWindow
+        self.calls=[]
+        class Root:
+            destroyed=False
+            def destroy(self):self.destroyed=True
+            def quit(self):pass
+            def after(self,*args):self.scheduled=True
+            def deiconify(self):pass
+            def lift(self):pass
+        class Tray:
+            closed=False;error=None;fail_once=False
+            def close(self):
+                if self.fail_once:
+                    self.fail_once=False
+                    raise HuginError('input_failed','synthetic_tray_close')
+                self.closed=True
+        self.window=HuginWindow.__new__(HuginWindow)
+        self.window.root=Root();self.window._tray=Tray()
+        self.window._alive=True;self.window._closed=False;self.window.failure=None
+        self.window._commands=queue.Queue(maxsize=32);self.window._updates=queue.Queue(maxsize=2)
+        self.window._stop_requested=threading.Event()
+        self.window.on_action=lambda *args:self.calls.append(args)
+
+    def test_full_open_queue_cannot_discard_confirmed_controller_stop(self):
+        for _ in range(32):self.window._command('show')
+        self.window.request_stop();self.window._pump()
+        self.assertTrue(self.window.root.destroyed)
+
+    def test_transient_tray_close_failure_retains_live_pump_and_owner_for_retry(self):
+        self.window._tray.fail_once=True
+        self.window.request_stop();self.window._pump()
+        self.assertFalse(self.window.root.destroyed)
+        self.assertIsNotNone(self.window.failure)
+        self.window.request_stop();self.window._pump()
+        self.assertTrue(self.window.root.destroyed)
+
+    def test_view_update_failure_requests_quit_and_keeps_stop_path_live(self):
+        def fail(view):raise HuginError('input_failed','synthetic_icon_update')
+        self.window.render=fail
+        self.window._updates.put(object())
+        self.window._pump()
+        self.assertEqual(self.calls,[('quit',None)])
+        self.assertEqual(self.window.failure.code,'interface_failed')
+        self.assertTrue(self.window.root.scheduled)
+        self.window.request_stop();self.window._pump()
+        self.assertTrue(self.window.root.destroyed)

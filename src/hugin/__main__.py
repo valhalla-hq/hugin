@@ -34,11 +34,13 @@ def main():
                     window.post(view)
 
             window = HuginWindow(action)
-            window.post(view)
-            window.show()
-            window.run()
-            if window.failure: raise window.failure
-            return 0
+            try:
+                window.post(view)
+                window.show()
+                window.run()
+                if window.failure: raise window.failure
+                return 0
+            finally: window.stop()
         if not args.pilot:
             # Productive hooks require the separately checked migration record.
             # Development launches cannot take the old stack's mouse bindings.

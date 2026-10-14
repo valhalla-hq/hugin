@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import queue
 import sys
+import threading
 import tkinter as tk
 from tkinter import ttk
 from .errors import HuginError
@@ -41,6 +42,7 @@ class HuginWindow:
         self._alive=False
         self._closed=False
         self.failure=None
+        self._stop_requested=threading.Event()
         try: self._build(on_action,with_tray=with_tray)
         except BaseException as cause:
             # A failed constructor still owns its created root/tray parts.
@@ -151,6 +153,9 @@ class HuginWindow:
         self.root.after(25,self._pump)
 
     def _command(self, command):
+        if command == 'stop':
+            self._stop_requested.set()
+            return
         try:
             self._commands.put_nowait(command)
         except queue.Full:
@@ -169,27 +174,41 @@ class HuginWindow:
             except queue.Full:
                 pass
 
+    def _fail(self,cause=None,*,notify=True):
+        if self.failure is None:
+            self.failure=cause if cause is not None and not isinstance(cause,Exception) else HuginError('interface_failed','window_pump')
+            self.failure.owner=self
+            if notify:
+                try: self.on_action('quit',None)
+                except BaseException: self._stop_requested.set()
+
     def _pump(self):
-        if not self._alive:
-            return
-        if self._tray and self._tray.error and self.failure is None:
-            self.failure=HuginError('interface_failed','tray_loop')
-            self.on_action('quit',None)
+        if not self._alive: return
         try:
-            while True:
-                command = self._commands.get_nowait()
-                if command == 'show':self.show()
-                elif command == 'stop':self.stop()
-        except queue.Empty:
-            pass
-        try:
-            while True:
-                view = self._updates.get_nowait()
-                self.render(view)
-        except queue.Empty:
-            pass
-        if self._alive:
-            self.root.after(25,self._pump)
+            if self._stop_requested.is_set():
+                try: self.stop()
+                except BaseException as cause:
+                    self._fail(cause,notify=False)
+                    self.root.quit()  # Application finally retains/retries this owner.
+                return
+            if self._tray and self._tray.error: self._fail()
+            if self.failure is None:
+                try:
+                    while True:
+                        command=self._commands.get_nowait()
+                        if command == 'show': self.show()
+                except queue.Empty: pass
+                try:
+                    while True: self.render(self._updates.get_nowait())
+                except queue.Empty: pass
+        except BaseException as cause: self._fail(cause)
+        finally:
+            if self._alive:
+                try: self.root.after(25,self._pump)
+                except BaseException as cause:
+                    self._fail(cause)
+                    try: self.root.quit()
+                    except BaseException: pass
 
     def render(self, view):
         old = self._view
@@ -227,12 +246,12 @@ class HuginWindow:
 
     def stop(self):
         if self._closed: return
-        self._alive = False
         if self._tray:
             self._tray.close()
             if not self._tray.closed: raise HuginError('interface_failed','tray_cleanup')
             self._tray = None
         if self.root is not None: self.root.destroy()
+        self._alive = False
         self._closed = True
 
     def run(self):
