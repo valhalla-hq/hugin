@@ -3,6 +3,8 @@ from contextlib import ExitStack
 from pathlib import Path
 import queue
 import threading
+import gc
+import weakref
 from types import ModuleType,SimpleNamespace as NS
 import unittest
 from unittest.mock import patch
@@ -215,3 +217,18 @@ class WindowPumpContracts(unittest.TestCase):
         self.assertTrue(self.window.root.scheduled)
         self.window.request_stop();self.window._pump()
         self.assertTrue(self.window.root.destroyed)
+
+    def test_saved_interrupt_releases_view_traceback_and_context(self):
+        from hugin.ui import View
+        def fail(view):
+            try:raise ValueError('synthetic inner failure')
+            except ValueError:raise KeyboardInterrupt() from RuntimeError('synthetic cause')
+        self.window.render=fail
+        view=View(text='Synthetischer vertraulicher Marker')
+        reference=weakref.ref(view)
+        self.window._updates.put(view);del view
+        self.window._pump();self.window.stop();gc.collect()
+        self.assertIsInstance(self.window.failure,KeyboardInterrupt)
+        self.assertIsNone(reference())
+        self.assertIsNone(self.window.failure.__context__)
+        self.assertIsNone(self.window.failure.__cause__)

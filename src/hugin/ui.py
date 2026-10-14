@@ -177,6 +177,10 @@ class HuginWindow:
     def _fail(self,cause=None,*,notify=True):
         if self.failure is None:
             self._forget_views()
+            if cause is not None and not isinstance(cause,Exception):
+                # Preserve the abort type/owner without retaining render(view)
+                # frames or chained exceptions containing completed UI text.
+                cause.__traceback__=cause.__context__=cause.__cause__=None
             self.failure=cause if cause is not None and not isinstance(cause,Exception) else HuginError('interface_failed','window_pump')
             self.failure.owner=self
             if notify:
