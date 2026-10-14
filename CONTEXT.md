@@ -30,7 +30,7 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Active Handoff
 
-- `handoffs/2026-10-14-hugin-v1.md`.
+- `handoffs/2026-10-14-hugin-core.md` for this bounded helper branch; overall accountable execution remains `handoffs/2026-10-14-hugin-v1.md`.
 
 ## Bounded Core Helper Checkpoint — 14 October 2026
 
@@ -41,3 +41,10 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 - Additional bounded STT idle-offload checkpoint follows 72fbd99715eb52463b86e3d7063d499e434fb048. `stt_idle_unload_seconds` comes from Settings.stt (initially 90); Tick schedules explicit `Action.OFFLOAD` with `Operation.job=None` through the same GPU slot only after all user/cleanup/resource work is free. New dictation capture may start, inference waits for matching terminal/observed exit. Successful offload preserves readiness for in-operation reload; failure blocks retry. Existing EnginePool.offload API was inspected only, not changed or called.
 - Parent application integration, independent review, real IPC/providers, physical input/clipboard/audio and hardware/latency/VRAM acceptance remain pending. No full Hugin acceptance or production activation claimed.
 - Ownership remains active. No helper PR, merge, global hooks, microphone, model loads or old-stack changes performed.
+
+## Bounded Cleanup Retry Checkpoint — 14 October 2026
+
+- Parent `1a189d7b706afff3ba58705b0222f411290f1740` fast-forwarded into this exclusive helper branch before the bounded producer fix. Root's normal launch remains gated.
+- `RetryCleanup()` owns explicit Quit retries for retained audio-reset/capture-close jobs, including STOPPING. It clears pending dictation intent, emits only identity-bound cleanup effects and requires real matching closure acknowledgements. No new user generation, GPU release or repeated delivery.
+- Six guards began red because RetryCleanup was absent; 57 Core guards and 129 total contracts/simulated integration tests now pass. Docs and diff checks pass. The isolated adapter seam probe flips shutdown readiness from false to true only when RetryCleanup is bound before Shutdown and the emitted reset is acknowledged after success.
+- Root owns actual adapter wiring and native retry/device checks. Offline wheelhouse work is authorized next but remains unimplemented in this checkpoint. Ownership stays active.
