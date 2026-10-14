@@ -182,7 +182,9 @@ class WindowsAbiContracts(unittest.TestCase):
         backend.user, backend.kernel = ClipboardOS(), MemoryOS()
         backend._opened, backend.hwnd, backend.tx_format, backend._token = opened, 100, 49152, b'nonce'
         backend._read_handle = lambda *_: b'nonce'
-        backend.capture_target = lambda: events.append('target') or 'target'
+        target=WindowTarget(100,200,3,4,500,'Edit',(200,1,2,3,4),(2,2))
+        backend.capture_target = lambda **kwargs: events.append('target') or target
+        backend.capture_native_target=lambda:events.append('native') or target
         backend.modifiers_down = lambda: events.append('modifiers') or False
         backend._chord = lambda _: events.append('send')
         sentinel = object()
@@ -190,8 +192,8 @@ class WindowsAbiContracts(unittest.TestCase):
             self.assertIs(transaction, sentinel)
             events.append('authorize')
             return True
-        backend.commit_paste(10, 'target', lambda: events.append('current') or True, authorize, sentinel)
-        self.assertEqual(events, ['lock', 'sequence', 'target', 'modifiers', 'current', 'authorize', 'send', 'unlock'])
+        backend.commit_paste(10,target,lambda:events.append('current') or True,authorize,sentinel)
+        self.assertEqual(events,['lock','sequence','target','native','modifiers','current','authorize','send','unlock'])
 
     def test_failed_close_after_send_keeps_possible_submission_fact(self):
         backend = object.__new__(NativeClipboard)
@@ -212,10 +214,12 @@ class WindowsAbiContracts(unittest.TestCase):
         backend.user, backend.kernel = ClipboardOS(), MemoryOS()
         backend._opened, backend.hwnd, backend.tx_format, backend._token = opened, 100, 49152, b'nonce'
         backend._read_handle = lambda *_: b'nonce'
-        backend.capture_target, backend.modifiers_down = lambda: 'target', lambda: False
+        target=WindowTarget(100,200,3,4,500,'Edit',(200,1,2,3,4),(2,2))
+        backend.capture_target,backend.modifiers_down=lambda **kwargs:target,lambda:False
+        backend.capture_native_target=lambda:target
         backend._chord = lambda _: None
         with self.assertRaises(ClipboardFailure) as failure:
-            backend.commit_paste(10, 'target', lambda: True)
+            backend.commit_paste(10,target,lambda:True)
         self.assertTrue(failure.exception.submitted)
 
     def test_partial_write_does_not_claim_later_user_sequence(self):
@@ -259,7 +263,7 @@ class WindowsAbiContracts(unittest.TestCase):
             def OpenClipboard(self, *_):
                 raise AssertionError('direct reads must not access clipboard')
         backend.user = ReadOS()
-        backend.capture_target = lambda: target
+        backend.capture_native_target = lambda: target
         self.assertEqual(backend.read_direct_selection(target, 1024, lambda: False), '😀')
 
     def test_direct_read_bounds_whole_control_before_buffer_allocation(self):
@@ -269,7 +273,7 @@ class WindowsAbiContracts(unittest.TestCase):
             def SendMessageTimeoutW(self, hwnd, message, capacity, pointer, flags, timeout, result):
                 ctypes.cast(result, ctypes.POINTER(ctypes.c_size_t))[0] = 1025
                 return 1
-        backend.user, backend.capture_target = ReadOS(), lambda: target
+        backend.user, backend.capture_native_target = ReadOS(), lambda: target
         with patch.object(ctypes, 'create_unicode_buffer', side_effect=AssertionError('allocation before limit')):
             with self.assertRaises(ClipboardFailure) as failure:
                 backend.read_direct_selection(target, 1024, lambda: False)
