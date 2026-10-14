@@ -43,6 +43,14 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 - Geprüft: 61 contracts, 16 ABI-/Producer-Mocks plus eine echte native RichEdit-Fixture, Docs und Compile. Native Fixture liest nur synthetische Auswahl aus eigenem unsichtbaren HWND, ohne fremde Auswahl/Fokusänderung/Clipboard-Mutation; tatsächlicher Job-/Pipe-/Normalexit geprüft. Browser/Codex und produktive GetFocusedElement-Bindung bleiben unbewiesen.
 - Parent übernimmt Sourcecommit `c97cabe` gezielt; dessen additive Prozess-Metriken in process.py erhalten, Input/Core/ApplicationRoot nicht überschreiben. UIA close/retry behält Besitzer bei Fehlern. Ownership bleibt aktiv.
 
+## Tray Helper Checkpoint
+
+- Sourcecommit `8e1e37982f80ea3572212b549da5b80a948217e0`: bounded `TrayOwner` für den exakt gepinnten pystray-0.19.5-Win32-Producer. Root übernimmt UI-/Application-Integration; hier kein Root-/Input-/Core-Diff.
+- Eigener gehaltener NativeRunner und eigener Visibility-Thread, Stop-Retry derselben Icon-Identität unabhängig von `_running`, bestätigtes Threadende und explizites HICON-Release. Fehler tragen `owner=self`; Live-Owner-Registry und fehlgeschlagene Ressourcen bleiben für Retry erhalten.
+- Guard-first: zunächst fehlendes tray.py rot; 72 Contracts, 21 Windows-Mocks plus zwei standardmäßig übersprungene Native-Opt-ins grün. Separater eigener NativeTray-Smoke im Parent-Controller grün (0,176 s ein Lauf): eigene Threads beendet, eigenes HWND aus pystrayMap entfernt, HICON freigegeben, Fokus/Clipboard-Sequence unverändert. Keine Mikrofone, Modelle, globalen Tasten oder Altstack-Aktionen.
+- Grenzen: private Producer-ABI ist versionsgebunden. Teilweise fehlgeschlagene NativeLoop-Bereinigung wird ohne sichere Schließungsfakten weiter gehalten; kein fremdes HWND und kein erzwungener Threadabbruch. Explorer-/Suspend-/Shell-Fehler-Pilot bleibt offen.
+- Parent integriert nur Sourcecommit `8e1e379`; diese Context-/Handoff-Metadaten gehören ausschließlich zum Helper. Ownership bleibt aktiv, kein PR/Merge durch Helper.
+
 ## Active Handoff
 
-- `handoffs/2026-10-14-hugin-windows-uia-helper.md` (dieser Helper-Branch; Haupthandoff weiterhin `handoffs/2026-10-14-hugin-v1.md` auf dem Integrationsbranch)
+- `handoffs/2026-10-14-hugin-windows-tray-helper.md` (dieser Helper-Branch; vorheriger UIA-Handoff `handoffs/2026-10-14-hugin-windows-uia-helper.md`; Haupthandoff weiterhin `handoffs/2026-10-14-hugin-v1.md` auf dem Integrationsbranch)
