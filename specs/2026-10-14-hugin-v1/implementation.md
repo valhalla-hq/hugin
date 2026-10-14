@@ -25,7 +25,7 @@ mit Ctrl+Alt+Shift+F9/F10; normale Eingaben sind bis T011/T012 gesperrt.
 
 ## Prüfungen am integrierten Controllerstand
 
-`tools/dev.py check --group all`: zuletzt 251 erfolgreiche Prüfungen, darunter
+`tools/dev.py check --group all`: zuletzt 252 erfolgreiche Prüfungen, darunter
 Verträge und simulierte IPC-/Restore-Integrationsfälle. Simulation ist kein
 Nachweis für native Modell-/Hardwareeigenschaften.
 
@@ -102,6 +102,10 @@ weiteren Befunde; die gemeldeten Queue-/Retry-/Renderfehler sind geschlossen.
 Installationspfad-Delta `07c3759` ebenfalls unabhängig ohne offene Befunde.
 Die privaten PR-Checks müssen vor Integration am unveränderten finalen
 Dokumentcheckpoint erneut grün sein. Dies ist kein T900-Hardware-Gesamtgate.
+Die Nachprüfung `f54e156` bestätigt zusätzlich für KeyboardInterrupt und
+SystemExit: Typ/Argumente/Owner bleiben erhalten, inhaltsführende Traceback-,
+Context- und Cause-Verweise werden vor Speicherung getrennt. Der zuerst rote
+Weakref-Guard gibt den abgeschlossenen View frei; kein offener Befund im Delta.
 
 Der Offline-Paketrestore wurde mit allen 122 echten Wheels in drei frischen
 Umgebungen geprüft: exakte Versionen und `pip check`, 266,20 s; idempotente
