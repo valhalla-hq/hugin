@@ -17,7 +17,7 @@ sys.path.insert(0,str(ROOT/'tools'))
 import prepare_engines
 from runtime_packages import assemble_manifest,load_wheel_lock
 sys.path.insert(0,str(ROOT/'tests/contracts'))
-from test_runtime_packages import fixture_wheel
+from test_runtime_packages import fixture_wheel,fixture_installation_paths
 spec=importlib.util.spec_from_file_location('hugin_restore',ROOT/'tools/restore.py')
 restore=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(restore)
@@ -99,6 +99,7 @@ class RuntimeRestoreTests(unittest.TestCase):
         with mock.patch.object(prepare_engines.venv.EnvBuilder,'create',side_effect=create), \
                 mock.patch.object(prepare_engines,'_installed_versions',side_effect=[dict.fromkeys(pins),pins,pins]), \
                 mock.patch.object(prepare_engines,'_python_facts',return_value={'python':'3.12.10','bits':64,'tk':'8.6'}), \
+                mock.patch.object(prepare_engines,'_installation_paths',return_value=fixture_installation_paths(self.target/'.runtime/stt')), \
                 mock.patch.dict(os.environ,{'PIP_TARGET':'foreign-installation','PIP_CONFIG_FILE':'foreign-config'}), \
                 mock.patch.object(prepare_engines.subprocess,'run') as run:
             prepare_engines.prepare_environment('stt',root=self.target,wheelhouse=self.source/'.runtime/wheelhouse')
@@ -108,6 +109,7 @@ class RuntimeRestoreTests(unittest.TestCase):
         self.assertIn('--no-index',installs[0].args[0])
         self.assertIn('--require-hashes',installs[0].args[0])
         self.assertIn('--isolated',installs[0].args[0])
+        self.assertIn('-I',installs[0].args[0])
         self.assertNotIn('PIP_TARGET',installs[0].kwargs['env'])
         self.assertEqual(installs[0].kwargs['env']['PIP_CONFIG_FILE'],os.devnull)
         marker=self.target/'.runtime/stt/hugin-environment.json'
@@ -205,6 +207,17 @@ class RuntimeRestoreTests(unittest.TestCase):
         # Tiny synthetic wheel, actual pip/venv. No controller/native/model import.
         result=restore.apply_restore(self.source,self.target,install=('controller',))
         self.assertTrue(result['offline_package_restore_verified'])
+        runtime=self.target/'.runtime/controller'
+        executable=runtime/('Scripts/python.exe' if os.name=='nt' else 'bin/python')
+        layout=prepare_engines._installation_paths(executable)
+        self.assertEqual(Path(layout['prefix']).resolve(),runtime.resolve())
+        self.assertTrue(all(Path(path).resolve().is_relative_to(runtime.resolve()) for path in layout['paths'].values()))
+        # Base Python's standard library is needed for reading, yet it is not
+        # a writable pip destination and must not invalidate this owned venv.
+        stdlib=subprocess.run([str(executable),'-I','-c',"import sysconfig;print(sysconfig.get_path('stdlib'))"],
+            check=True,capture_output=True,text=True).stdout.strip()
+        self.assertFalse(Path(stdlib).resolve().is_relative_to(runtime.resolve()))
+        prepare_engines.validate_environment(self.target,'controller')
         proof=self.target/'.runtime/controller/hugin-wheel-installation.json'
         before=proof.read_bytes(),proof.stat().st_mtime_ns
         again=restore.apply_restore(self.source,self.target,install=('controller',))

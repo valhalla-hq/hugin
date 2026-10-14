@@ -352,3 +352,42 @@ approvals or normal CLI activation gate. These were source/fixture checks, not a
 new full 122-wheel offline restoration, GPU/provider/native-device or migration
 pilot. The remaining real hardware/production acceptance gaps remain open.
 Ownership remains active; root integration and the other three fixes stay parent-owned.
+
+## Shared Inner Install Destination Correction
+
+Parent/Windows delta review found valid schema-2 build markers still allowed an
+inner Lib/site-packages junction to another installation. This follow-up fixes
+that producing owner for build and every normal profile, without changing locks,
+wheels or any existing real environment.
+
+- tools/prepare_engines.py now shares _validate_environment_installation between
+  _build_environment_spec and _environment_spec. Before any interpreter probe or
+  install input write, it scans the owned runtime for escaping directory/file
+  links; internal cycles are bounded by resolved-directory identity. The runtime
+  is also pip's data destination, so nested library/package, script, header and
+  data redirects are covered. Control-output aliases are rejected separately.
+- _installation_paths asks the target interpreter's installing pip get_scheme
+  for purelib/platlib/headers/scripts/data. Both those resolved targets and the
+  actual interpreter prefix must belong to the owned runtime. New venvs are
+  checked again after creation, before requirements or pip. Probes and pip use
+  the same Python -I isolation, preventing PYTHONHOME/PYTHONPATH/cwd from changing
+  the installed layout after validation. No new owner framework or path cache.
+- Base stdlib/include returned by sysconfig are read-only inputs, not the pip
+  scheme's writable paths, and are not blanket-rejected. A real tiny temporary
+  fixture restore checks that Base stdlib remains outside the valid owned venv
+  while all actual pip destinations stay inside. No real engine/model import.
+- Guard-first: twenty inner redirects across wheel-build/controller/stt/tts and
+  twenty-four actual-prefix/scheme mismatch cases first reached fake installs
+  instead of rejecting. All pass after the shared fix. Existing fake interpreter
+  tests now mock only the new metadata boundary; real tiny pip/venv coverage runs
+  the production boundary. Package fixture root is canonicalized once, fixing the
+  hosted RUNNER~1 versus runneradmin mismatch without weakening producer locks.
+- Local gates: fourteen package contracts and complete source suite 218 passed
+  (20.732 seconds), docs/Ruff F/diff green. Read-only live helper STT preflight:
+  0.552 seconds, one observation with cache state/child CPU/memory unmeasured.
+- No source/wheel/package/model lock changed. No Root .runtime, old installation,
+  native input, playback, microphone or GPU action. Existing generic/pathless
+  build markers remain rejected rather than migrated. Validation does not claim
+  protection from a separate actor replacing filesystem paths concurrently with
+  an install. Hosted CI rerun and independent Windows delta review remain parent
+  work. Ownership remains active; cherry-pick only the following source commit.

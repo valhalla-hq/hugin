@@ -61,6 +61,23 @@ installation remains at its owned path for a same-lock retry. Each successful
 environment gets a profile-hash proof after exact metadata checks and
 `pip check`; repeated Apply keeps that proof and avoids reinstalling packages.
 
+Build and profile environments share an installation-path preflight. Before
+starting their Python or writing package inputs, it rejects inner junctions or
+symlinks escaping the owned runtime, including package, script, header and data
+subtrees. It then asks that interpreter's pip for its actual installation scheme
+and checks the interpreter prefix plus all five write destinations. A marker
+alone cannot authorize a redirected installation. The same checks run after a
+new environment is created. Existing paths are checked afresh; no live filesystem
+validation is cached. This is a preflight, not protection against concurrent
+filesystem replacement by another actor during an installation.
+
+Python probes and pip both use `-I`, so ambient PYTHONHOME, PYTHONPATH and the
+working directory cannot change the checked interpreter layout. The base Python
+standard library remains a permitted read-only input; it is not a pip write
+destination and is neither traversed nor required to live in the venv. Build
+markers use schema 2 and bind the final runtime path. Older pathless build markers
+are preserved and rejected; there is no automatic adoption or migration.
+
 These tools do not activate Hugin, input hooks, autostart, audio or models.
 Sox's external executable is a separate native prerequisite if a provider path
 uses it; the Python wheel does not install it. Real model inference, device

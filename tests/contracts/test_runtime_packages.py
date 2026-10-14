@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import shutil
 import sys
 import tempfile
 import unittest
@@ -29,10 +30,28 @@ def fixture_wheel(folder, name='fixture_pkg', version='1.0', *, tag='py3-none-an
     return path
 
 
+def fixture_directory_link(link,target,root):
+    link.parent.mkdir(parents=True,exist_ok=True)
+    target.mkdir(parents=True,exist_ok=True)
+    assert link.parent.resolve().is_relative_to(root) and target.resolve().is_relative_to(root)
+    try:link.symlink_to(target,target_is_directory=True)
+    except OSError:
+        if os.name!='nt':raise unittest.SkipTest('directory links unavailable')
+        subprocess.run(['cmd','/c','mklink','/J',str(link),str(target)],check=True,capture_output=True)
+
+
+def fixture_installation_paths(runtime):
+    runtime=Path(runtime).resolve()
+    library=runtime/('Lib/site-packages' if os.name=='nt' else 'lib/python3.12/site-packages')
+    return {'prefix':str(runtime),'paths':{'purelib':str(library),'platlib':str(library),
+        'scripts':str(runtime/('Scripts' if os.name=='nt' else 'bin')),
+        'headers':str(runtime/'include/site/python3.12/_hugin_write_scope'),'data':str(runtime)}}
+
+
 class RuntimePackageContracts(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
-        self.root = Path(self.temp.name)
+        self.root = Path(self.temp.name).resolve()
         (self.root / 'locks').mkdir()
         self.house = self.root / '.runtime/wheelhouse'
         for profile in ('controller', 'stt', 'tts'):
@@ -44,18 +63,71 @@ class RuntimePackageContracts(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
+    def installation_fixture(self,root,profile):
+        shutil.copytree(self.root/'locks',root/'locks')
+        runtime=root/'.runtime'/profile;runtime.mkdir(parents=True)
+        executable=runtime/('Scripts/python.exe' if os.name=='nt' else 'bin/python')
+        executable.parent.mkdir(parents=True);executable.write_bytes(b'synthetic interpreter')
+        owner=({'schema_version':2,'runtime':str(runtime),'python':prepare_engines.PYTHON,
+            'build_tools':dict(prepare_engines.BUILD_TOOLS),'source_date_epoch':prepare_engines.SOURCE_DATE_EPOCH}
+            if profile=='wheel-build' else {'schema_version':1,'engine':profile,'runtime':str(runtime),
+            'python':prepare_engines.PYTHON,'pins':{'fixture-pkg':'1.0'}})
+        marker=runtime/('hugin-build.json' if profile=='wheel-build' else 'hugin-environment.json')
+        marker.write_text(json.dumps(owner),encoding='utf-8')
+        return runtime,fixture_installation_paths(runtime)
+
+    def assert_install_scope_rejected(self,root,profile,layout):
+        spec={'kind':'pypi-sdist','version':'1.5.0',
+            'archive_url':'https://files.pythonhosted.org/packages/sox-1.5.0.tar.gz'}
+        reason='build_environment_outside_runtime' if profile=='wheel-build' else 'environment_outside_runtime'
+        with patch.object(prepare_engines,'_fetch_source',return_value='a'*64) as fetch,\
+                patch.object(prepare_engines,'_download') as download,\
+                patch.object(prepare_engines,'inspect_wheels',return_value=()),\
+                patch.object(prepare_engines,'_python_facts'),\
+                patch.object(prepare_engines,'_installed_versions',return_value={'fixture-pkg':'1.0'}),\
+                patch.object(prepare_engines,'_installation_paths',return_value=layout,create=True),\
+                patch.object(prepare_engines,'_pip',side_effect=ValueError('stop_before_install')) as pip:
+            with self.assertRaisesRegex(ValueError,reason):
+                if profile=='wheel-build':
+                    prepare_engines._build_source_wheel(root,self.house,'sox',spec,'a'*64)
+                else:prepare_engines.prepare_environment(profile,root=root,wheelhouse=self.house)
+        fetch.assert_not_called();download.assert_not_called();pip.assert_not_called()
+        runtime=root/'.runtime'/profile
+        self.assertFalse((runtime/'build-requirements.txt').exists())
+        self.assertFalse((runtime/'hugin-offline-requirements.txt').exists())
+        self.assertFalse((runtime/'hugin-wheel-installation.json').exists())
+
+    def test_inner_install_redirects_rejected_for_build_and_every_profile_before_writes(self):
+        for profile in ('wheel-build','controller','stt','tts'):
+            for destination in ('purelib','nested_library','nested_scripts','headers','data'):
+                with self.subTest(profile=profile,destination=destination),tempfile.TemporaryDirectory(dir=self.root) as temporary:
+                    root=Path(temporary).resolve();runtime,layout=self.installation_fixture(root,profile)
+                    library=Path(layout['paths']['purelib']);scripts=Path(layout['paths']['scripts'])
+                    link={'purelib':library,'nested_library':library/'fixture_pkg',
+                        'nested_scripts':scripts/'fixture-bin','headers':Path(layout['paths']['headers']),
+                        'data':runtime/'share/fixture-data'}[destination]
+                    foreign=root/'foreign-installation'
+                    fixture_directory_link(link,foreign,root)
+                    self.assert_install_scope_rejected(root,profile,layout)
+                    self.assertEqual(list(foreign.iterdir()),[])
+
+    def test_actual_interpreter_prefix_and_install_scheme_must_match_owned_runtime(self):
+        for profile in ('wheel-build','controller','stt','tts'):
+            for field in ('prefix','purelib','platlib','headers','scripts','data'):
+                with self.subTest(profile=profile,field=field),tempfile.TemporaryDirectory(dir=self.root) as temporary:
+                    root=Path(temporary).resolve();_,layout=self.installation_fixture(root,profile)
+                    foreign=str(root/'foreign-installation')
+                    if field=='prefix':layout['prefix']=foreign
+                    else:layout['paths'][field]=foreign
+                    self.assert_install_scope_rejected(root,profile,layout)
+
     def test_build_environment_junction_outside_runtime_fails_before_any_build_work(self):
         foreign=self.root/'other-installation';foreign.mkdir()
         runtime=self.root/'.runtime/wheel-build'
         owner={'schema_version':1,'python':prepare_engines.PYTHON,
             'build_tools':dict(prepare_engines.BUILD_TOOLS),'source_date_epoch':prepare_engines.SOURCE_DATE_EPOCH}
         (foreign/'hugin-build.json').write_text(json.dumps(owner),encoding='utf-8')
-        try:runtime.symlink_to(foreign,target_is_directory=True)
-        except OSError:
-            if os.name!='nt':self.skipTest('directory links unavailable')
-            # These absolute endpoints are both fresh children of this fixture.
-            assert runtime.parent.resolve().is_relative_to(self.root) and foreign.resolve().is_relative_to(self.root)
-            subprocess.run(['cmd','/c','mklink','/J',str(runtime),str(foreign)],check=True,capture_output=True)
+        fixture_directory_link(runtime,foreign,self.root)
         self.assertEqual(runtime.resolve(),foreign.resolve())
         spec={'kind':'pypi-sdist','version':'1.5.0',
             'archive_url':'https://files.pythonhosted.org/packages/sox-1.5.0.tar.gz'}
@@ -105,6 +177,7 @@ class RuntimePackageContracts(unittest.TestCase):
                 patch.object(prepare_engines,'inspect_wheels',return_value=()),\
                 patch.object(prepare_engines,'_python_facts'),\
                 patch.object(prepare_engines.venv,'EnvBuilder') as builder,\
+                patch.object(prepare_engines,'_installation_paths',return_value=fixture_installation_paths(runtime)),\
                 patch.object(prepare_engines,'_installed_versions',return_value=dict(prepare_engines.BUILD_TOOLS)),\
                 patch.object(prepare_engines,'_pip',side_effect=pip) as installed:
             builder.return_value.create.side_effect=create

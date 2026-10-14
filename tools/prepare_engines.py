@@ -76,12 +76,56 @@ for name in json.loads(sys.argv[1]):
     except m.PackageNotFoundError: versions[name]=None
 print(json.dumps(versions))
 '''
-    result=subprocess.run([str(executable),'-c',script,json.dumps(list(pins))],
+    result=subprocess.run([str(executable),'-I','-c',script,json.dumps(list(pins))],
         check=True,capture_output=True,text=True)
     versions=json.loads(result.stdout)
     if not isinstance(versions,dict) or set(versions) != set(pins):
         raise ValueError('package_metadata_invalid')
     return versions
+
+
+def _installation_paths(executable):
+    # Ask the installing pip for its own scheme; sysconfig's base stdlib and
+    # include paths are read-only inputs, not pip's venv write destinations.
+    script='''import json,sys
+from pip._internal.locations import get_scheme
+scheme=get_scheme('_hugin_write_scope',isolated=True)
+print(json.dumps({'prefix':sys.prefix,'paths':{name:getattr(scheme,name)
+    for name in ('purelib','platlib','headers','scripts','data')}}))
+'''
+    result=subprocess.run([str(executable),'-I','-c',script],check=True,capture_output=True,text=True)
+    facts=json.loads(result.stdout)
+    if (not isinstance(facts,dict) or set(facts)!={'prefix','paths'}
+            or not isinstance(facts['prefix'],str) or not Path(facts['prefix']).is_absolute()
+            or not isinstance(facts['paths'],dict)
+            or set(facts['paths'])!={'purelib','platlib','headers','scripts','data'}
+            or any(not isinstance(path,str) or not Path(path).is_absolute() for path in facts['paths'].values())):
+        raise ValueError('package_metadata_invalid')
+    return facts
+
+
+def _validate_environment_installation(runtime,executable,owned_files,*,reason):
+    # A valid outer marker does not own a redirected package/script subtree.
+    # Check links before starting Python, whose site import could follow them.
+    if any(path.resolve()!=path for path in owned_files):
+        raise ValueError(reason)
+    pending=[runtime] if runtime.exists() else []
+    seen=set()
+    while pending:
+        directory=pending.pop().resolve()
+        if not directory.is_relative_to(runtime):raise ValueError(reason)
+        if directory in seen:continue
+        seen.add(directory)
+        with os.scandir(directory) as entries:
+            for entry in entries:
+                if (entry.is_symlink() or entry.is_junction()) and not Path(entry.path).resolve().is_relative_to(runtime):
+                    raise ValueError(reason)
+                if entry.is_dir():pending.append(Path(entry.path))
+    if executable.exists():
+        facts=_installation_paths(executable)
+        if Path(facts['prefix']).resolve()!=runtime or any(
+                not Path(path).resolve().is_relative_to(runtime) for path in facts['paths'].values()):
+            raise ValueError(reason)
 
 
 def _environment_spec(root,engine):
@@ -99,12 +143,15 @@ def _environment_spec(root,engine):
         if not marker.is_file() or json.loads(marker.read_text(encoding='utf-8')) != expected_owner:
             raise ValueError('environment_ownership_or_lock_conflict')
     executable=runtime/('Scripts/python.exe' if os.name=='nt' else 'bin/python')
+    _validate_environment_installation(runtime,executable,
+        (marker,runtime/'hugin-wheel-installation.json',runtime/'hugin-offline-requirements.txt',runtime/'pyvenv.cfg'),
+        reason='environment_outside_runtime')
     return runtime,executable,pins,expected_owner,marker
 
 
 def _python_facts(executable):
     script="import json,sys,struct,tkinter;print(json.dumps({'python':'.'.join(map(str,sys.version_info[:3])),'bits':struct.calcsize('P')*8,'tk':str(tkinter.TkVersion)}))"
-    result=subprocess.run([str(executable),'-c',script],check=True,capture_output=True,text=True)
+    result=subprocess.run([str(executable),'-I','-c',script],check=True,capture_output=True,text=True)
     facts=json.loads(result.stdout)
     if facts != {'python':PYTHON,'bits':64,'tk':'8.6'}:
         raise ValueError('python_version_or_tk_mismatch')
@@ -134,7 +181,7 @@ def _pip(executable,*arguments,extra_env=None):
     environment['PIP_CONFIG_FILE']=os.devnull
     if extra_env:
         environment.update(extra_env)
-    subprocess.run([str(executable),'-m','pip','--isolated','--no-cache-dir',*arguments],check=True,env=environment)
+    subprocess.run([str(executable),'-I','-m','pip','--isolated','--no-cache-dir',*arguments],check=True,env=environment)
 
 
 def prepare_environment(engine, *, root=ROOT, wheelhouse=None):
@@ -153,6 +200,9 @@ def prepare_environment(engine, *, root=ROOT, wheelhouse=None):
         marker.write_text(json.dumps(expected_owner,indent=2)+'\n',encoding='utf-8')
     if not executable.exists():
         venv.EnvBuilder(with_pip=True).create(runtime)
+    _validate_environment_installation(runtime,executable,
+        (marker,proof,runtime/'hugin-offline-requirements.txt',runtime/'pyvenv.cfg'),
+        reason='environment_outside_runtime')
     _python_facts(executable)
     installed=_installed_versions(executable,pins)
     if any(version is not None and version != pins[name] for name,version in installed.items()):
@@ -239,14 +289,12 @@ def _build_environment_spec(root):
     marker=runtime/'hugin-build.json'
     executable=runtime/('Scripts/python.exe' if os.name=='nt' else 'bin/python')
     requirements=runtime/'build-requirements.txt'
-    # Neither a directory junction nor an individual output/executable link
-    # may redirect build writes or installation into a different environment.
-    if any(path.resolve() != path for path in (marker,executable,requirements)):
-        raise ValueError('build_environment_outside_runtime')
     owner={'schema_version':2,'runtime':str(runtime),'python':PYTHON,
            'build_tools':dict(BUILD_TOOLS),'source_date_epoch':SOURCE_DATE_EPOCH}
     if runtime.exists() and (not marker.is_file() or json.loads(marker.read_text(encoding='utf-8')) != owner):
         raise ValueError('build_environment_ownership_conflict')
+    _validate_environment_installation(runtime,executable,(marker,requirements,runtime/'pyvenv.cfg'),
+        reason='build_environment_outside_runtime')
     return runtime,executable,marker,requirements,owner
 
 
@@ -271,6 +319,8 @@ def _build_source_wheel(root,house,name,spec,expected_hash):
         runtime.mkdir(parents=True)
         marker.write_text(json.dumps(owner,indent=2)+'\n',encoding='utf-8')
         venv.EnvBuilder(with_pip=True).create(runtime)
+    _validate_environment_installation(runtime,executable,(marker,requirements,runtime/'pyvenv.cfg'),
+        reason='build_environment_outside_runtime')
     _python_facts(executable)
     lines=[f'{(house/item.file).resolve().as_uri()} --hash=sha256:{item.sha256}' for item in tool_records]
     requirements.write_text('\n'.join(lines)+'\n',encoding='utf-8')
