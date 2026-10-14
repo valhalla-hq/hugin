@@ -37,8 +37,25 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Next Step
 
-- Kürzeländerung nach Review/CI integrieren und Pilot mit Strg+Alt+D/V neu starten. Danach menschlicher Hör-/Tasten-/Zielvergleich. Einmaliger lokaler Rückweg hält die eigene Familie und startet nach Tray-Beenden/geschlossenem Job die unveränderten Startup-lnks; Status im lokalen .runtime/pilot-session-*.json. Normale Maus-/Alt+Y-Hooks bleiben gesperrt.
+- Main 8c64029c8068a6fe3c58d177a1ed7b0c353ca773 mit Strg+Alt+D/V läuft sichtbar;
+  geordneter Altstack-Rückstart und erneute Pause beim Kürzelwechsel bestätigt.
+- Aktiver Task codex/hugin-pilot-fixes-mjolnir: Brian meldet fehlende Codex-
+  Übergabe bei unverändertem Ziel und abgehacktes Audio bei beiden Stimmen.
+  Vertrag/Plan: specs/2026-10-14-hugin-v1/pilot-fixes.md.
+- Audiofix für beide Stimmen nativ bestätigt: Freya48/Tyr47 leere Refills
+  vorher, beide0 nachher, PCM vollständig identisch, alle eigenen Header/
+  Handles geschlossen. Modellladen und Übergabeablehnungen werden präzise
+  angezeigt. Kuratierte Nachweise: docs/pilot-fixes-2026-10-14.md.
+- 310 Vertrags-/Integrationsprüfungen und 48 Windows-Prüfungen ohne Skips grün.
+  Unabhängiger Source-Review am 1a40110 abgeschlossen. Codex-UIA-Nachweis und
+  unmittelbare Bestätigung implementiert; tatsächlicher warmer Codex-Paste-/
+  Restore-Nachweis wartet auf ein aktives leeres Nachrichtenfeld. Vorhandener
+  Entwurf bleibt unangetastet; targets.json bleibt bis zur Prüfung leer.
+- Alte Testsitzung regulär beendet, Rückstart und erneute reguläre Pause der
+  Altapps bestätigt. Geprüfte Aktualisierung und einmaliger Neustart folgen
+  am exakten CI-geprüften Head. Der Rückweg startet nach Tray-Beenden die
+  unveränderten Startup-lnks. Normale Maus-/Alt+Y-Hooks bleiben gesperrt.
 
 ## Active Handoff
 
-- `handoffs/2026-10-14-simple-hotkeys.md`
+- `handoffs/2026-10-14-pilot-fixes.md`

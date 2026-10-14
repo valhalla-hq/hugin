@@ -1,15 +1,17 @@
 """Controller wiring through fake I/O; these are not native pilot claims."""
-from concurrent.futures import Future
+from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 from types import SimpleNamespace as NS
 import json
 import threading
+import time
 import unittest
 from hugin.errors import HuginError
 
 from hugin import coordinator as c
 from hugin.config import load_settings
-from hugin.application import Controller
+from hugin.application import Controller, _DeliveryCommit
+from hugin.windows.clipboard import ClipboardFailure
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -41,14 +43,17 @@ class Output:
 
 class Clipboard:
     def __init__(self): self.submissions = []; self.cancel_at_commit = None
-    def capture_target(self): return NS(target='target', status='target_captured')
+    def capture_native_target(self): return NS(target='target', status='target_captured')
+    def capture_target(self, **kwargs): return NS(target='target', status='target_captured')
     def capture_selection(self, cancelled): return NS(text='Synthetischer Test.', status='captured')
-    def deliver(self, text, target, still_current, *, authorize):
-        if self.cancel_at_commit: self.cancel_at_commit()
-        if still_current() and authorize('transaction'):
-            self.submissions.append(text)
-            return NS(status='submitted', submitted=True, restored=True)
-        return NS(status='cancelled', submitted=False, restored=True)
+    def deliver(self, text, target, still_current, *, authorize, commit):
+        submitted=[False]
+        def send():
+            if self.cancel_at_commit:self.cancel_at_commit()
+            if still_current() and authorize('transaction'):
+                self.submissions.append(text);submitted[0]=True
+        commit('transaction',send)
+        return NS(status='submitted' if submitted[0] else 'cancelled',submitted=submitted[0],restored=True)
     def copy(self, text): self.submissions.append(text); return NS(status='copied')
     def close(self): pass
 
@@ -85,7 +90,7 @@ class ApplicationContracts(unittest.TestCase):
             microphone=Microphone(self.calls), output=Output(self.calls),
             clipboard=self.clipboard, pool=self.pool, publish=lambda view: None,
             capture_executor=Immediate(), audio_executor=Immediate(), maintenance_executor=Immediate(),
-            selection_executor=Immediate())
+            selection_executor=Immediate(),delivery_executor=Immediate())
 
     def pump(self):
         while self.controller.pump_once(): pass
@@ -123,6 +128,196 @@ class ApplicationContracts(unittest.TestCase):
         self.pump()
         self.assertEqual(self.clipboard.submissions, [])
         self.assertEqual(self.controller.core.snapshot().result.text, 'private marker')
+
+    def assert_delivery_rejection(self, status, expected_code):
+        self.clipboard.deliver = lambda *args, **kwargs: NS(
+            status=status, submitted=False, restored=False)
+        self.dictation_ready()
+        request,generation=self.pool.inference[-1]
+        self.controller.worker_event(dict(type='result',engine='stt',engine_instance='actual-stt',
+            request_id=request,generation=generation,text='synthetic rejected dictation'))
+        self.pump()
+        self.assertEqual(self.controller.core.snapshot().error.code,expected_code)
+        self.assertEqual(self.controller.view().text,'synthetic rejected dictation')
+        self.assertEqual(self.clipboard.submissions,[])
+        self.assertNotIn('synthetic rejected dictation',self.controller.diagnostic())
+
+    def test_unapproved_delivery_does_not_claim_target_changed(self):
+        self.assert_delivery_rejection('target_unverified','target_unverified')
+
+    def test_unverifiable_delivery_does_not_claim_target_changed(self):
+        self.assert_delivery_rejection('target_unverifiable','target_unverifiable')
+
+    def test_timed_out_target_proof_does_not_claim_clipboard_unavailable(self):
+        self.assert_delivery_rejection('target_probe_timeout','target_unverifiable')
+
+    def test_clipboard_rejection_does_not_claim_target_changed(self):
+        self.assert_delivery_rejection('format_unsupported','clipboard_failed')
+
+    def test_cold_model_load_is_distinguished_from_transcription(self):
+        self.controller.command('dictation');self.pump()
+        self.controller.command('dictation');self.pump()
+        self.assertEqual(self.controller.view().status,'Whisper wird geladen')
+        self.assertIn('Whisper: wird geladen',self.controller.view().components)
+
+    def test_target_probe_stops_microphone_before_waiting_and_keeps_owner_pumping(self):
+        entered,release,pumped=threading.Event(),threading.Event(),threading.Event()
+        waiting=[False]
+        def capture(**kwargs):
+            entered.set();release.wait(2)
+            return NS(target='target',status='target_captured')
+        self.clipboard.capture_native_target=lambda:NS(target='target',status='target_captured')
+        self.clipboard.capture_target=capture
+        self.controller.capture_executor=ThreadPoolExecutor(1)
+        self.controller.publish=lambda view:pumped.set() if waiting[0] else None
+        owner=threading.Thread(target=self.controller.run,args=(lambda:None,))
+        owner.start()
+        try:
+            self.controller.command('dictation')
+            deadline=time.monotonic()+1
+            while not self.controller.microphone.owned and time.monotonic()<deadline:time.sleep(.005)
+            self.controller.command('dictation')
+            self.assertTrue(entered.wait(1))
+            self.assertFalse(self.controller.microphone.owned,'target probe must not extend the recording')
+            waiting[0]=True;self.controller.command('clear')
+            self.assertTrue(pumped.wait(.5),'provider waits must not block the serial owner')
+        finally:
+            release.set();self.controller.command('quit');owner.join(3)
+            self.assertFalse(owner.is_alive())
+
+    def test_slow_delivery_keeps_owner_pumping_and_quit_waits_for_its_cleanup(self):
+        entered,release,pumped=threading.Event(),threading.Event(),threading.Event()
+        waiting=[False]
+        def deliver(*args,**kwargs):
+            entered.set();release.wait(2)
+            return NS(status='cancelled',submitted=False,restored=False)
+        self.clipboard.deliver=deliver
+        self.dictation_ready()
+        self.controller.delivery_executor=ThreadPoolExecutor(1)
+        self.controller.publish=lambda view:pumped.set() if waiting[0] else None
+        owner=threading.Thread(target=self.controller.run,args=(lambda:None,))
+        owner.start()
+        try:
+            request,generation=self.pool.inference[-1]
+            self.controller.worker_event(dict(type='result',engine='stt',engine_instance='actual-stt',
+                request_id=request,generation=generation,text='synthetic delivery'))
+            self.assertTrue(entered.wait(1))
+            waiting[0]=True;self.controller.command('clear')
+            self.assertTrue(pumped.wait(.5),'delivery waits must not block the serial owner')
+            self.controller.command('quit');time.sleep(.05)
+            self.assertTrue(owner.is_alive(),'live delivery owns its cleanup barrier')
+        finally:
+            release.set();self.controller.command('quit');owner.join(3)
+            self.controller.delivery_executor.shutdown(wait=True)
+            self.assertFalse(owner.is_alive())
+
+    def test_background_delivery_commits_on_owner_and_finishes_on_worker(self):
+        self.dictation_ready()
+        self.controller.delivery_executor=ThreadPoolExecutor(1)
+        threads=[]
+        def deliver(text,target,current,*,authorize,commit):
+            def send():
+                threads.append(('commit',threading.get_ident()))
+                if current() and authorize('transaction'):self.clipboard.submissions.append(text)
+            commit('transaction',send)
+            threads.append(('finish',threading.get_ident()))
+            return NS(status='submitted',submitted=True,restored=True)
+        self.clipboard.deliver=deliver
+        request,generation=self.pool.inference[-1]
+        self.controller.worker_event(dict(type='result',engine='stt',engine_instance='actual-stt',
+            request_id=request,generation=generation,text='synthetic asynchronous delivery'))
+        try:
+            deadline=time.monotonic()+1
+            while (not threads or self.controller._delivery_tasks or self.controller.core.snapshot().state==c.State.DELIVERING) and time.monotonic()<deadline:
+                self.controller.pump_once(.01)
+            self.assertEqual(self.clipboard.submissions,['synthetic asynchronous delivery'])
+            self.assertEqual(threads[0],('commit',threading.get_ident()))
+            self.assertEqual(threads[1][0],'finish')
+            self.assertNotEqual(threads[1][1],threading.get_ident())
+        finally:
+            self.controller.command('quit');self.pump()
+            self.controller.delivery_executor.shutdown(wait=True)
+
+    def test_expired_commit_never_runs_and_every_claimed_failure_is_acknowledged(self):
+        self.dictation_ready()
+        job=self.controller.core.snapshot().job
+        calls=[]
+        expired=Future();expired.cancel()
+        self.controller.handle(_DeliveryCommit(job,'expired',lambda:calls.append('late'),expired))
+        self.assertEqual(calls,[])
+        failures=(ClipboardFailure('input_partial',submitted=True,owned_sequence=123),KeyboardInterrupt())
+        for failure in failures:
+            with self.subTest(failure=type(failure).__name__):
+                acknowledgement=Future()
+                def send():raise failure
+                self.controller.handle(_DeliveryCommit(job,'failed',send,acknowledgement))
+                self.assertTrue(acknowledgement.done())
+                self.assertIs(acknowledgement.exception(),failure)
+
+    def test_quit_with_full_queue_cancels_pending_native_commit_without_losing_finish(self):
+        self.dictation_ready()
+        self.controller.delivery_executor=ThreadPoolExecutor(1)
+        request,generation=self.pool.inference[-1]
+        self.controller.worker_event(dict(type='result',engine='stt',engine_instance='actual-stt',
+            request_id=request,generation=generation,text='synthetic cancelled delivery'))
+        self.controller.pump_once()
+        try:
+            deadline=time.monotonic()+1
+            while time.monotonic()<deadline:
+                with self.controller._lock:
+                    pending=any(isinstance(item[2],_DeliveryCommit) for item in self.controller._completions.values())
+                if pending:break
+                time.sleep(.005)
+            self.assertTrue(pending)
+            for _ in range(64):self.controller.command('clear')
+            self.controller.command('quit')
+            deadline=time.monotonic()+1
+            while not self.controller.shutdown_ready() and time.monotonic()<deadline:self.controller.pump_once(.01)
+            self.assertEqual(self.clipboard.submissions,[])
+            self.assertTrue(self.controller.shutdown_ready())
+        finally:self.controller.delivery_executor.shutdown(wait=True)
+
+    def test_failed_delivery_submit_revokes_even_an_already_queued_callable(self):
+        class QueuedThenFailed:
+            def submit(self,fn):
+                self.queued=fn
+                raise RuntimeError('synthetic thread start failure')
+        self.dictation_ready()
+        executor=QueuedThenFailed();self.controller.delivery_executor=executor
+        request,generation=self.pool.inference[-1]
+        self.controller.worker_event(dict(type='result',engine='stt',engine_instance='actual-stt',
+            request_id=request,generation=generation,text='synthetic failed submit'))
+        try:self.pump()
+        except RuntimeError:pass  # The old path strands the closing delivery.
+        executor.queued()
+        self.controller.command('quit');self.pump()
+        self.assertEqual(self.clipboard.submissions,[])
+        self.assertTrue(self.controller.shutdown_ready())
+
+    def test_submit_failure_after_execution_claim_retains_delivery_until_real_finish(self):
+        entered,release=threading.Event(),threading.Event()
+        class RunningThenFailed:
+            def submit(self,fn):
+                self.thread=threading.Thread(target=fn);self.thread.start()
+                if not entered.wait(1):raise AssertionError('delivery did not start')
+                raise RuntimeError('synthetic late submit failure')
+        def deliver(*args,**kwargs):
+            entered.set();release.wait(2)
+            return NS(status='cancelled',submitted=False,restored=False)
+        self.dictation_ready()
+        self.clipboard.deliver=deliver
+        executor=RunningThenFailed();self.controller.delivery_executor=executor
+        request,generation=self.pool.inference[-1]
+        self.controller.worker_event(dict(type='result',engine='stt',engine_instance='actual-stt',
+            request_id=request,generation=generation,text='synthetic claimed delivery'))
+        try:
+            self.pump();self.controller.command('quit');self.pump()
+            self.assertFalse(self.controller.shutdown_ready())
+            self.assertEqual(len(self.controller._delivery_tasks),1)
+        finally:
+            release.set();executor.thread.join(2);self.pump()
+        self.assertEqual(self.clipboard.submissions,[])
+        self.assertTrue(self.controller.shutdown_ready())
 
     def test_foreign_worker_identity_cannot_publish_text(self):
         self.dictation_ready()

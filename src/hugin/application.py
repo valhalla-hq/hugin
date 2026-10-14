@@ -5,6 +5,7 @@ Never log events/effects/futures: their payloads are private user content.
 from __future__ import annotations
 
 from concurrent.futures import Future, ThreadPoolExecutor
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime,timezone
 import itertools
@@ -20,6 +21,7 @@ from .errors import HuginError, MESSAGES
 from .config import read_json_object
 from .diagnostics import observed_versions
 from .ui import View
+from .windows.clipboard import ClipboardFailure
 
 
 @dataclass(frozen=True)
@@ -55,6 +57,14 @@ class _Binding:
     generation: int
 
 
+@dataclass(frozen=True)
+class _DeliveryCommit:
+    job: c.Job
+    transaction: object
+    send: Callable[[],None]
+    acknowledgement: Future
+
+
 def _safe_error(error, phase):
     return HuginError(error.code if isinstance(error,HuginError) else 'worker_failed',phase)
 
@@ -63,7 +73,7 @@ class Controller:
     """Construct and pump on one owner thread; callbacks call command/worker_event."""
     def __init__(self, settings, *, inputs, microphone, output, clipboard, pool,
                  publish, capture_executor=None, audio_executor=None, maintenance_executor=None,
-                 selection_executor=None,signals=None):
+                 selection_executor=None,delivery_executor=None,signals=None):
         self.settings = settings
         self.inputs,self.microphone,self.output = inputs,microphone,output
         self.clipboard,self.pool,self.publish = clipboard,pool,publish
@@ -77,6 +87,8 @@ class Controller:
         self.audio_executor = audio_executor or ThreadPoolExecutor(1,thread_name_prefix='hugin-audio')
         self.maintenance_executor = maintenance_executor or ThreadPoolExecutor(2,thread_name_prefix='hugin-cleanup')
         self.selection_executor = selection_executor or ThreadPoolExecutor(1,thread_name_prefix='hugin-selection')
+        self.delivery_executor = delivery_executor or ThreadPoolExecutor(1,thread_name_prefix='hugin-delivery')
+        self._owner_ident = None
         self._events = queue.PriorityQueue(maxsize=64)
         self._counter = itertools.count()
         self._lock = threading.RLock()
@@ -88,6 +100,7 @@ class Controller:
         self._cleanup_failed = set()
         self._capture_tasks = set()
         self._selection_tasks = set()
+        self._delivery_tasks = set()
         self._completions = {}
         self._queued_head = None
         self._audio_job = None
@@ -129,7 +142,9 @@ class Controller:
         elif isinstance(event,c.AudioReset):
             # Failed attempts and later confirmed retries are distinct facts.
             key = (type(event),event.job,event.success)
-        elif isinstance(event,(c.RecordingStarted,c.RecordingStopped)):
+        elif isinstance(event,_DeliveryCommit):
+            key=(type(event),event.job,event.acknowledgement)
+        elif isinstance(event,(c.RecordingStarted,c.RecordingStopped,c.DeliveryFinished)):
             key = (type(event),event.job)
         elif isinstance(event,_Command) and event.kind == 'quit':
             key = (type(event),'quit')
@@ -214,6 +229,17 @@ class Controller:
         return True
 
     def handle(self, event, *, audio_ack=None):
+        if self._owner_ident is None:self._owner_ident=threading.get_ident()
+        if isinstance(event,_DeliveryCommit):
+            acknowledgement=event.acknowledgement
+            if not acknowledgement.set_running_or_notify_cancel():return
+            try:
+                if self._snapshot.job != event.job or self._token(event.job).is_set():
+                    raise ClipboardFailure('cancelled')
+                event.send()
+            except BaseException as failure:acknowledgement.set_exception(failure)
+            else:acknowledgement.set_result(None)
+            return
         if isinstance(event,_Command):
             mapping = {'dictation':c.DictationToggle,'read':c.ReadToggle,'cancel':c.Cancel,
                 'copy':c.CopyResult,'clear':c.DeleteResult,'quit':c.Shutdown,
@@ -302,19 +328,24 @@ class Controller:
                     else: self._post(c.RecordingStarted(effect.job,_safe_error(error,'capture')))
             self._capture_submit(start)
         elif isinstance(effect,c.StopRecording):
-            target = None if effect.discard else self.clipboard.capture_target().target
+            target = None if effect.discard else self.clipboard.capture_native_target().target
+            token = self._token(effect.job)
             def stop():
                 data,error = None,None
+                bound_target=target
                 try:
                     if effect.discard: self.microphone.cancel()
-                    else: data = self.microphone.stop()
+                    else:
+                        data = self.microphone.stop()
+                        if target is not None and not token.is_set():
+                            bound_target=self.clipboard.capture_target(expected=target,cancelled=token.is_set).target
                 except Exception as cause:
                     error = _safe_error(cause,'capture')
                     try: self.microphone.cancel()
                     except HuginError: pass
                 if self.microphone.owned:
                     self._post(_Failure(HuginError('microphone_failed','capture_cleanup')))
-                else: self._post(c.RecordingStopped(effect.job,data,target,error))
+                else: self._post(c.RecordingStopped(effect.job,data,bound_target,error))
             self._capture_submit(stop)
         elif isinstance(effect,c.CaptureSelection):
             token = self._token(effect.job)
@@ -386,13 +417,55 @@ class Controller:
             self.audio_executor.submit(drain)
         elif isinstance(effect,c.StageDelivery):
             token = self._token(effect.job)
-            def current(): return not token.is_set() and self.core.snapshot().job == effect.job
+            def current():
+                with self._lock:return not token.is_set() and self._snapshot.job == effect.job
             def authorize(transaction):
+                if threading.get_ident() != self._owner_ident:
+                    raise ClipboardFailure('commit_rejected')
                 committed = self.core.dispatch(c.DeliveryCommit(effect.job,transaction,current()))
                 return any(isinstance(item,c.DeliverText) and item.transaction == transaction for item in committed)
-            result = self.clipboard.deliver(effect.text,effect.target,current,authorize=authorize)
-            error = None if result.submitted and result.restored else HuginError('target_changed','delivery')
-            self.handle(c.DeliveryFinished(effect.job,error))
+            def commit(transaction,send):
+                if threading.get_ident() == self._owner_ident:
+                    send();return
+                acknowledgement=Future()
+                self._post(_DeliveryCommit(effect.job,transaction,send,acknowledgement))
+                deadline=time.monotonic()+2
+                while not acknowledgement.done():
+                    if token.is_set() or time.monotonic() >= deadline:
+                        if acknowledgement.cancel():raise ClipboardFailure(
+                            'cancelled' if token.is_set() else 'commit_timeout')
+                    try:acknowledgement.result(timeout=.025)
+                    except TimeoutError:pass
+                acknowledgement.result()
+            def deliver():
+                try:
+                    result=self.clipboard.deliver(effect.text,effect.target,current,
+                        authorize=authorize,commit=commit)
+                    code=result.status if result.status in (
+                        'target_changed','target_unverifiable','target_unverified') else 'clipboard_failed'
+                    if result.status in ('target_probe_timeout','target_probe_failed','target_probe_busy',
+                            'target_cleanup_pending'):
+                        code='target_unverifiable'
+                    error=None if result.submitted and result.restored else HuginError(code,'delivery')
+                except BaseException as cause:error=_safe_error(cause,'delivery')
+                self._post(c.DeliveryFinished(effect.job,error))
+            ticket=Future()
+            with self._lock:self._delivery_tasks.add(ticket)
+            def finished(done):
+                with self._lock:self._delivery_tasks.discard(done)
+            ticket.add_done_callback(finished)
+            def claimed_delivery():
+                # submit can fail after enqueueing or starting a WorkItem.
+                # This independently owned gate precedes all native work.
+                if not ticket.set_running_or_notify_cancel():return
+                try:deliver()
+                finally:ticket.set_result(None)
+            try:self.delivery_executor.submit(claimed_delivery)
+            except BaseException:
+                if ticket.cancel():
+                    self._post(c.DeliveryFinished(effect.job,HuginError('worker_failed','delivery_start')))
+                elif not ticket.done():
+                    self._post(_Failure(HuginError('worker_failed','delivery_start')))
         elif isinstance(effect,c.CopyText):
             if self.clipboard.copy(effect.text).status != 'copied':
                 self._runtime_error = HuginError('clipboard_failed','copy')
@@ -508,7 +581,7 @@ class Controller:
         capture_active=snap.job is not None and snap.job.kind == c.JobKind.DICTATION
         selection_active=snap.job is not None and snap.job.kind == c.JobKind.READING
         with self._lock:
-            abandoned_io=bool((self.microphone.owned or self._capture_tasks) and not capture_active
+            abandoned_io=bool((self.microphone.owned or self._capture_tasks or self._delivery_tasks) and not capture_active
                 or self._selection_tasks and not selection_active)
         data = {'schema_version':1,'app':'Hugin','version':__version__,
             'state':snap.state.value,'voice':snap.voice,'input_ready':bool(self.inputs.running and not self.inputs.error),
@@ -528,6 +601,7 @@ class Controller:
     def view(self):
         snap = self.core.snapshot()
         retiring={(op.engine,op.engine_instance) for op in snap.retired_operations}
+        loading = snap.gpu_slot if snap.gpu_slot and snap.gpu_slot.action == c.Action.INITIALIZE else None
         labels = {c.State.IDLE:'Bereit',c.State.STARTING:'Mikrofon wird geöffnet',c.State.RECORDING:'Aufnahme läuft',
             c.State.TRANSCRIBING:'Diktat wird verarbeitet',c.State.DELIVERING:'Text wird übergeben',
             c.State.TTS_PREPARING:'Vorlesen wird vorbereitet',c.State.TTS_PLAYING:'Vorlesen läuft',
@@ -537,10 +611,13 @@ class Controller:
             ('wird beendet' if (item.engine,item.engine_instance) in self._closing else
              'Bereinigung offen' if (item.engine,item.engine_instance) in self._cleanup_failed else
              'wird gestoppt' if (item.engine,item.engine_instance) in retiring else
-             'gestört' if item.blocked else 'bereit' if item.ready else 'bei Bedarf') for item in snap.components)
+             'gestört' if item.blocked else 'wird geladen' if loading and item.engine == loading.engine
+             else 'bereit' if item.ready else 'bei Bedarf') for item in snap.components)
         pilot = getattr(self.inputs,'pilot',False)
         activity = 'error' if error else {c.State.IDLE:'idle',c.State.RECORDING:'recording',c.State.TTS_PLAYING:'playing'}.get(snap.state,'preparing')
         status=labels[snap.state]
+        if loading and loading.job == snap.job and snap.job:
+            status=('Whisper' if loading.engine == c.Engine.STT else 'Qwen')+' wird geladen'
         if snap.state == c.State.IDLE and retiring:
             status='Vorherige Verarbeitung wird beendet'
             if not error: activity='preparing'
@@ -561,7 +638,7 @@ class Controller:
 
     def shutdown_ready(self):
         snap = self.core.snapshot()
-        with self._lock: capture_pending = bool(self._capture_tasks or self._selection_tasks)
+        with self._lock: capture_pending = bool(self._capture_tasks or self._selection_tasks or self._delivery_tasks)
         return self._stop and not (snap.gpu_slot or snap.cancelling_job or self._closing or
             self._cleanup_failed or self.pool.workers or self.microphone.owned or capture_pending)
 
@@ -582,12 +659,13 @@ class Controller:
         return not self._io_cleanup_failed
 
     def run(self, on_closed):
+        self._owner_ident=threading.get_ident()
         while not self._closed:
             try:
                 self.pump_once(.025)
                 self.tick()
                 if self.shutdown_ready() and not self._io_cleanup_failed and self.finish_io():
-                    for executor in (self.capture_executor,self.audio_executor,self.maintenance_executor,self.selection_executor):
+                    for executor in (self.capture_executor,self.audio_executor,self.maintenance_executor,self.selection_executor,self.delivery_executor):
                         executor.shutdown(wait=True,cancel_futures=True)
                     self._closed = True
             except Exception as cause:
@@ -633,7 +711,9 @@ class Application:
                 if isinstance(getattr(error,'owner',None),HuginWindow): window=error.owner
                 raise
             clipboard=ClipboardService(snapshot_budget=self.settings.limits['clipboard_bytes'])
-            for name,delay in approvals.delivery: clipboard.approve_target_class(name,delay)
+            for approval in approvals.delivery:
+                clipboard.approve_target_class(approval.control_class,approval.restore_delay_seconds,
+                    package_family=approval.package_family)
             for name in approvals.capture_fallback: clipboard.approve_capture_target_class(name)
             controller = Controller(self.settings,inputs=inputs,
                 microphone=Microphone(self.settings.limits['capture_bytes']),
@@ -663,7 +743,7 @@ class Application:
                 else:
                     if controller:
                         owner_closed=controller.finish_io()
-                        for executor in (controller.capture_executor,controller.audio_executor,controller.maintenance_executor,controller.selection_executor):
+                        for executor in (controller.capture_executor,controller.audio_executor,controller.maintenance_executor,controller.selection_executor,controller.delivery_executor):
                             executor.shutdown(wait=True,cancel_futures=True)
                 if window:
                     window.stop()

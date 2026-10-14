@@ -11,6 +11,8 @@ MESSAGES = {
     'capture_limit': 'Die Aufnahme hat ihr Speicherlimit erreicht.',
     'clipboard_failed': 'Die Zwischenablage ist nicht sicher verfügbar.',
     'target_changed': 'Das Einfügeziel hat sich geändert. Der Text kann kopiert werden.',
+    'target_unverifiable': 'Das aktive Eingabefeld kann nicht sicher erkannt werden. Der Text kann kopiert werden.',
+    'target_unverified': 'Automatisches Einfügen ist für dieses Programm noch nicht geprüft. Der Text kann kopiert werden.',
     'selection_empty': 'Kein kopierbarer Text ausgewählt.',
     'worker_failed': 'Eine lokale Sprachkomponente ist nicht verfügbar.',
     'worker_timeout': 'Eine lokale Sprachkomponente antwortet nicht rechtzeitig.',
