@@ -13,6 +13,7 @@ class WhisperEngine:
         self.device = device or settings.stt['device']
         verify_files(settings.paths['stt_model'], settings.root / 'locks/stt-model.json')
         self._dll_handles = []
+        self._cuda_libraries = []
         self._cudart = None
         if self.device == 'cuda':
             directory = settings.root / '.runtime/cuda'
@@ -21,6 +22,11 @@ class WhisperEngine:
                 self._dll_handles.append(os.add_dll_directory(str(directory)))
                 self._cudart = ctypes.WinDLL(str(directory / 'cudart64_12.dll'))
                 self._cudart.cudaDeviceSynchronize.restype = ctypes.c_int
+                # CT2 4.8.2 resolves cuBLAS by legacy LoadLibraryA basename.
+                # AddDllDirectory alone doesn't cover that search. Preload
+                # verified absolute paths and retain them with this engine.
+                self._cuda_libraries = [ctypes.WinDLL(str(directory / name))
+                    for name in ('cublasLt64_12.dll','cublas64_12.dll')]
         import numpy as np
         from faster_whisper import WhisperModel
         self.np = np

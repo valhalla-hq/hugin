@@ -13,11 +13,12 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 ## Current State
 
 - Private Initialisierung und Katalogregistrierung abgeschlossen. Pilot-PR https://github.com/valhalla-hq/hugin/pull/1 am unveränderten geprüften Head b3ee07cb18b94764a1ea24b56179ae329382b868 integriert; Merge cf1c70570b790211b54ce27e8a93b8e641703d69.
-- Task codex/hugin-v1-mjolnir dokumentiert anschließend den echten Restore und festen lokalen Einstieg; keine produktive Aktivierung.
-- Coordinator, Windows-Adapter samt isoliertem UIA/COM-Gerätesignalen, bestätigtem Trayabschluss, Worker-IPC, eigene Audioadapter und kleines Interface verbunden. 252 Contracts/Integrationsprüfungen und 44 Windows-Prüfungen ohne Skips grün; docs/compile/diff geprüft.
+- Restore-/Einstiegsnachweis aus PR2 integriert, main e762108bf189ce3428f6fba9cca6f2cbb412a7ce. Frühere Task-Ownership freigegeben.
+- Aktiver Task codex/hugin-style-pilot-mjolnir: Darstellung nach drei Nutzerreferenzen in Nachtblau/Violett und eigenes Raben-Icon, ohne Funktionserweiterung. Erster GPU-/Sprachpilot und sichtbarer Teststart beauftragt; geordnete vorübergehende Altstack-Pause ausdrücklich freigegeben. Siehe specs/2026-10-14-hugin-v1/style-pilot.md.
+- Nachtblau-/Violettoberfläche mit eigenem Raben-Icon integriert. 268 Vertrags-/Integrationsprüfungen und 48 Windows-Prüfungen ohne Skips grün. UI, GPU-Probe/Cancel-Racefix und Windows-cuBLAS-Fix unabhängig ohne offene Delta-Befunde geprüft. Nachweise/Grenzen: docs/pilot-2026-10-14.md.
 - Main cf1c705 vollständig aus 29 echten Modell-/CUDA-Dateien und 122 lokalen Wheels wiederhergestellt: drei frische Umgebungen, Versionen/pip check grün; Apply 279,716s, Wiederholung ohne Neuinstallation 63,824s. 44 Windows-Prüfungen ohne Skips und echte CPU-Probe aus der finalen Installation grün; GPU-/Hör-/physische Zielmatrix-Abnahme offen.
 - C:/Users/brian/Hugin ist ein geprüfter Junction zum sauberen _repos/hugin-Mainclone. Die sechs ursprünglichen Planungsdateien bleiben mit identischen Hashes in C:/Users/brian/Hugin-Planung-2026-10-14 erhalten. Keine venv verschoben.
-- Whispering/PipPal und produktive Tasten/Autostarts sind unverändert. Keine Hugin-Gesamtabnahme behauptet.
+- Autorisierte Pause über normale Appaktionen bestätigt: Whispering/PipPal und alter Qwen-Worker beendet, PipPal-Profil und beide Startup-lnks hashidentisch. Alter STT-HTTP-Dienst im Standby unverändert. Eigener serieller GPU-Test für Whisper und Freya/Tyr samt Cancel und Familienabschluss erfolgreich. Keine produktive Umstellung oder Gesamtabnahme.
 - GitHub main-Protection-Abfrage liefert HTTP403 wegen Tarifgrenze; keine Policy geändert. Vertraglicher PR-/Review-/CI-Gate bleibt maßgeblich.
 
 ## Decisions
@@ -27,8 +28,8 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Next Step
 
-- Kontrollierten Hardware-Pilot mit Brian abstimmen. Normale Eingaben bleiben technisch gesperrt; Pilot Ctrl+Alt+Shift+F9/F10. Altstack vor einer gesondert abgestimmten Pilotpause nicht beenden. GPU-/Hör-/Zielmatrix-Abnahme und produktiver Wechsel sind weiterhin offen.
+- Nach Review/CI privat integrieren und sichtbaren manuellen Pilot starten. Einmaliger lokaler Rückweg hält die eigene Familie und startet nach Tray-Beenden/geschlossenem Job die unveränderten Startup-lnks; Status im lokalen .runtime/pilot-session-*.json. Danach menschlicher Hör-/Tasten-/Zielvergleich und realen Rückstart prüfen. Normale Maus-/Alt+Y-Hooks bleiben gesperrt.
 
 ## Active Handoff
 
-- `handoffs/2026-10-14-hugin-v1.md`
+- `handoffs/2026-10-14-style-pilot.md`

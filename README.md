@@ -2,7 +2,7 @@
 
 Lokale Windows-App für Diktieren und Vorlesen mit den bestätigten Stimmen **Freya** und **Tyr**. Hugin soll Whispering und PipPal vollständig ersetzen.
 
-Status am **14.10.2026**: Controller, native Oberfläche, Eingaben, Audio und lokale Worker sind verbunden. Echtes Whisper funktioniert in der eigenen CPU-Umgebung; GPU-/Hör-/Zielmatrix-Abnahme stehen noch aus. Whispering/PipPal und Autostarts bleiben unverändert. Quelle ist das private Repository valhalla-hq/hugin; Entwicklung folgt AGENTS.md und dem zentralen Brian-Projekt-Workflow.
+Status am **14.10.2026**: Controller, dunkle native Oberfläche mit Raben-Icon, Eingaben, Audio und lokale Worker sind verbunden. Eigener serieller GPU-Pilot für Whisper und Freya/Tyr erfolgreich; Hör-/physische Zielmatrix- und Gesamtabnahme stehen noch aus. Whispering/PipPal sind für die autorisierte Testsitzung geordnet pausiert; Installationen, Profile und Autostarts bleiben erhalten. Quelle ist das private Repository valhalla-hq/hugin; Entwicklung folgt AGENTS.md und dem zentralen Brian-Projekt-Workflow.
 
 Der lokale Einstieg `C:\Users\brian\Hugin` zeigt auf den sauberen Main-Deploymentclone. Alle drei eigenen Umgebungen und echten Modell-/CUDA-Dateien sind dort aus geprüften lokalen Dateien wiederhergestellt. Die sechs ursprünglichen Planungsdateien bleiben mit identischen SHA256-Hashes unter `C:\Users\brian\Hugin-Planung-2026-10-14` erhalten. Dies aktiviert noch keine produktiven Bindungen.
 
@@ -23,6 +23,7 @@ Der lokale Einstieg `C:\Users\brian\Hugin` zeigt auf den sauberen Main-Deploymen
 4. [Bestandsnachweise und feste Modellidentitäten](specs/2026-10-14-hugin-v1/evidence.md)
 5. [Gegenprüfung und Planungsstatus](specs/2026-10-14-hugin-v1/review.md)
 6. [Aktuelle Implementierung und offene Abnahme](specs/2026-10-14-hugin-v1/implementation.md)
+7. [Darstellung und erster GPU-Pilot](docs/pilot-2026-10-14.md)
 
 Der Nutzer hat die schrittweise Implementierung beauftragt. Produktive Aktivierung folgt erst nach Prüfung. Der aktuelle Arbeitsstand ist ausdrücklich noch kein fertig abgenommener Ersatz.
 

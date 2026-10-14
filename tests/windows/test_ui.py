@@ -11,6 +11,10 @@ class NativeWindowContract(unittest.TestCase):
         self.window = HuginWindow(lambda kind,value:None,with_tray=False)
 
     def tearDown(self):
+        # Tk's shared event queue can outlive a destroyed test root. Cancel
+        # this fixture's callbacks before the next isolated root is created.
+        for timer in self.window.root.tk.splitlist(self.window.root.tk.call('after','info')):
+            self.window.root.after_cancel(timer)
         self.window.stop()
 
     def test_status_updates_do_not_map_window_or_steal_focus(self):
