@@ -227,6 +227,30 @@ class SimulatedWorkerTests(unittest.TestCase):
         client.close()
         self.assertTrue(owner.released)
 
+    def test_failed_native_kill_does_not_become_closed_on_retry(self):
+        class Owner:
+            stdin=stdout=stderr=None
+            released=False
+            alive=True
+            kills=0
+            def wait(self,timeout):
+                if self.alive: raise subprocess.TimeoutExpired('synthetic',timeout)
+                return 0
+            def kill(self):
+                self.kills+=1
+                if self.kills==1: raise HuginError('worker_failed','job_terminate')
+                self.alive=False
+            def close(self): self.released=True
+        owner=Owner();client=WorkerClient(ROOT,'stt',lambda event:None)
+        client.process=owner
+        with self.assertRaises(HuginError): client.close()
+        self.assertFalse(client.closed)
+        self.assertTrue(owner.alive)
+        client.close()
+        self.assertTrue(client.closed)
+        self.assertFalse(owner.alive)
+        self.assertTrue(owner.released)
+
 
 if __name__=='__main__':
     unittest.main()

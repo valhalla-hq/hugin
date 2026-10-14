@@ -2,6 +2,7 @@
 from concurrent.futures import Future
 from pathlib import Path
 from types import SimpleNamespace as NS
+import json
 import threading
 import unittest
 from hugin.errors import HuginError
@@ -31,9 +32,9 @@ class Microphone:
 
 class Output:
     def __init__(self, calls): self.calls = calls
-    def start(self, job): self.calls.append('player')
+    def start(self, job): self.calls.append('player'); self.job=job
     def write(self, pcm, job, cancelled): self.calls.append('audio'); return not cancelled()
-    def drain(self, job, cancelled): return not cancelled()
+    def drain(self, job, cancelled): return getattr(self,'job',None)==job and not cancelled()
     def stop(self): self.calls.append('reset')
     def close(self): pass
 
@@ -53,7 +54,7 @@ class Clipboard:
 
 
 class Pool:
-    def __init__(self): self.workers = {}; self.starts = []; self.inference = []
+    def __init__(self): self.workers = {}; self.starts = []; self.inference = []; self.inference_futures=[]
     def start(self, engine):
         self.starts.append(engine)
         self.workers[engine] = NS(engine_instance='actual-' + engine, process=None,close=lambda:None)
@@ -62,7 +63,7 @@ class Pool:
     def transcribe(self, pcm, request_id, generation):
         self.inference.append((request_id, generation)); return Future()
     def synthesize(self, text, voice, request_id, generation, language=None):
-        self.inference.append((request_id, generation)); return Future()
+        self.inference.append((request_id, generation)); future=Future();self.inference_futures.append(future);return future
     def cancel(self, *args): return True
 
 
@@ -240,6 +241,26 @@ class ApplicationContracts(unittest.TestCase):
         self.controller.command('quit');self.pump()
         self.assertTrue(self.controller.finish_io())
         self.assertEqual(calls,['inputs','output','clipboard','output-retry'])
+
+    def test_spoken_reading_then_zero_pcm_reading_both_finish(self):
+        self.controller.command('read');self.pump()
+        self.pool.future.set_result({'engine_instance':'actual-tts','device':'cuda'});self.pump()
+        operation=self.controller.core.snapshot().gpu_slot
+        self.controller.handle(c.EngineAudio(operation,b'\0\0'))
+        self.pool.inference_futures[-1].set_result({'code':None,'cancelled':False});self.pump()
+        self.assertEqual(self.controller.core.snapshot().state,c.State.IDLE)
+        self.controller.command('read');self.pump()
+        # A valid empty stream follows the spoken stream in the same worker.
+        self.pool.inference_futures[-1].set_result({'code':None,'cancelled':False});self.pump()
+        self.assertEqual(self.controller.core.snapshot().state,c.State.IDLE)
+
+    def test_diagnostic_has_observed_engine_versions_profile_and_event_time(self):
+        self.controller.command('cancel');self.pump()
+        data=json.loads(self.controller.diagnostic())
+        self.assertEqual(set(data['engine_versions']),{'stt','tts'})
+        self.assertEqual(set(data['engine_versions']['stt']),{'faster-whisper','ctranslate2','numpy','av'})
+        self.assertEqual(data['profile_id'],'deutsch-3')
+        self.assertIsNotNone(data['last_input_utc'])
 
 
 if __name__ == '__main__': unittest.main()

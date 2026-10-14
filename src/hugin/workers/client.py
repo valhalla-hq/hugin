@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import subprocess
 import threading
+import time
 import uuid
 
 from hugin.config import load_settings
@@ -34,12 +35,16 @@ class WorkerClient:
         self.data_lock = threading.Lock()
         self.active = None
         self.closed = False
+        self._closing = False
+        self._close_lock = threading.Lock()
         self.failed = False
         self.ready = False
         self.device = None
         self._threads = []
 
     def _emit(self, event):
+        with self.condition:
+            if self.closed or self._closing: return
         try:
             self.callback(event)
         except Exception:
@@ -56,7 +61,7 @@ class WorkerClient:
     def _begin(self, kind, request_id, generation):
         identity = Identity(self.engine_instance, request_id, generation)
         with self.condition:
-            if self.closed or self.failed or self.active is not None:
+            if self.closed or self._closing or self.failed or self.active is not None:
                 raise HuginError('worker_failed', 'worker_busy')
             future = Future()
             self.active = dict(identity=identity, kind=kind, future=future,
@@ -192,7 +197,7 @@ class WorkerClient:
 
     def _fail(self, code, phase):
         with self.condition:
-            if self.failed or self.closed:
+            if self.failed or self.closed or self._closing:
                 return
             self.failed = True
             self.ready = False
@@ -357,12 +362,18 @@ class WorkerClient:
             pass
 
     def close(self):
-        if self.closed or self.process is None:
-            self.closed = True
-            return
+        with self._close_lock:
+            if self.closed or self.process is None:
+                self.closed = True
+                return
+            self._close_owned()
+
+    def _close_owned(self):
         self.cancel_active()
         with self.condition:
-            self.closed = True
+            # Stop admission/publication now; closed is only a completed
+            # cleanup fact, never an intent to terminate a held native family.
+            self._closing = True
             self.ready = False
             identity = self.active['identity'] if self.active else Identity(
                 self.engine_instance, str(uuid.uuid4()), 0)
@@ -377,7 +388,6 @@ class WorkerClient:
             try:
                 self.process.wait(timeout=self.settings.limits['exit_seconds'])
             except subprocess.TimeoutExpired:
-                self.closed = False  # Keep retryable ownership of the held family.
                 self.failed = True
                 raise HuginError('worker_timeout','worker_exit') from None
         for stream in (self.process.stdin,self.process.stdout,self.process.stderr,self.data_in,self.data_out):
@@ -386,9 +396,15 @@ class WorkerClient:
                     stream.close()
             except OSError:
                 pass
+        deadline=time.monotonic()+1
+        for thread in self._threads:
+            if thread is not threading.current_thread(): thread.join(max(0,deadline-time.monotonic()))
+        if any(thread is not threading.current_thread() and thread.is_alive() for thread in self._threads):
+            raise HuginError('worker_timeout','worker_threads')
         if hasattr(self.process, 'close'):
             self.process.close()
         with self.condition:
+            self.closed = True
             if self.active and not self.active['future'].done():
                 self.active['future'].set_exception(HuginError('worker_failed','worker_closed'))
             self.active = None
