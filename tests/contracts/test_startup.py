@@ -13,7 +13,7 @@ def module(name,**fields):
 
 
 class StartupContracts(unittest.TestCase):
-    def _failure_closes_io_before_instance_release(self,ui_failure=False):
+    def _failure_closes_io_before_instance_release(self,ui_failure=False,join_failure=False,cleanup_failure=False):
         owners=[];guards=[];released=[];controllers=[];joined=[];commands=[]
         class Owner:
             def __init__(self,*args,**kwargs):self.closed=False;owners.append(self)
@@ -34,9 +34,11 @@ class StartupContracts(unittest.TestCase):
         class Controller:
             def __init__(self,settings,**kwargs):
                 controllers.append(self)
+                self._closed=False
                 self.owners=[kwargs[name] for name in ('inputs','signals','output','clipboard')]
                 self.capture_executor=self.audio_executor=self.maintenance_executor=self.selection_executor=Executor()
             def finish_io(self):
+                if cleanup_failure: return False
                 for owner in self.owners:owner.close()
                 return True
             def run(self,*args):pass
@@ -47,7 +49,8 @@ class StartupContracts(unittest.TestCase):
                 if not ui_failure: raise RuntimeError('synthetic start failure')
             def join(self):
                 joined.append(True)
-                controllers[0].finish_io()
+                if join_failure: raise RuntimeError('synthetic interrupted join')
+                controllers[0]._closed=controllers[0].finish_io()
         fakes={
             'hugin.audio':module('hugin.audio',Microphone=lambda *args:NS(),PCMOutput=Owner),
             'hugin.ui':module('hugin.ui',HuginWindow=Owner),
@@ -64,9 +67,14 @@ class StartupContracts(unittest.TestCase):
             patches.enter_context(patch.dict('sys.modules',fakes))
             patches.enter_context(patch.object(application,'Controller',Controller))
             patches.enter_context(patch.object(application.threading,'Thread',FailedThread))
-            with self.assertRaises(RuntimeError):application.Application(settings,pilot=True).run()
-        self.assertTrue(guards[0].closed)
-        self.assertTrue(released and all(released),'all started owners must close before mutex release')
+            app=application.Application(settings,pilot=True)
+            with self.assertRaises(RuntimeError):app.run()
+        if join_failure or cleanup_failure:
+            self.assertFalse(guards[0].closed,'unconfirmed cleanup must retain the instance owner')
+            self.assertIs(app._startup_owners[0],guards[0])
+        else:
+            self.assertTrue(guards[0].closed)
+            self.assertTrue(released and all(released),'all started owners must close before mutex release')
         if ui_failure:
             self.assertIn('quit',commands)
             self.assertTrue(joined)
@@ -76,6 +84,12 @@ class StartupContracts(unittest.TestCase):
 
     def test_ui_loop_failure_joins_live_owner_before_instance_release(self):
         self._failure_closes_io_before_instance_release(ui_failure=True)
+
+    def test_interrupted_join_retains_instance_and_live_controller(self):
+        self._failure_closes_io_before_instance_release(ui_failure=True,join_failure=True)
+
+    def test_failed_startup_cleanup_retains_instance_and_native_owners(self):
+        self._failure_closes_io_before_instance_release(cleanup_failure=True)
 
 
 class WindowCleanupContracts(unittest.TestCase):

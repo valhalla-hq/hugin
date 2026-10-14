@@ -644,16 +644,21 @@ class Application:
             window.run()
             return 0
         finally:
+            owner_closed=controller is None
             try:
                 if thread_started:
                     # A UI/show failure must follow the same owned shutdown as
                     # a normal close. Keep the mutex until native cleanup ends.
                     controller.command('quit')
                     thread.join()
+                    owner_closed=controller._closed
+                    if not owner_closed: raise HuginError('worker_failed','controller_exit')
                 else:
                     if controller:
-                        if not controller.finish_io(): self._startup_owners=controller
+                        owner_closed=controller.finish_io()
                         for executor in (controller.capture_executor,controller.audio_executor,controller.maintenance_executor,controller.selection_executor):
                             executor.shutdown(wait=True,cancel_futures=True)
                 if window: window.stop()
-            finally: guard.close()
+            finally:
+                if owner_closed: guard.close()
+                else: self._startup_owners=(guard,controller,window,thread)
