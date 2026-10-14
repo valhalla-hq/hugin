@@ -59,11 +59,13 @@ class _CloseRequest:
 
 
 class WindowsSignals:
-    def __init__(self,on_action,*,backend=None,queue_size=32):
+    def __init__(self,on_action,*,backend=None,endpoints=None,queue_size=32):
         if not callable(on_action) or type(queue_size) is not int or not 1 <= queue_size <= 256:
             raise ValueError('invalid signal callback or queue bound')
         self.on_action=on_action
+        self._native_defaults=backend is None
         self._backend=backend
+        self._endpoints=endpoints
         self._events=queue.Queue(queue_size)
         self._requests=queue.Queue(1)
         self._request=None
@@ -81,12 +83,13 @@ class WindowsSignals:
     @property
     def ready(self):
         return bool(self._opened and not self._halt.is_set() and self.error is None
+            and (self._endpoints is None or self._endpoints.ready)
             and self._thread is not None and self._thread.is_alive()
             and self._dispatcher is not None and self._dispatcher.is_alive())
 
     @property
     def closed(self):
-        return self._native_closed.is_set() and not any(
+        return self._native_closed.is_set() and (self._endpoints is None or self._endpoints.closed) and not any(
             thread is not None and thread.is_alive() for thread in (self._thread,self._dispatcher))
 
     def _fail(self,code,phase):
@@ -123,8 +126,15 @@ class WindowsSignals:
     def start(self):
         if self._thread is not None or self._halt.is_set():
             raise HuginError('input_failed','signals_restart')
-        if self._backend is None:
-            self._backend=_NativeSignalWindow()
+        try:
+            if self._backend is None:
+                self._backend=_NativeSignalWindow()
+            if self._native_defaults and self._endpoints is None:
+                from hugin.windows.audio_endpoints import AudioEndpointNotifications
+                self._endpoints=AudioEndpointNotifications()
+        except Exception:
+            self._fail('input_failed','signals_start')
+            raise self.error from None
         self._native_closed.clear()
         self._dispatcher=threading.Thread(target=self._dispatch,name='hugin-signals-dispatch',daemon=True)
         self._thread=threading.Thread(target=self._run,name='hugin-signals-window',daemon=True)
@@ -135,7 +145,8 @@ class WindowsSignals:
             self._thread.start()
         except Exception:
             self._fail('input_failed','signals_start')
-            if not self._thread.is_alive() and self._backend.closed:
+            if not self._thread.is_alive() and self._backend.closed and (
+                self._endpoints is None or self._endpoints.closed):
                 self._native_closed.set()
             raise HuginError('input_failed','signals_start') from None
         if not self._started.wait(3):
@@ -146,6 +157,12 @@ class WindowsSignals:
 
     def _cleanup(self,request=None):
         try:
+            if self._endpoints is not None and not self._endpoints.closed:
+                self._endpoints.close()
+                if not self._endpoints.closed:
+                    raise HuginError('input_failed','signals_endpoint_cleanup')
+            # Keep the message queue/window available for COM cleanup recovery
+            # until unregister and all same-thread COM releases have succeeded.
             self._backend.close()
             if not self._backend.closed:
                 raise HuginError('input_failed','signals_cleanup')
@@ -153,19 +170,21 @@ class WindowsSignals:
             self._fail('input_failed','signals_cleanup')
             if request is not None:
                 request.error=HuginError('input_failed','signals_cleanup')
-            return False
-        finally:
-            if request is not None:
                 request.done.set()
+            return False
         self._opened=False
         self._native_closed.set()
         self._halt.set()
+        if request is not None:
+            request.done.set()  # Publish closure facts before the acknowledgement.
         return True
 
     def _run(self):
         recovering=False
         try:
             self._backend.open(self._enqueue)
+            if self._endpoints is not None:
+                self._endpoints.open(self._enqueue,self._fail)
             self._opened=True
         except Exception:
             self._fail('input_failed','signals_start')

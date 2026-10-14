@@ -202,3 +202,52 @@ for the parent to cherry-pick, not the merge commit.
 
 Resume this helper using the same active ownership. Parent must cherry-pick the
 last signal source commit, not merge the helper branch into the overall task.
+
+## Bounded Default Audio Endpoint Follow-Up
+
+Signals source checkpoint was pushed as 90cf52520ca20e5db137b6b149b8b9354a3a0cd0.
+The next separate source commit adds default endpoint notifications; parent owns
+Application/UI integration. This helper still owns its exclusive worktree.
+
+- src/hugin/windows/audio_endpoints.py owns comtypes 1.4.17 MMDevice registration.
+  SDK IIDs, method order and types come from primary Microsoft docs/mmdeviceapi.h;
+  PROPERTYKEY is GUID/DWORD by value, LPCWSTR stays an opaque wchar pointer.
+  Only OnDefaultDeviceChanged for render/capture and console/multimedia/
+  communications emits devices_changed, including null default-device IDs.
+  No enumeration, endpoint names/IDs, property lookup, settings, polling or streams.
+- WindowsSignals now composes this owner on its original native thread; public
+  start/ready/closed/error/close remain available. comtypes loads on start's caller
+  thread, while the signal thread balances a separate explicit STA init. Native
+  defaults require both window and endpoint registration; fake backend tests
+  explicitly inject endpoints and never create native COM resources implicitly.
+- MMDevice holds no callback reference: sink and exact QueryInterface pointer stay
+  owned until unregister succeeds. Callback/enumerator release and CoUninitialize
+  run on the original owner thread. Failed stages retain ownership for retry;
+  cleanup success is separate from sticky operational error. Strong registries
+  retain failed resources, but not an initialization failure with no resources.
+- WindowsSignals close's combined deadline covers COM, window/class cleanup and
+  both threads. A blocked COM unregister times out honestly, retaining its owner
+  and wake window. Window cleanup follows COM cleanup. Closure facts are published
+  before close acknowledgement, preventing a retry from racing successful cleanup.
+- Guard-first: endpoint module contracts first failed missing-module; composition
+  guards first failed absent endpoints API. Extra lifetime guard exposed stale
+  notification closures retaining a successfully closed owner; disable now clears
+  those application callback references. Twelve endpoint + sixteen signal
+  contracts pass; full source suite 151 passed. Five fake COM ABI + seven fake
+  Win32 ABI guards passed separately; Ruff F/docs/diff whitespace checked.
+- Real read-only register/unregister with parent controller comtypes 1.4.17 passed.
+  Reproducible test: tests/windows/test_audio_endpoints_native.py, opt-in
+  HUGIN_ENDPOINT_READONLY_TESTS=1, PYTHONPATH=src. Its six default-change callbacks
+  are synthetic invocations through the real COM vtable, not actual OS events.
+  The test also invokes no-op ABI slots with a local synthetic string and observes
+  its own thread exit. It performs no device query/change, mic/playback or GPU work.
+- Separate Spec/Standards self-review used Code Review skill sequentially because
+  parent forbids subagents. No unresolved source findings. Standard device switch
+  delivery, parent invalidation/reopening, sleep/resume/Modern Standby and Explorer
+  restart still require controlled pilot. Do not mark AC016/T009 complete.
+
+Pick up using the same worktree and ownership. Parent should cherry-pick this
+endpoint source commit after 90cf525; no root edits or process.py edits occurred.
+Old Whispering/PipPal remain untouched and GPU load remains prohibited until the
+parent coordinates the controlled pilot. Offline wheelhouse/controller restore
+and genuine GPU/hearing/performance coverage remain open from earlier slices.
