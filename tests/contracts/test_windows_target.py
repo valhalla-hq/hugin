@@ -86,6 +86,18 @@ class Uia:
 
 
 class TargetContracts(unittest.TestCase):
+    def test_warm_proof_rechecks_selection_and_editability_after_measuring(self):
+        for kind in ('position','edit','readonly'):
+            automation=Automation();proof=_target_proof(automation,Uia,BASE,lambda:BASE,lambda:False)
+            original=automation.focus
+            def after():
+                if kind=='position':original.pattern.position+=1
+                if kind=='edit':automation.focus=Element(99,automation.root)
+                if kind=='readonly':original.CurrentIsReadOnly=True
+            original.pattern.after=after
+            result=confirm_uia_target(automation,Uia,BASE,lambda:BASE,proof)
+            self.assertEqual(result.status,'target_unverifiable' if kind=='readonly' else 'target_changed',kind)
+
     def test_warm_proof_checks_current_edit_and_local_point_without_ancestor_walk(self):
         for kind in ('same','chat_shift','caret','edit','readonly'):
             automation=Automation()
