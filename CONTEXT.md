@@ -30,7 +30,7 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Active Handoff
 
-- `handoffs/2026-10-14-hugin-core.md` for this bounded helper branch; overall accountable execution remains `handoffs/2026-10-14-hugin-v1.md`.
+- `handoffs/2026-10-14-hugin-core.md`
 
 ## Bounded Core Helper Checkpoint — 14 October 2026
 
