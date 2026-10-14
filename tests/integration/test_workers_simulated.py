@@ -318,6 +318,56 @@ class SimulatedWorkerTests(unittest.TestCase):
         self.assertFalse(owner.alive)
         self.assertTrue(owner.released)
 
+    def test_close_retains_owner_until_pcm_transfer_thread_exits(self):
+        import io
+        from unittest.mock import patch
+        from hugin.workers import client as clientmodule
+        class Owner:
+            def __init__(self): self.stdin=io.BytesIO();self.stdout=io.BytesIO();self.stderr=io.BytesIO()
+            released=False
+            def wait(self,timeout):return 0
+            def close(self):self.released=True
+        owner=Owner();client=WorkerClient(ROOT,'stt',lambda event:None)
+        client.process=owner;client.ready=True
+        client.data_in=io.BytesIO();client.data_out=io.BytesIO()
+        entered,release=threading.Event(),threading.Event()
+        original_sha=clientmodule.hashlib.sha256
+        def blocked_hash(data):
+            entered.set();release.wait(5);return original_sha(data)
+        try:
+            with patch.object(clientmodule.hashlib,'sha256',blocked_hash):
+                client.transcribe(b'\0\0'*16,str(uuid.uuid4()),1)
+                self.assertTrue(entered.wait(1))
+                with self.assertRaises(HuginError):client.close()
+                self.assertFalse(client.closed)
+                self.assertFalse(owner.released)
+        finally:
+            release.set()
+            client.close()
+        self.assertTrue(client.closed)
+        self.assertTrue(owner.released)
+
+    def test_failed_reader_start_does_not_leave_unjoinable_thread_owner(self):
+        import io
+        from unittest.mock import patch
+        from hugin.workers import client as clientmodule
+        class Owner:
+            def __init__(self): self.stdin=io.BytesIO();self.stdout=io.BytesIO();self.stderr=io.BytesIO()
+            released=False
+            def wait(self,timeout):return 0
+            def close(self):self.released=True
+        class FailedThread:
+            def __init__(self,*args,**kwargs):pass
+            def start(self):raise RuntimeError('synthetic thread creation failure')
+            def is_alive(self):return False
+            def join(self,timeout):raise RuntimeError('thread was not started')
+        owner=Owner();client=WorkerClient(ROOT,'stt',lambda event:None,spawn=lambda *args,**kwargs:owner)
+        with patch.object(clientmodule.threading,'Thread',FailedThread):
+            with self.assertRaises(HuginError):client.start(device='cpu')
+        client.close()
+        self.assertTrue(client.closed)
+        self.assertTrue(owner.released)
+
 
 if __name__=='__main__':
     unittest.main()

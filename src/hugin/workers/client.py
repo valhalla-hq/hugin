@@ -55,8 +55,11 @@ class WorkerClient:
         with self.control_lock:
             if self.process is None or self.process.stdin is None:
                 raise HuginError('worker_failed', 'worker_control')
-            write_control(self.process.stdin, dict(schema_version=1, type=kind,
-                engine=self.engine, **identity.fields(), **fields), self.settings.limits['control_bytes'])
+            try:
+                write_control(self.process.stdin, dict(schema_version=1, type=kind,
+                    engine=self.engine, **identity.fields(), **fields), self.settings.limits['control_bytes'])
+            except (OSError,ValueError):
+                raise HuginError('worker_failed','worker_control') from None
 
     def _begin(self, kind, request_id, generation):
         identity = Identity(self.engine_instance, request_id, generation)
@@ -128,11 +131,19 @@ class WorkerClient:
         for target in (self._control_reader, self._data_reader, self._stderr_reader):
             thread = threading.Thread(target=target, daemon=True)
             self._threads.append(thread)
-            thread.start()
+            try: thread.start()
+            except Exception:
+                self._threads.remove(thread)
+                raise HuginError('worker_failed','worker_readers') from None
         self._send('initialize', identity, device=device)
         return future
 
     def transcribe(self, pcm: bytes, request_id: str, generation: int):
+        # Admission and transfer ownership must precede any concurrent close.
+        with self._close_lock:
+            return self._transcribe(pcm,request_id,generation)
+
+    def _transcribe(self, pcm, request_id, generation):
         if self.engine != 'stt' or not self.ready or not isinstance(pcm, bytes):
             raise HuginError('worker_failed', 'transcribe')
         if not pcm or len(pcm) % 2 or len(pcm) > self.settings.limits['capture_bytes']:
@@ -152,7 +163,13 @@ class WorkerClient:
                             pcm[offset:offset+self.settings.limits['frame_bytes']]))
             except Exception:
                 self._fail('worker_failed', 'worker_input')
-        threading.Thread(target=transfer, daemon=True).start()
+        thread=threading.Thread(target=transfer,name='hugin-pcm-transfer',daemon=True)
+        self._threads=[item for item in self._threads if item.is_alive()]
+        self._threads.append(thread)
+        try: thread.start()
+        except Exception:
+            self._threads.remove(thread)
+            self._fail('worker_failed','worker_input')
         return future
 
     def synthesize(self, text: str, voice: str, request_id: str, generation: int,

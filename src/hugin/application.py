@@ -127,7 +127,10 @@ class Controller:
         if isinstance(event,(_Started,c.EngineFault,c.EngineTerminal)):
             key = (type(event),event.operation)
         elif isinstance(event,_Closed): key = (type(event),event.engine,event.incarnation)
-        elif isinstance(event,(c.RecordingStarted,c.RecordingStopped,c.AudioReset)):
+        elif isinstance(event,c.AudioReset):
+            # Failed attempts and later confirmed retries are distinct facts.
+            key = (type(event),event.job,event.success)
+        elif isinstance(event,(c.RecordingStarted,c.RecordingStopped)):
             key = (type(event),event.job)
         if key is not None:
             with self._lock:
@@ -606,6 +609,7 @@ class Application:
         controller = None
         window = None
         thread = None
+        thread_started=False
         try:
             def command(kind,value=None):
                 if controller: controller.command(kind,value)
@@ -626,6 +630,7 @@ class Application:
             inputs.start()
             thread = threading.Thread(target=controller.run,args=(window.request_stop,),name='hugin-owner',daemon=False)
             thread.start()
+            thread_started=True
             if self.show: window.show()
             window.run()
             controller.command('quit')
@@ -633,7 +638,7 @@ class Application:
             return 0
         finally:
             try:
-                if thread is None:
+                if not thread_started:
                     if controller:
                         if not controller.finish_io(): self._startup_owners=controller
                         for executor in (controller.capture_executor,controller.audio_executor,controller.maintenance_executor,controller.selection_executor):

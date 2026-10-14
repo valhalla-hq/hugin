@@ -10,6 +10,15 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class ConfigurationContract(unittest.TestCase):
+    def test_pcm_frame_budget_requires_complete_samples(self):
+        for budget in (1,3,65535):
+            with self.subTest(budget=budget),tempfile.TemporaryDirectory() as temp:
+                root=Path(temp)
+                shutil.copytree(ROOT/'config',root/'config')
+                config=root/'config/hugin.toml'
+                config.write_text(config.read_text().replace('frame_bytes = 65536',f'frame_bytes = {budget}'))
+                with self.assertRaises(HuginError): load_settings(root)
+
     def test_both_approved_voice_identities_are_preserved(self):
         settings = load_settings(ROOT)
         self.assertEqual(settings.default_voice, 'freya')

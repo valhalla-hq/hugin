@@ -88,7 +88,7 @@ def load_settings(root: Path) -> Settings:
         limits = data['limits']
         if any(type(value) is not int or not 0 < value <= 64 * 1024 * 1024 for value in limits.values()):
             raise HuginError('config_invalid', 'configuration')
-        if limits['capture_bytes'] % 2 or limits['frame_bytes'] > 65536 or limits['control_bytes'] > 65536:
+        if limits['capture_bytes'] % 2 or limits['frame_bytes'] % 2 or limits['frame_bytes'] > 65536 or limits['control_bytes'] > 65536:
             raise HuginError('config_invalid', 'configuration')
         if limits['transcript_bytes'] > 262144 or limits['selection_bytes'] > 262144:
             raise HuginError('config_invalid', 'configuration')

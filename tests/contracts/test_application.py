@@ -229,6 +229,20 @@ class ApplicationContracts(unittest.TestCase):
         self.controller.command('quit');self.pump()
         self.assertTrue(self.controller.shutdown_ready())
 
+    def test_quit_retry_preserves_success_after_queued_failed_reset(self):
+        self.controller.command('read');self.pump()
+        real_stop=self.controller.output.stop
+        failures=[True,True]
+        def stop():
+            if failures:
+                failures.pop()
+                raise HuginError('audio_failed','transient_reset')
+            real_stop()
+        self.controller.output.stop=stop
+        self.controller.command('cancel');self.controller.pump_once()
+        self.controller.command('quit');self.pump()
+        self.assertTrue(self.controller.shutdown_ready())
+
     def test_system_resume_invalidates_active_capture_and_never_replays_it(self):
         self.controller.command('dictation');self.pump()
         self.assertTrue(self.controller.microphone.owned)
