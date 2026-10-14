@@ -27,6 +27,13 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 - T001 abschließen und die vertikalen Tasks der Spec abarbeiten; Prüfstatus je AC führen. Produktive Eingaben erst nach vorbereitetem, geprüftem Wechsel übernehmen.
 
+## Windows Helper Checkpoint
+
+- Bounded Helper auf Mjolnir: `codex/hugin-windows-mjolnir`, exklusiver Worktree `C:/Users/brian/brian-projects/worktrees/hugin/hugin-windows-mjolnir`; Ownership bleibt aktiv. Integration bleibt beim Accountable Executor auf `codex/hugin-v1-mjolnir`.
+- Implementierungscommit `7d10c31`: direkte native Eingaben/Pilotmodus, fail-closed Clipboard-/Zieltransaktionen, benutzergebundener Instanzmutex und Job-Object-Workerfamilien. API und Plattformgrenzen: `docs/windows-api.md`.
+- Geprüft: 33 contracts (29 neue Windows-Guards und 4 Konfigurationschecks), 11 Windows-ABI-/Producer-Mocks, Docs-Check und Compile. Kein echter Hook/Hotkey, keine echte Clipboard-Mutation, kein Mikrofon/Modell, keine Workerbeendigung ausgeführt.
+- Auswahl- und Paste-Fallback bleiben pro Zielklasse gesperrt, bis deren Pilotnachweis vorliegt. Nächster Helper-Schritt: direkte Standard-Edit-Auswahl ohne Clipboard-Mutation. Browser/UIA und die echte Zielmatrix bleiben offen.
+
 ## Active Handoff
 
-- `handoffs/2026-10-14-hugin-v1.md`
+- `handoffs/2026-10-14-hugin-windows-helper.md` (dieser Helper-Branch; Haupthandoff weiterhin `handoffs/2026-10-14-hugin-v1.md` auf dem Integrationsbranch)
