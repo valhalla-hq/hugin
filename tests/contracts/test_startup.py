@@ -51,7 +51,7 @@ class StartupContracts(unittest.TestCase):
                 controllers.append(self)
                 self._closed=False
                 self.owners=[kwargs[name] for name in ('inputs','signals','output','clipboard')]
-                self.capture_executor=self.audio_executor=self.maintenance_executor=self.selection_executor=Executor()
+                self.capture_executor=self.audio_executor=self.maintenance_executor=self.selection_executor=self.delivery_executor=Executor()
             def finish_io(self):
                 if cleanup_failure: return False
                 for owner in self.owners:owner.close()

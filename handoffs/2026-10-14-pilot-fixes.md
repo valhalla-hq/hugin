@@ -4,6 +4,7 @@
 - Executor Mjolnir, Branch codex/hugin-pilot-fixes-mjolnir, Worktree
   C:/Users/brian/brian-projects/worktrees/hugin/hugin-pilot-fixes-mjolnir.
 - Preflight-Control e3deecae6673a024aa9015a4387737fbec04c795; Ownership aktiv.
+- PR https://github.com/valhalla-hq/hugin/pull/5, Draft, noch nicht integriert.
 - Auftrag/Prüfplan: specs/2026-10-14-hugin-v1/pilot-fixes.md. Automatisches
   Einfügen in Codex reparieren, Audioaussetzer bei Freya UND Tyr beheben,
   ersten Modellstart erklären. Bestehende Modelle/Autostarts/Profile erhalten.
@@ -21,6 +22,23 @@
   hugin-simple-hotkeys-mjolnir/.runtime; während dessen Lauf nicht entfernen.
 - Geprüfte private Integration und geordneter Neustart folgen nach Source/
   Native-Abnahme und unabhängigen Reviews. Vollständige Produktabnahme offen.
+- Native Audioabnahme erfolgreich: alter Source Freya48/Tyr47 leere native
+  Queue beim Nachfüllen; Fix beide0, Bytes/Hashes exakt, alle Player geschlossen.
+  Reale Laufzeiten 6,905→6,084s / 6,697→5,921s. Native Null-PCM-Stoppguard grün.
+  Kuratierter Nachweis docs/pilot-fixes-2026-10-14.md; JSON ignoriert in .runtime.
+- Audio8aad103 übernommen als49145d5; UIA59dce8f als1ad2bf3. Audiohelper released.
+  Unabhängiger Review verlangt UIA-final-Commit-Frische und Callbackfreigabe;
+  Windowshelper schließt diese im selben exklusiven Task, kein PR/Merge dort.
+- Root31 Controllerguards grün, inklusive eigenen Submit-Tickets: queued Throw
+  wird widerrufen; bereits geclaimte Arbeit behält echte Cleanupbarriere.
+  Beide neuen Blockierungsfälle waren zuerst rot. Targetparser bindet Paket-
+  scopes als named Approval; reale Family am gehaltenen Prozesshandle bestätigt.
+- Vorherige Huginsitzung geordnet beendet, Supervisor-Rückweg bestätigt und
+  Altapps für echte Audioprobe normal pausiert. Danach unveränderte Startup-lnks
+  wieder gestartet, damit während der weiteren Prüfung ein Rückweg verfügbar ist.
+  Aktuelle Altapp-PIDs/Handles frisch bestimmen, alte Snapshots nicht als Killrecht.
+- Reale Codex-Pasteprobe stoppt ohne Änderung bei vorhandenem Nachrichtenentwurf.
+  Nutzerfrage nach leerem Feld pending; kein Ziel freigeben oder Entwurf löschen.
 
 Fortsetzen: AGENTS.md, CONTEXT.md, diesen Handoff und pilot-fixes.md lesen.
 Exakten Branch-/PR-/Runtimezustand prüfen, nur eigene gehaltene Ressourcen
