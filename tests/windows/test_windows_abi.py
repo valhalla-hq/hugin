@@ -274,3 +274,41 @@ class WindowsAbiContracts(unittest.TestCase):
             with self.assertRaises(ClipboardFailure) as failure:
                 backend.read_direct_selection(target, 1024, lambda: False)
         self.assertEqual(failure.exception.status, 'text_limit')
+
+    def test_selection_probe_job_memory_limit_uses_native_job_contract(self):
+        library = Library()
+        captured = []
+        def limits(job, information_class, pointer, size):
+            value = ctypes.cast(pointer, ctypes.POINTER(_ExtendedLimits)).contents
+            captured.append((value.BasicLimitInformation.LimitFlags, value.JobMemoryLimit))
+            return 1
+        library.SetInformationJobObject = limits
+        with patch.object(ctypes, 'WinDLL', return_value=library):
+            backend = NativeProcess()
+        backend.create_job(256 * 1024 * 1024)
+        self.assertEqual(captured, [(0x2000 | 0x200, 256 * 1024 * 1024)])
+
+    def test_non_edit_direct_read_uses_isolated_selection_probe(self):
+        from hugin.windows.selection import SelectionResult
+        backend = object.__new__(NativeClipboard)
+        target = WindowTarget(100, 200, 3, 4, 500, 'Chrome_WidgetWin_1', None, None)
+        calls = []
+        class Probe:
+            def read(self, expected, cancelled):
+                calls.append(expected)
+                return SelectionResult('captured', 'UIA selected text')
+        backend._selection_probe = Probe()
+        self.assertEqual(backend.read_direct_selection(target, 1024, lambda: False), 'UIA selected text')
+        self.assertEqual(calls, [target])
+
+    def test_selection_probe_failure_never_falls_back_to_clipboard(self):
+        from hugin.windows.selection import SelectionResult
+        backend = object.__new__(NativeClipboard)
+        target = WindowTarget(100, 200, 3, 4, 500, 'Chrome_WidgetWin_1', None, None)
+        class Probe:
+            def read(self, expected, cancelled):
+                return SelectionResult('selection_timeout')
+        backend._selection_probe = Probe()
+        with self.assertRaises(ClipboardFailure) as failure:
+            backend.read_direct_selection(target, 1024, lambda: False)
+        self.assertEqual(failure.exception.status, 'selection_timeout')

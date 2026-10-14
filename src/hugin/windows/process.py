@@ -19,7 +19,8 @@ from hugin.errors import HuginError
 class OwnedProcess:
     def __init__(self, command, *, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                  stderr=subprocess.PIPE, startupinfo=None, close_fds=True,
-                 creationflags=0x08000000, cwd=None, env=None, backend=None):
+                 creationflags=0x08000000, cwd=None, env=None, backend=None,
+                 memory_limit=None):
         if not isinstance(command, (list, tuple)) or not command or any(
                 not isinstance(part, str) or '\0' in part for part in command):
             raise ValueError('command must be an argument list')
@@ -27,6 +28,9 @@ class OwnedProcess:
             raise ValueError('only hidden creation with explicit handles is supported')
         if any(value not in (subprocess.PIPE, subprocess.DEVNULL) for value in (stdin, stdout, stderr)):
             raise ValueError('stdio must use PIPE or DEVNULL')
+        if memory_limit is not None and (type(memory_limit) is not int or
+                not 0 < memory_limit < 1 << (ctypes.sizeof(ctypes.c_size_t) * 8)):
+            raise ValueError('invalid job memory limit')
         attributes = getattr(startupinfo, 'lpAttributeList', None) or {}
         if set(attributes) - {'handle_list'}:
             raise ValueError('unsupported process attribute')
@@ -42,7 +46,7 @@ class OwnedProcess:
         self._assigned = False
         child_descriptors = []
         try:
-            self._job = self.backend.create_job()
+            self._job = self.backend.create_job() if memory_limit is None else self.backend.create_job(memory_limit)
             stdio = []
             for name, mode, incoming in (('stdin', stdin, True), ('stdout', stdout, False), ('stderr', stderr, False)):
                 if mode == subprocess.PIPE:
@@ -215,12 +219,15 @@ class NativeProcess:
         import msvcrt
         return msvcrt.get_osfhandle(descriptor)
 
-    def create_job(self):
+    def create_job(self, memory_limit=None):
         job = self.kernel.CreateJobObjectW(None, None)
         if not job:
             raise HuginError('worker_failed', 'job_create')
         limits = _ExtendedLimits()
         limits.BasicLimitInformation.LimitFlags = 0x2000  # KILL_ON_JOB_CLOSE; no breakaway.
+        if memory_limit is not None:
+            limits.BasicLimitInformation.LimitFlags |= 0x200  # JOB_OBJECT_LIMIT_JOB_MEMORY
+            limits.JobMemoryLimit = memory_limit
         if not self.kernel.SetInformationJobObject(job, 9, ctypes.byref(limits), ctypes.sizeof(limits)):
             if not self.kernel.CloseHandle(job):
                 self._pending_handles.add(job)
