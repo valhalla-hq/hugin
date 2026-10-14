@@ -1,7 +1,9 @@
 # Hugin Implementierungsnachweis
 
-Stand 14.10.2026. Kein produktiver Wechsel. Whispering/PipPal, Tasten und
-Autostarts bleiben unverändert. Hugin läuft zunächst ausschließlich im Pilot
+Dieser Bericht enthält die früheren Implementierungsteilnachweise vom
+14.10.2026. Aktuelle Darstellung, autorisierte vorübergehende Apppause und
+abgeschlossene serielle CUDA-Probe: [erster GPU-Pilot](../../docs/pilot-2026-10-14.md).
+Kein produktiver Wechsel; Profile und Autostarts bleiben erhalten. Hugin läuft ausschließlich im Pilot
 mit Ctrl+Alt+Shift+F9/F10; normale Eingaben sind bis T011/T012 gesperrt.
 
 ## Implementiert und geprüft
@@ -135,9 +137,9 @@ Geräte- und Explorer-Neustarts bleiben offen.
 | Bereich | Offener Nachweis |
 | --- | --- |
 | AC-001/015 | Physische Maus/Alt+Y, Navigation, aktive Escape-Bindung und Login |
-| AC-002/012 | Eigene GPU-Whisper-Inferenz, native CUDA-Cancel-/Cleanup-Fälle |
+| AC-002/012 | Serielle eigene CUDA-Whisper-Inferenz belegt; native CUDA-Cancel-/Fehler-/Cleanup-Fälle offen |
 | AC-003/011 | Echte Zielmatrix Word/Browser/Codex/PDF, Fokus/Caret und Clipboard-Rennen |
-| AC-004/006 | Qwen auf GPU mit beiden Stimmen, Hörvergleich und Streaming |
+| AC-004/006 | Serielle Qwen-GPU-Inferenz beider Stimmen/IPC-Streaming belegt; Hörvergleich und native Streamingwiedergabe offen |
 | AC-005/008 | Reale Priorität/Abbruch während nativer GPU-Arbeit |
 | AC-007/009/010 | Native UI-Pilot; RAM-/Diagnoseverträge sind separat geprüft |
 | AC-013 | Vergleichsmessung kalt/warm mit Altstack, CPU/Familien-RAM und Latenzen |

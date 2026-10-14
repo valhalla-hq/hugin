@@ -1,5 +1,9 @@
 # Gemessene Pilotkosten
 
+Die folgenden CPU-Werte stammen aus dem früheren Implementierungsstand.
+Aktuelle eigene CUDA-Einzelmessungen und ihre Grenzen stehen im
+[ersten GPU-Pilot](pilot-2026-10-14.md). Ein fairer Altstack-Vergleich fehlt weiterhin.
+
 Noch kein Altstack-/GPU-Leistungsvergleich. Die CPU-Probe benutzt das
 bestätigte synthetische Tyr-Audio (6,48625 s), eigene Modell-/DLL-/Paketdateien
 und die reale private Worker-Verbindung über gehaltene Windows-Jobhandles.
@@ -35,7 +39,7 @@ gemessener physischer Working-Set-Peak. Grundlagen:
 [Job accounting](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-jobobject_basic_accounting_information),
 [extended job limits](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-jobobject_extended_limit_information).
 
-Ungemessen: physische Prozessfamilien-RAM-Spitze, Agent-Tokens, GPU-Init/
+In diesen CPU-Proben ungemessen: physische Prozessfamilien-RAM-Spitze, Agent-Tokens, GPU-Init/
 Inferenz/Residenz/Cancel, physische Eingabe bis Stopp/Aufnahme, erster Ton,
 echte Zielübergabe, p50/p95 und vergleichbare Altstack-Aufgaben. Der vollständige
 `baseline-and-hugin`-Benchmark bleibt bis zum exklusiven Hardware-Pilot offen.

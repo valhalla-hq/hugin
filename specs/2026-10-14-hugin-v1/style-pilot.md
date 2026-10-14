@@ -38,8 +38,14 @@ vorbehalten. Keine Gesamt-Abnahme aus Teilprüfungen ableiten.
 
 ## Aufgaben
 
-- [ ] T020 S001/S002: Darstellungsanpassung und Icon mit nativer Sichtprüfung.
-- [ ] T021 S003: Bestehende UI-/Cleanupverträge gegenprüfen.
-- [ ] T022 P001: Kleine synthetische Probe und serieller Hardwarelauf.
+- [x] T020 S001/S002: Darstellungsanpassung und Icon mit nativer Sichtprüfung.
+- [x] T021 S003: Bestehende UI-/Cleanupverträge gegenprüfen.
+- [x] T022 P001: Kleine synthetische Probe und serieller Hardwarelauf.
 - [ ] T023 P002: Geordnete Pilotpause, sichtbarer Teststart und Rückweg.
 - [ ] T024: Review, CI, Integration und ehrlicher Prüf-/Übergabestand.
+
+Prüfstand: [Erster GPU-Pilot](../../docs/pilot-2026-10-14.md).
+268 Vertrags-/Integrationsprüfungen, 48 Windows-Prüfungen ohne Skips; UI,
+Probe-Racefix und Windows-cuBLAS-Fix unabhängig gegengeprüft. T023 enthält
+die bestätigte geordnete Pause; sichtbarer Start erfolgt nach Integration.
+Rückstart, Hören, physische Zielmatrix und vollständige V1-Abnahme bleiben offen.
