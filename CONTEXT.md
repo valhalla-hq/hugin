@@ -14,8 +14,8 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 - Private Initialisierung und Katalogregistrierung abgeschlossen, main e555d7d76045dddde35cdeb2e63ce17f048df559.
 - Aktiver Task codex/hugin-v1-mjolnir, Draft PR https://github.com/valhalla-hq/hugin/pull/1.
-- Coordinator, Windows-Adapter, Worker-IPC, eigene Audioadapter und kleines Interface verbunden. 132 Contracts/simulierte Integrationsprüfungen grün; docs/compile/diff geprüft.
-- Eigene STT/TTS-Umgebungen/Modelle im Worker-Helper vorbereitet; CPU-Whisper über native private IPC geprüft. Parent-Runtime wird additiv vorbereitet. GPU-/Hör-/physische Abnahme offen.
+- Coordinator, Windows-Adapter samt isoliertem UIA/COM-Gerätesignalen, Worker-IPC, eigene Audioadapter und kleines Interface verbunden. 229 Contracts/Integrationsprüfungen und 37 Windows-Prüfungen ohne Skips grün; docs/compile/diff geprüft.
+- Eigene STT/TTS-Umgebungen/Modelle im Task vorbereitet; echtes CPU-Whisper durch Controller/IPC geprüft. Offline-Wheelhouse mit 122 Paketen und frischem Restore separat geprüft. GPU-/Hör-/physische Zielmatrix-Abnahme offen.
 - Whispering/PipPal und produktive Tasten/Autostarts sind unverändert. Keine Hugin-Gesamtabnahme behauptet.
 - GitHub main-Protection-Abfrage liefert HTTP403 wegen Tarifgrenze; keine Policy geändert. Vertraglicher PR-/Review-/CI-Gate bleibt maßgeblich.
 
@@ -26,7 +26,7 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Next Step
 
-- Integrierten Controller unabhängig gegen Spec und Standards prüfen, UIA-Leseweg und Restore vervollständigen, danach native Pilotnachweise sammeln. Normale Eingaben bleiben technisch gesperrt; Pilot Ctrl+Alt+Shift+F9/F10.
+- Nach unabhängiger Gegenprüfung den privaten Pilotstand sichern und vollständig aus lokalen echten Dateien wiederherstellen. Danach kontrollierten Hardware-Pilot vorbereiten. Normale Eingaben bleiben technisch gesperrt; Pilot Ctrl+Alt+Shift+F9/F10. Altstack vor einer gesondert abgestimmten Pilotpause nicht beenden.
 
 ## Active Handoff
 

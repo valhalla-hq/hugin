@@ -1,6 +1,6 @@
 # Hugin Bestandsnachweise
 
-Stand: 14.10.2026. Lokale Quellen wurden lesend untersucht. Bisherige Laufzeit-/Hashnachweise stammen aus der technischen Bestandsaufnahme in dieser Unterhaltung; die Modelle wurden für die Erstellung der Spec nicht erneut geladen oder transkribiert. Hugin selbst ist unimplementiert.
+Bestandsaufnahme vor Umsetzung am 14.10.2026. Lokale Quellen wurden lesend untersucht; die Modelle wurden für die Erstellung der Spec nicht erneut geladen oder transkribiert. Den späteren Hugin-Prüfstand beschreibt [implementation.md](implementation.md); historische Messungen hier sind keine Hugin-Abnahme.
 
 ## Beobachtungen und ihre Grenzen
 

@@ -24,6 +24,9 @@ the PyTorch CUDA 12.8 index and the fixed Faster Qwen Git archive. It writes
 Hugin-owned `.runtime/wheelhouse`, and creates the combined lock only if absent.
 Existing published artifact hashes must match; differing bytes are preserved
 and rejected. A complete matching wheelhouse is a no-op without downloads.
+Source-build environments additionally bind their canonical runtime path.
+Foreign junctions, moved environments and older pathless build markers are
+preserved and rejected; preparation never adopts or relocates them automatically.
 
 Faster Qwen 0.3.2 is built from Git revision
 `a70afc0f81f7f5f8801c3227968f1102f43f211c`. Sox 1.5.0 is also built from its

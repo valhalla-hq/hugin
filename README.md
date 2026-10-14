@@ -47,6 +47,8 @@ gesperrt. Der Benchmark-/Migrationsschritt folgt nach dem Pilot; fehlende
 Nachweise werden nicht als erfolgreiche Tests gewertet.
 
 Restore plant standardmäßig ohne Schreibwirkung. `--apply` materialisiert nur
-die eigene Runtime eines validierten Ziel-Checkouts additiv. Siehe
-[Worker-/Restore-Vertrag](docs/workers-api.md); vollständiger Offline-Paketrestore
-wird gesondert geprüft.
+die eigene Runtime eines validierten Ziel-Checkouts additiv, aus SHA256-geprüften
+lokalen Dateien. Siehe [Offline-Restore](docs/offline-restore.md),
+[Pilotverträge für Zielklassen und Diagnose](docs/pilot-contracts.md) und
+[gemessene CPU-Pilotkosten](docs/performance.md). Der
+[Hardware-Pilot](docs/pilot-runbook.md) beschreibt Start, Prüfung und Rückweg.

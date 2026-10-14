@@ -12,7 +12,8 @@ mit Ctrl+Alt+Shift+F9/F10; normale Eingaben sind bis T011/T012 gesperrt.
   eigenständige GPU-Operationen, Generationen, vollständiges Terminal vor
   Ressourcenfreigabe, zentral geplanter 90-Sekunden-STT-Offload.
 - Native Windows-Adapter für Eingaben, Einzelinstanz, gehaltene Jobfamilien,
-  Clipboard-Transaktionen und direkten Standard-Edit-Leseweg.
+  Clipboard-Transaktionen, direkten Standard-Edit-Leseweg und begrenzte
+  UIA-Auswahl in einer eigenen isolierten Prozessfamilie.
 - Kleines Tkinter-/Tray-Interface; Stimmenwechsel, ein RAM-Ergebnis,
   Ablauf/Kopieren/Löschen und Diagnose mit festem inhaltsfreiem Schema.
 - Controller verbindet diese Grenzen; nativer Audioreset wird vor neuer
@@ -24,13 +25,15 @@ mit Ctrl+Alt+Shift+F9/F10; normale Eingaben sind bis T011/T012 gesperrt.
 
 ## Prüfungen am integrierten Controllerstand
 
-`tools/dev.py check --group all`: zuletzt 132 erfolgreiche Prüfungen, darunter
-117 Contracts und 15 simulierte IPC-/Restore-Integrationsfälle. Simulation ist kein
+`tools/dev.py check --group all`: zuletzt 229 erfolgreiche Prüfungen, darunter
+Verträge und simulierte IPC-/Restore-Integrationsfälle. Simulation ist kein
 Nachweis für native Modell-/Hardwareeigenschaften.
 
 `tools/dev.py check --docs`: 19 Anforderungen, 17 AC, keine gefundenen
 Zuordnungs-/Link-/Stimm-/Lock-Probleme. Compileall und Git-Diff-Check grün.
-Die Windows-ABI-/Producer-Mocks und eigene UI werden separat geprüft.
+`windows --interactive` mit expliziten UIA-/Audio-/Endpoint-Testflags:
+37 Prüfungen ohne Skips erfolgreich. Darunter sind ABI-/Producer-Mocks und
+eigene native Fixtures; dies beweist keine vollständige produktive Zielmatrix.
 
 Die Controller-Guards liefen zuerst wegen fehlender application.py rot, dann
 grün: Initialisierung vor Inferenz, Fremdidentität, Abbruch unmittelbar am
@@ -39,15 +42,24 @@ Clipboard-Commit, Reset vor Mikrofon sowie Diagnose/RAM-Ablauf.
 Die eigene CPU-Probe durch den integrierten Controller benötigt 13,862 s für
 den ersten abgeschlossenen Ablauf: 17 Wörter normalisiert exakt, genau eine
 Übergabe an ein RAM-Testziel, danach null eigene Worker und kein offenes
-Mikrofon. Kein GPU-/physischer Eingabe-/nativer Clipboard-Nachweis; CPU-Zeit,
-Familien-RAM und Agent-Tokens in dieser Probe ungemessen.
+Mikrofon. Kein GPU-/physischer Eingabe-/nativer Clipboard-Nachweis. Spätere
+kalte/warme Messung und Grenzen von CPU-/Job-Commit-Zahlen stehen in
+[performance.md](../../docs/performance.md). Nach dem Cleanup-Fix wurde der
+echte CPU-Ablauf erneut erfolgreich geprüft: 13,125 s, 17 Wörter exakt,
+eine RAM-Übergabe, null eigene Worker. Nach Registrierung der PCM-Transfer-
+Threads erneut 16,089 s, 17 Wörter exakt und null verbleibende Worker; parallel
+liefen Vertragsprüfungen. Dies ist ein Korrektheitsnachweis, kein Latenzvergleich.
 
 Native Geräteproben: kurze Mikrofonaufnahme ausschließlich im RAM, Schließen
 bestätigt; waveOut mit synthetischem Null-PCM, Reset/Backpressure/Headers und
 Schließen bestätigt. Pilot-Hotkeys/Escape registriert und wieder freigegeben,
 Einzelinstanz in einem zweiten echten Prozess geprüft. Versteckter
 App-/Tray-Pilot startet und beendet samt Mutex-Freigabe. UI bei 200 Prozent
-DPI gerendert und visuell geprüft; ein Größenfehler wurde korrigiert. Physische
+DPI gerendert und visuell geprüft; ein Größenfehler wurde korrigiert. Ein
+verstecktes eigenes RichEdit lieferte über echtes UIA die Unicode-Auswahl,
+ohne Fokus oder Zwischenablage zu verändern. Native Registrierung und
+Freigabe von IMMNotificationClient sowie sechs kontrollierte VTable-Aufrufe
+geprüft; keine echten Geräte umgeschaltet. Physische
 Tasten, hörbare Stimmen und DPI 100/150 bleiben offen.
 
 Unabhängige Spec-/Standards-Reviews am festen Stand 8d604bb fanden Rennen
@@ -57,7 +69,34 @@ korrigiert; jeder reproduzierte Fall erhielt einen zuerst roten Guard.
 Expliziter Cleanup-Retry erhält die ursprüngliche Ressourcenidentität und
 wiederholt keine Textübergabe. Audio-Terminal wartet auf angenommene Blöcke;
 Cancel bleibt davon unabhängig. Nachfolgeprüfung und Gesamtpilot bleiben
-eigene Gates.
+eigene Gates. Weitere Gegenprüfungen fanden einen verfrühten `closed`-Status
+bei fehlgeschlagenem Worker-Kill und einen Abschlussfehler bei lautloser TTS
+nach einem alten Audioauftrag. Beide wurden am erzeugenden Owner mit zuerst
+roten Guards korrigiert. Worker-Reader und Operations-Scopes geben beendete
+Text-/PCM-Nachrichten vor dem nächsten blockierenden Idle-Read frei.
+Ein nachfolgendes Domain-Review reproduzierte die verlorene Escape-Bindung
+beim Übergang Vorlesen→Diktat. Das Audioreset-ACK läuft jetzt nach Abschluss
+des alten Effectbatches über die Eigentümer-Mailbox; der zuerst rote Guard
+prüft die aktive Escape-Bindung der neuen Aufnahme.
+Fehlgeschlagene und später bestätigte Audioreset-Versuche bleiben getrennte
+geordnete Fakten. Fehlgeschlagene Threadstarts, laufende PCM-Transferthreads,
+UI-loop-Ausnahmen und unbestätigter Cleanup halten ihre Owner; die
+Einzelinstanz wird erst nach Controller- und Fensterabschluss freigegeben.
+Zusätzliche Guards wurden jeweils vor dem Fix reproduziert. Build-Umgebungen
+binden den endgültigen Pfad; ein Junction darf keine fremde Runtime beschreiben.
+
+Der Offline-Paketrestore wurde mit allen 122 echten Wheels in drei frischen
+Umgebungen geprüft: exakte Versionen und `pip check`, 266,20 s; idempotente
+Wiederholung 22,16 s. Socket-blockierte Kindprozesse meldeten null
+Netzversuche. Die Modell-/CUDA-Dateien dieser Helper-Probe waren 25-Byte-
+Fixtures: ein vollständiger Restore echter Modelldateien und anschließende
+GPU-Inferenz sind gesondert nachzuweisen. Beide Source-Wheels wurden erneut
+bitidentisch gebaut. [Vertrag und Grenzen](../../docs/offline-restore.md).
+
+Windows-Leistungs-/Geräteereignisse werden über ein eigenes unsichtbares
+Fenster und gehaltene COM-Lebenszeiten verarbeitet. Resume/Gerätewechsel
+entwerten alte Aufträge und schließen eigene Modellworker. Reale Suspend-,
+Geräte- und Explorer-Neustarts bleiben offen.
 
 ## Noch keine Abnahme
 
@@ -86,7 +125,9 @@ eigene Gates.
 3. Das 250-ms-Ausgabebudget ist geteilt: höchstens 6000 Bytes beim Client und
    6000 Bytes nativ bei PCM16/24 kHz/Mono. Keine unbeschränkte Audio-Queue.
 4. Restore darf nur die .runtime eines validierten Hugin-Checkouts additiv
-   materialisieren. Paketpins allein beweisen keinen Offline-Wheelhouse-Restore.
+   materialisieren. Ein gemeinsamer Wheel-Artefaktlock prüft Metadaten,
+   Versionen, Herkunft und SHA256; Installation ausschließlich lokal,
+   `--no-index --no-deps --require-hashes`, ohne Umgebungen zu verschieben.
 
 Diese Präzisierungen ändern die vereinbarten Funktionen nicht. Offene native
 Nachweise und eingeschränkte Zielabdeckung bleiben Freigabebedingungen.

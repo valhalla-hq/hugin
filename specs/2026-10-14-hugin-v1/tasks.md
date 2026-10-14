@@ -33,4 +33,4 @@ T005/T006 sind nach T004 unabhängig vorbereitbar, aber gemeinsame Hardware wird
 
 ## Einordnung dieses Auftrags
 
-T001/T002/T003/T008 sind als begrenzte Implementierungsscheiben geprüft. T004–T007 enthalten bereits Code und Vertragsnachweise, bleiben wegen Zielmatrix/GPU-/Hörtests offen. T009 ist in Arbeit. T010–T012 und die abschließende Konvergenz folgen nach dem kontrollierten Hardware-Pilot. Whispering/PipPal bleiben produktiv. Geprüfte Kommandos und verbleibende Einschränkungen stehen in implementation.md.
+T001/T002/T003/T008 sind als begrenzte Implementierungsscheiben geprüft. T004–T007 enthalten Code und Vertragsnachweise, bleiben wegen Zielmatrix/GPU-/Hörtests offen. T009 enthält UIA, Betriebssignale und geprüften Offline-Paketrestore; echte Modellwiederherstellung und native Betriebsszenarien bleiben offen. T010–T012 und die abschließende Konvergenz folgen nach dem kontrollierten Hardware-Pilot. Whispering/PipPal bleiben produktiv. Geprüfte Kommandos und verbleibende Einschränkungen stehen in implementation.md.
