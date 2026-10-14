@@ -1,0 +1,23 @@
+name: validate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check project contract
+        shell: bash
+        run: |
+          test -f README.md
+          test -f AGENTS.md
+          test -f CONTEXT.md
+          test -f CLAUDE.md
+          test -f .github/pull_request_template.md
+          test -f handoffs/README.md
+          test -f outputs/README.md

@@ -1,0 +1,29 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+credentials*
+secrets*
+
+# Dependencies, caches, builds, and test output
+node_modules/
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+coverage/
+dist/
+build/
+
+# Generated media outputs are not Git truth by default
+outputs/*
+!outputs/README.md
+!outputs/*.manifest.json
+
+# Runtime-local workspace state
+.brian-projects-worktree.json
