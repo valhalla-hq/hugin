@@ -53,3 +53,11 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 - Parent review found successful terminal futures could overtake the last PCM callback because framing receipt was counted as publication. Client now owns separate per-request received/accepted-audio counts. Non-canceled terminals wait for all callbacks; cancellation bypasses publication waits after framed bytes are drained. Returning old callbacks cannot acknowledge a newer request.
 - Guard-first public WorkerClient regressions reproduced the last-callback and next-chunk race before the fix; 26 total tests now pass, including independent cancellation under backpressure and old/new request identities. No GPU or native actions used for this correction.
 - Separate read-only Standards review of parent fixed head 8d604bb628898e96c2de5ecefee214356cdd040c reported three reproduced cleanup findings to the parent: lossy capacity handling for owner-close acknowledgements, pending capture shutdown, and sticky input-error cleanup. Parent owns those root fixes; no parent edits made here.
+
+## Bounded T009 Windows Signals
+
+- Parent fixed head 1a189d7b706afff3ba58705b0222f411290f1740 was merged into this exclusive helper (merge 9c2cd05); helper context retained. Overall integration still belongs to the parent.
+- src/hugin/windows/signals.py implements WindowsSignals with a dedicated invisible top-level broadcast window, held class/callback lifetime, bounded dispatch of system_pause/system_resume/devices_changed, honest ready/closed/error, and retryable owner-thread cleanup. No existing WNDPROC is overwritten. Parent owns Application/UI wiring.
+- Guard-first source/ABI tests: 10 signal contracts plus 7 mocked Win32 producer/ABI cases green; full source suite 133 passed. No actual native window, sleep/resume, device change, Explorer termination, microphone, playback or GPU model load performed for this slice.
+- Installed pystray 0.19.5 already handles TaskbarCreated by re-adding a visible icon; static source hashes/findings and API are in docs/system-signals.md. No duplicate Explorer-recovery code added.
+- Real broadcast delivery, Modern Standby, controller/device reopen timing and Explorer pilot remain unverified. Generic WM_DEVICECHANGE does not establish exhaustive default-audio-endpoint change coverage; AC016 remains open.

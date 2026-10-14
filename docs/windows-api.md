@@ -4,6 +4,10 @@ This is the bounded T003/T004 implementation slice, not a completed native
 pilot or permission to activate Hugin. Whispering/PipPal remain unchanged.
 Imports register no hooks, inject no input and open no clipboard.
 
+T009 operating signals use a separate owned top-level broadcast window;
+see [system-signals.md](system-signals.md) for WindowsSignals lifecycle,
+typed callbacks, recovery guards, pystray Explorer findings and coverage limits.
+
 ## Inputs
 
 `WindowsInputs(on_action, pilot=False, *, backend=None, queue_size=32)` calls
