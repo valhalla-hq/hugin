@@ -29,4 +29,13 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Active Handoff
 
-- `handoffs/2026-10-14-hugin-v1.md`
+- `handoffs/2026-10-14-hugin-workers.md`
+
+## Bounded Engine Helper Checkpoint
+
+- Executor for this helper: codex/hugin-workers-mjolnir, separate worktree; the parent Hugin task owns integration and completion. Ownership remains active, no helper PR or merge.
+- Implemented bounded private IPC, atomic transcript completion, isolated Whisper/Qwen workers and parent-client API. See docs/workers-api.md. Parent centrally schedules initialization, inference and offload.
+- Own .runtime/models/stt, .runtime/models/tts and .runtime/cuda were copied from exact existing local bytes and fully hash-verified. New STT/TTS venvs installed from 21/94 pinned dependency entries; both pip checks passed. Old runtimes and processes unchanged.
+- 11 contract tests and 5 simulated worker integration tests passed. Real CPU Whisper completed silent-input cold/warm/offload/reload probes; real private IPC plus native Windows Job Object completed with observed family exit. No GPU model loaded, no microphone or playback.
+- Native initialization must finish synchronously before starting the command reader: earlier reader placement reproduced a 60-second CPU initialization hang. Initialization cancellation therefore uses parent-held job watchdog/exit rather than an in-process acknowledgement.
+- GPU inference/cancellation, both-voice hearing, combined residency, complete offline wheelhouse restore, speech accuracy and full hardware AC remain unverified. No T005/T006 completion or total Hugin acceptance claimed.

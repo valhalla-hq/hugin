@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "source": "torch 2.9.1+cu128 Windows wheel, CUDA12/cuDNN9 (observed old runtime copied independently)",
+  "files": [
+    {
+      "file": "cublas64_12.dll",
+      "size": 113716224,
+      "sha256": "9513540e4ec4c51ee9e7304138c2cc255c29a8c181f9e80c38efa25738becd99"
+    },
+    {
+      "file": "cublasLt64_12.dll",
+      "size": 674667520,
+      "sha256": "b199d1ff892a81b7fd3d57ba1781549609b41500b36008fef326038393ad46c7"
+    },
+    {
+      "file": "cudart64_12.dll",
+      "size": 573952,
+      "sha256": "c2c9a9c22a9bcba90e261825968836787b331038047a26770cffb7a583c28344"
+    },
+    {
+      "file": "cudnn64_9.dll",
+      "size": 266288,
+      "sha256": "9edbcdff73b0af070eb160b2ce66e59feca04aa017351d8eedcc5e8e149967d2"
+    },
+    {
+      "file": "cudnn_adv64_9.dll",
+      "size": 282445872,
+      "sha256": "f202e8ff36209ac4292fe2ef79d4539487495b3b948f0c978cc63298f43a1850"
+    },
+    {
+      "file": "cudnn_cnn64_9.dll",
+      "size": 4618272,
+      "sha256": "3f03dec3b81f137f049e1d1c06ff469248eef54ff9424b3b9045fc0f69559d1a"
+    },
+    {
+      "file": "cudnn_engines_precompiled64_9.dll",
+      "size": 513926688,
+      "sha256": "ebc2c1f74366b029a4350f7f9a3b109ccd5aa9b4ae02527950793dd29f7b74fb"
+    },
+    {
+      "file": "cudnn_engines_runtime_compiled64_9.dll",
+      "size": 20201008,
+      "sha256": "93ab6351ca0f2b6ca842f83d284e56c427525778c14657229801a13cf8121bd8"
+    },
+    {
+      "file": "cudnn_graph64_9.dll",
+      "size": 2420256,
+      "sha256": "a933efeb280a3252297f92d79f7e83003bcbc6f665872d11645d1dbbab9cb598"
+    },
+    {
+      "file": "cudnn_heuristic64_9.dll",
+      "size": 56823328,
+      "sha256": "458175f12771a35de0ea39c04250d727c2424d42a7ffe0bc987ae81204748fba"
+    },
+    {
+      "file": "cudnn_ops64_9.dll",
+      "size": 126508576,
+      "sha256": "851d8f4191a24b322b0be738d191a3159455f0da4db47a19f5cc7ad6e55edf61"
+    },
+    {
+      "file": "zlibwapi.dll",
+      "size": 89088,
+      "sha256": "1f047faec08d9a35c304fb4a7cf13853589359a8f7cbfdd48c5d5807712dcf05"
+    }
+  ]
+}
