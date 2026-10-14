@@ -7,6 +7,8 @@ für Vorlesen; beides weiter Toggle, Escape weiter nur bei aktiver Aktion.
 - Executor Mjolnir, Branch codex/hugin-simple-hotkeys-mjolnir,
   Worktree C:/Users/brian/brian-projects/worktrees/hugin/hugin-simple-hotkeys-mjolnir.
 - Preflight-Control e3deecae6673a024aa9015a4387737fbec04c795.
+- PR https://github.com/valhalla-hq/hugin/pull/4. Ownership bis zum geprüften
+  Remote-Checkpoint aktiv, danach über project_workspace.py freigeben.
 - Änderung: input.py, application.py, zwei vorhandene Tests, README und
   aktuelle Pilot-Anleitungen und zwei Spec-Verweise. Modell-/Paketlocks unverändert.
 - Prüfung: 268 Vertrags-/Integrationstests ohne Skips, docs und diff --check
