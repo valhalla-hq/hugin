@@ -86,3 +86,23 @@ chunks and is discarded entirely; raw output is never retained as diagnostics.
 Tests using injected synthetic engines establish IPC behavior only. Real CPU
 Whisper, GPU Whisper, Qwen, cancellation under native CUDA work, both-voice
 listening and combined GPU residency require separate explicit evidence.
+
+## Runtime restore
+
+Run `tools/restore.py --target C:/path/to/Hugin-checkout --source-root
+C:/path/to/verified-Hugin-checkout` to inspect a read-only plan. Both roots
+must already contain Hugin configuration, voices and matching file locks from
+Git. Sources are the selected checkout's owned model/CUDA files; no old-stack
+paths or model downloads are built into restore. Add `--apply` to copy only
+missing locked files and create new STT/TTS environments at the destination.
+`--install none` copies model/DLL files only. Existing differing bytes,
+unlocked files, unowned environments or changed package pins fail closed.
+The target's tracked files and controller environment remain untouched.
+
+New engine environments carry `hugin-environment.json` binding their path,
+engine and pins. Repeated apply verifies installed distribution versions and
+runs pip check without reinstalling correct packages. Older unmarked
+environments require separately reviewed adoption; restore does not assume
+ownership from matching package versions. A complete controller restore and
+offline wheelhouse with cryptographic package hashes remain open. Cache hits
+in an online installation do not establish an offline restore.
