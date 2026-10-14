@@ -645,6 +645,7 @@ class Application:
             return 0
         finally:
             owner_closed=controller is None
+            window_closed=window is None
             try:
                 if thread_started:
                     # A UI/show failure must follow the same owned shutdown as
@@ -658,7 +659,9 @@ class Application:
                         owner_closed=controller.finish_io()
                         for executor in (controller.capture_executor,controller.audio_executor,controller.maintenance_executor,controller.selection_executor):
                             executor.shutdown(wait=True,cancel_futures=True)
-                if window: window.stop()
+                if window:
+                    window.stop()
+                    window_closed=True
             finally:
-                if owner_closed: guard.close()
+                if owner_closed and window_closed: guard.close()
                 else: self._startup_owners=(guard,controller,window,thread)

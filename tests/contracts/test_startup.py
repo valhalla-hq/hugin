@@ -13,7 +13,7 @@ def module(name,**fields):
 
 
 class StartupContracts(unittest.TestCase):
-    def _failure_closes_io_before_instance_release(self,ui_failure=False,join_failure=False,cleanup_failure=False):
+    def _failure_closes_io_before_instance_release(self,ui_failure=False,join_failure=False,cleanup_failure=False,window_failure=False):
         owners=[];guards=[];released=[];controllers=[];joined=[];commands=[]
         class Owner:
             def __init__(self,*args,**kwargs):self.closed=False;owners.append(self)
@@ -23,6 +23,10 @@ class StartupContracts(unittest.TestCase):
             def post(self,*args):pass
             def request_stop(self):pass
             def run(self):raise RuntimeError('synthetic UI loop failure')
+        class Window(Owner):
+            def stop(self):
+                if window_failure: raise RuntimeError('synthetic window cleanup failure')
+                super().stop()
         class Guard(Owner):
             def __init__(self):super().__init__();guards.append(self)
             def acquire(self):return True
@@ -53,7 +57,7 @@ class StartupContracts(unittest.TestCase):
                 controllers[0]._closed=controllers[0].finish_io()
         fakes={
             'hugin.audio':module('hugin.audio',Microphone=lambda *args:NS(),PCMOutput=Owner),
-            'hugin.ui':module('hugin.ui',HuginWindow=Owner),
+            'hugin.ui':module('hugin.ui',HuginWindow=Window),
             'hugin.windows.input':module('hugin.windows.input',WindowsInputs=Owner),
             'hugin.windows.instance':module('hugin.windows.instance',InstanceGuard=Guard),
             'hugin.windows.clipboard':module('hugin.windows.clipboard',ClipboardService=Owner),
@@ -69,7 +73,7 @@ class StartupContracts(unittest.TestCase):
             patches.enter_context(patch.object(application.threading,'Thread',FailedThread))
             app=application.Application(settings,pilot=True)
             with self.assertRaises(RuntimeError):app.run()
-        if join_failure or cleanup_failure:
+        if join_failure or cleanup_failure or window_failure:
             self.assertFalse(guards[0].closed,'unconfirmed cleanup must retain the instance owner')
             self.assertIs(app._startup_owners[0],guards[0])
         else:
@@ -90,6 +94,9 @@ class StartupContracts(unittest.TestCase):
 
     def test_failed_startup_cleanup_retains_instance_and_native_owners(self):
         self._failure_closes_io_before_instance_release(cleanup_failure=True)
+
+    def test_failed_window_close_retains_instance_and_window_owner(self):
+        self._failure_closes_io_before_instance_release(ui_failure=True,window_failure=True)
 
 
 class WindowCleanupContracts(unittest.TestCase):
