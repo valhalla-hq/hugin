@@ -3,6 +3,11 @@
   "platform": "win_amd64",
   "files": [
     {
+      "file": "comtypes-1.4.17-py3-none-any.whl",
+      "size": 298743,
+      "sha256": "4e0a221dde2c589b82977bed802efd71cd5eb67a380347b732e02735e597f586"
+    },
+    {
       "file": "cffi-2.1.1-cp312-cp312-win_amd64.whl",
       "size": 185919,
       "sha256": "f53e442b08449d42821fa4a4fba000095af9f62742a500f978a9f557ec44339a"

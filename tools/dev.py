@@ -58,6 +58,9 @@ def main():
     if args.group == 'windows' and not args.interactive:
         print('Native tests require --interactive and an isolated test target.',file=sys.stderr)
         return 2
+    if args.interactive:
+        import os
+        os.environ['HUGIN_INTERACTIVE_TESTS'] = '1'
     suite = unittest.TestSuite()
     groups = ('contracts','integration') if args.group == 'all' else (args.group,)
     for group in groups:
