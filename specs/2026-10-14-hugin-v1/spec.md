@@ -112,6 +112,11 @@ nicht stillschweigend.
 
 ## Änderungslog
 
+- 14.10.2026, Fortsetzung: Nachtblau-/Violettdarstellung und eigenes Raben-Icon
+  nach Nutzerreferenzen sowie vorübergehende geordnete Altstack-Pause für den
+  ersten GPU-Pilot beauftragt. [Ergänzung und Prüfplan](style-pilot.md).
+  Bestehende Funktionen und produktiver Aktivierungsgate unverändert.
+
 - 14.10.2026: V1 aus Grill-me, Bestandsaufnahme und akzeptiertem STORM-Vorschlag festgehalten. Kleines Interface, Freya/Tyr und die drei Ergänzungen Escape, letztes Diktat, Diagnose sind enthalten. Keine Implementierung ausgeführt.
 - 14.10.2026, Umsetzung: Native Tk-/Tray-/Audio-/Windows-Adapter und private
   Worker-IPC verbunden. Direkte Auswahl ohne Clipboard-Mutation bevorzugt;
