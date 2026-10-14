@@ -289,6 +289,16 @@ def confirm_uia_target(automation,uia,target,native_target,proof):
         position,current=_insertion(automation,uia,binding)
         if position!=proof.identity.position:
             return TargetResult('target_changed')
+        # Provider calls above can span a user selection/editability change.
+        # Reacquire the current Edit and compare a second fresh local integer,
+        # not only endpoints of COM ranges that may move with document edits.
+        focus=automation.GetFocusedElement()
+        if not focus or _identity(focus)!=proof.identity.focus_id:return TargetResult('target_changed')
+        binding.pattern=_edit_pattern(focus,uia)
+        final_position,final=_insertion(automation,uia,binding)
+        if (final_position!=proof.identity.position
+                or any(current.CompareEndpoints(endpoint,final,endpoint)!=0 for endpoint in (0,1))):
+            return TargetResult('target_changed')
         _confirm_focus(automation,proof.binding,target,native_target)
         return TargetResult('target_captured',proof.identity)
     except _SelectionFailure as failure:return _target_failure(failure)
