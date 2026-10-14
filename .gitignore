@@ -19,11 +19,14 @@ __pycache__/
 coverage/
 dist/
 build/
-
 # Generated media outputs are not Git truth by default
 outputs/*
 !outputs/README.md
 !outputs/*.manifest.json
-
 # Runtime-local workspace state
 .brian-projects-worktree.json
+.runtime/
+*.py[cod]
+*.egg-info/
+.coverage
+*.log
