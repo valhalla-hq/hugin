@@ -95,3 +95,17 @@ ownership conflicts and Python/Tk preflight. The full offline probe uses all
 25-byte model/CUDA fixtures, socket-blocked child processes and no model
 imports. Curated results and exact checkpoint details live in the helper
 handoff. Runtime wheels, environments, probe outputs and raw logs stay ignored.
+
+On 14 October 2026, merged main `cf1c70570b790211b54ce27e8a93b8e641703d69`
+was restored into `C:/Users/brian/brian-projects/_repos/hugin`: all 29 real
+model/CUDA files (5,934,025,392 bytes), 122 real wheels and their manifest,
+and three fresh environments at their final paths. Exact versions and all
+three `pip check` runs passed. Apply took 279.716 seconds; a repeated Apply
+took 63.824 seconds without reinstalling packages. Native Windows checks
+passed 44/44 without skips in the restored controller, and its own CPU
+Whisper delivered the 17-word synthetic reference exactly once to a RAM target,
+then closed all own workers. This full real-file run used local-only inputs
+and no-index pip; unlike the earlier fixture probe, its network was not
+externally blocked or monitored. No GPU inference or productive migration
+was performed. The stable `C:/Users/brian/Hugin` junction targets this clean
+main clone; all six original planning files were preserved and hash-checked.
