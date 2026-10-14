@@ -88,6 +88,24 @@ declares full PCM length/hash. Transcript begin/contiguous fragments/end verify
 UTF-8, length, and SHA256 atomically up to 256 KiB. Stderr drains in fixed 4 KiB
 chunks and is discarded entirely; raw output is never retained as diagnostics.
 
+Worker operation locals end before GPU synchronization and terminal publication:
+provider text, encoded transcript bytes, PCM chunks and closed generators do not
+survive into the next idle Queue.get. Consumed command dictionaries are cleared
+at their owning operation boundary, including failure paths. The command reader
+transfers ownership into the bounded queue and drops its own reference before
+reading another command. Input frames end their scope after copying into the
+active capture draft, before the next frame read.
+
+Client control-event and data-frame processing each have a short scope ending
+before their next blocking read. A completed frame or callback publication does
+not remain in reader-loop locals while idle. The active transcript draft is
+cleared on cancellation/terminal. Results deliberately retained by the caller,
+including the controller's one RAM slot, remain that caller's responsibility.
+An executing callback may still own its in-flight argument until it returns;
+cancel remains independent of a blocked audio callback. These are Python object
+lifetime guarantees, not a claim of secure allocator erasure or verified native
+provider-cache clearing.
+
 Tests using injected synthetic engines establish IPC behavior only. Real CPU
 Whisper, GPU Whisper, Qwen, cancellation under native CUDA work, both-voice
 listening and combined GPU residency require separate explicit evidence.

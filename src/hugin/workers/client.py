@@ -211,141 +211,147 @@ class WorkerClient:
     def _control_reader(self):
         try:
             while True:
-                event = read_control(self.process.stdout, self.settings.limits['control_bytes'])
-                identity = Identity.from_message(event)
-                base = {'schema_version','type','engine','engine_instance','request_id','generation'}
-                extra = {'ready': {'device','sample_rate'}, 'result_begin': {'length','sha256'},
-                    'result_end': {'length','sha256'}, 'terminal': {'cancelled','code','audio_bytes','elapsed_seconds'},
-                    'fault': {'code','phase','retry'}}
-                kind = event.get('type')
-                if (type(event.get('schema_version')) is not int or event.get('schema_version') != 1 or event.get('engine') != self.engine
-                        or identity.engine_instance != self.engine_instance or not isinstance(kind,str) or kind not in extra
-                        or set(event) != base | extra[kind]):
-                    raise invalid()
-                publish = None
-                with self.condition:
-                    active = self.active
-                    if active is None or identity != active['identity']:
-                        raise invalid()
-                    if kind == 'ready':
-                        if (active['kind'] != 'initialize' or active['ready_event'] is not None
-                                or event['device'] not in ('cpu','cuda')
-                                or type(event['sample_rate']) is not int
-                                or event['sample_rate'] != (16000 if self.engine == 'stt' else 24000)):
-                            raise invalid()
-                        active['ready_event'] = event
-                    elif kind == 'result_begin':
-                        if active['kind'] != 'transcribe' or active['receiver'] is not None:
-                            raise invalid()
-                        active['receiver'] = TranscriptReceiver(identity, event['length'],
-                            event['sha256'], self.settings.limits['transcript_bytes'])
-                        self.condition.notify_all()
-                    elif kind == 'result_end':
-                        receiver = active['receiver']
-                        if receiver is None or active['result_ended']:
-                            raise invalid()
-                        self.condition.wait_for(lambda: self.failed or
-                            active['received'] == receiver.length,
-                            timeout=self.settings.limits['ready_seconds'])
-                        if self.failed or active['received'] != receiver.length:
-                            raise invalid()
-                        if not active['cancelled']:
-                            publish = dict(type='result', engine=self.engine,
-                                           **identity.fields(), text=receiver.finish(event['length'],event['sha256']))
-                        active['result_ended'] = True
-                    elif kind == 'terminal':
-                        if (type(event['cancelled']) is not bool or type(event['audio_bytes']) is not int
-                                or event['audio_bytes'] < 0 or event['audio_bytes'] % 2
-                                or type(event['elapsed_seconds']) not in (int,float)
-                                or event['elapsed_seconds'] < 0
-                                or event['code'] not in (None,'worker_failed','resource_limit','protocol_invalid','unsupported','asset_integrity')):
-                            raise invalid()
-                        if active['kind'] == 'synthesize':
-                            # Even cancellation must drain the declared framed
-                            # bytes before this request's identity is retired.
-                            # Receipt advances before callbacks, so this never
-                            # waits behind the current blocked audio callback.
-                            self.condition.wait_for(lambda: self.failed or
-                                active['received'] == event['audio_bytes'],
-                                timeout=self.settings.limits['ready_seconds'])
-                            if self.failed or active['received'] != event['audio_bytes']:
-                                raise invalid()
-                        if not event['cancelled'] and not active['cancelled']:
-                            if active['kind'] == 'transcribe' and event['code'] is None and not active['result_ended']:
-                                raise invalid()
-                            if active['kind'] == 'synthesize':
-                                self.condition.wait_for(lambda: self.failed or active['cancelled'] or
-                                    active['accepted_audio'] == event['audio_bytes'],
-                                    timeout=self.settings.limits['ready_seconds'])
-                                if self.failed or (not active['cancelled'] and active['accepted_audio'] != event['audio_bytes']):
-                                    raise invalid()
-                        if active['receiver'] is not None:
-                            active['receiver'].cancel()
-                        self.active = None
-                        self.condition.notify_all()
-                        if active['kind'] == 'initialize':
-                            ready = active['ready_event']
-                            if ready is None or event['cancelled'] or event['code']:
-                                active['future'].set_exception(HuginError('worker_failed','initialize'))
-                            else:
-                                self.ready, self.device = True, ready['device']
-                                active['future'].set_result(ready)
-                                publish = ready
-                        else:
-                            active['future'].set_result(event)
-                            publish = event
-                    else:
-                        if (event['code'] not in ('worker_failed','resource_limit','protocol_invalid','unsupported','asset_integrity')
-                                or event['phase'] not in ('worker_protocol','initialize','transcribe','synthesize','offload','gpu_synchronize')
-                                or event['retry'] not in ('later','restart')):
-                            raise invalid()
-                        publish = event
-                if publish is not None:
-                    self._emit(publish)
+                self._read_control_event()
         except EOFError:
             self._fail('worker_failed', 'worker_exit')
         except (HuginError, OSError, ValueError):
             self._fail('protocol_invalid', 'worker_control')
 
+    def _read_control_event(self):
+        event = read_control(self.process.stdout, self.settings.limits['control_bytes'])
+        identity = Identity.from_message(event)
+        base = {'schema_version','type','engine','engine_instance','request_id','generation'}
+        extra = {'ready': {'device','sample_rate'}, 'result_begin': {'length','sha256'},
+            'result_end': {'length','sha256'}, 'terminal': {'cancelled','code','audio_bytes','elapsed_seconds'},
+            'fault': {'code','phase','retry'}}
+        kind = event.get('type')
+        if (type(event.get('schema_version')) is not int or event.get('schema_version') != 1 or event.get('engine') != self.engine
+                or identity.engine_instance != self.engine_instance or not isinstance(kind,str) or kind not in extra
+                or set(event) != base | extra[kind]):
+            raise invalid()
+        publish = None
+        with self.condition:
+            active = self.active
+            if active is None or identity != active['identity']:
+                raise invalid()
+            if kind == 'ready':
+                if (active['kind'] != 'initialize' or active['ready_event'] is not None
+                        or event['device'] not in ('cpu','cuda')
+                        or type(event['sample_rate']) is not int
+                        or event['sample_rate'] != (16000 if self.engine == 'stt' else 24000)):
+                    raise invalid()
+                active['ready_event'] = event
+            elif kind == 'result_begin':
+                if active['kind'] != 'transcribe' or active['receiver'] is not None:
+                    raise invalid()
+                active['receiver'] = TranscriptReceiver(identity, event['length'],
+                    event['sha256'], self.settings.limits['transcript_bytes'])
+                self.condition.notify_all()
+            elif kind == 'result_end':
+                receiver = active['receiver']
+                if receiver is None or active['result_ended']:
+                    raise invalid()
+                self.condition.wait_for(lambda: self.failed or
+                    active['received'] == receiver.length,
+                    timeout=self.settings.limits['ready_seconds'])
+                if self.failed or active['received'] != receiver.length:
+                    raise invalid()
+                if not active['cancelled']:
+                    publish = dict(type='result', engine=self.engine,
+                                   **identity.fields(), text=receiver.finish(event['length'],event['sha256']))
+                active['result_ended'] = True
+            elif kind == 'terminal':
+                if (type(event['cancelled']) is not bool or type(event['audio_bytes']) is not int
+                        or event['audio_bytes'] < 0 or event['audio_bytes'] % 2
+                        or type(event['elapsed_seconds']) not in (int,float)
+                        or event['elapsed_seconds'] < 0
+                        or event['code'] not in (None,'worker_failed','resource_limit','protocol_invalid','unsupported','asset_integrity')):
+                    raise invalid()
+                if active['kind'] == 'synthesize':
+                    # Even cancellation must drain the declared framed
+                    # bytes before this request's identity is retired.
+                    # Receipt advances before callbacks, so this never
+                    # waits behind the current blocked audio callback.
+                    self.condition.wait_for(lambda: self.failed or
+                        active['received'] == event['audio_bytes'],
+                        timeout=self.settings.limits['ready_seconds'])
+                    if self.failed or active['received'] != event['audio_bytes']:
+                        raise invalid()
+                if not event['cancelled'] and not active['cancelled']:
+                    if active['kind'] == 'transcribe' and event['code'] is None and not active['result_ended']:
+                        raise invalid()
+                    if active['kind'] == 'synthesize':
+                        self.condition.wait_for(lambda: self.failed or active['cancelled'] or
+                            active['accepted_audio'] == event['audio_bytes'],
+                            timeout=self.settings.limits['ready_seconds'])
+                        if self.failed or (not active['cancelled'] and active['accepted_audio'] != event['audio_bytes']):
+                            raise invalid()
+                if active['receiver'] is not None:
+                    active['receiver'].cancel()
+                self.active = None
+                self.condition.notify_all()
+                if active['kind'] == 'initialize':
+                    ready = active['ready_event']
+                    if ready is None or event['cancelled'] or event['code']:
+                        active['future'].set_exception(HuginError('worker_failed','initialize'))
+                    else:
+                        self.ready, self.device = True, ready['device']
+                        active['future'].set_result(ready)
+                        publish = ready
+                else:
+                    active['future'].set_result(event)
+                    publish = event
+            else:
+                if (event['code'] not in ('worker_failed','resource_limit','protocol_invalid','unsupported','asset_integrity')
+                        or event['phase'] not in ('worker_protocol','initialize','transcribe','synthesize','offload','gpu_synchronize')
+                        or event['retry'] not in ('later','restart')):
+                    raise invalid()
+                publish = event
+        if publish is not None:
+            self._emit(publish)
+
     def _data_reader(self):
         try:
             while True:
-                frame = read_frame(self.data_in)
-                with self.condition:
-                    active = self.active
-                    if active is None or frame.identity != active['identity'] or frame.offset != active['received']:
-                        raise invalid()
-                    if frame.kind == 'text':
-                        self.condition.wait_for(lambda: self.failed or active['receiver'] is not None,
-                            timeout=self.settings.limits['ready_seconds'])
-                        receiver = active['receiver']
-                        if receiver is None or active['received'] + len(frame.data) > receiver.length:
-                            raise invalid()
-                        if not active['cancelled']:
-                            receiver.add(frame)
-                    elif (active['kind'] != 'synthesize' or len(frame.data) >
-                            min(self.settings.limits['audio_buffer_ms'] * 24, 6000)):
-                        raise invalid()
-                    active['received'] += len(frame.data)
-                    cancelled = active['cancelled']
-                    self.condition.notify_all()
-                if frame.kind == 'pcm' and not cancelled:
-                    self._emit(dict(type='audio',engine=self.engine,**frame.identity.fields(),
-                                    pcm=frame.data,sample_rate=24000,offset=frame.offset))
-                    with self.condition:
-                        still_current = self.active is active and not active['cancelled']
-                        if still_current:
-                            # Receipt proves framing, not publication. A normal
-                            # terminal must not overtake this callback (and let
-                            # the coordinator retire its last PCM as stale).
-                            active['accepted_audio'] += len(frame.data)
-                            self.condition.notify_all()
-                    if still_current:
-                        self._send('credit', frame.identity)
+                self._read_data_frame()
         except EOFError:
             self._fail('worker_failed','worker_exit')
         except (HuginError, OSError, ValueError):
             self._fail('protocol_invalid','worker_data')
+
+    def _read_data_frame(self):
+        frame = read_frame(self.data_in)
+        with self.condition:
+            active = self.active
+            if active is None or frame.identity != active['identity'] or frame.offset != active['received']:
+                raise invalid()
+            if frame.kind == 'text':
+                self.condition.wait_for(lambda: self.failed or active['receiver'] is not None,
+                    timeout=self.settings.limits['ready_seconds'])
+                receiver = active['receiver']
+                if receiver is None or active['received'] + len(frame.data) > receiver.length:
+                    raise invalid()
+                if not active['cancelled']:
+                    receiver.add(frame)
+            elif (active['kind'] != 'synthesize' or len(frame.data) >
+                    min(self.settings.limits['audio_buffer_ms'] * 24, 6000)):
+                raise invalid()
+            active['received'] += len(frame.data)
+            cancelled = active['cancelled']
+            self.condition.notify_all()
+        if frame.kind == 'pcm' and not cancelled:
+            self._emit(dict(type='audio',engine=self.engine,**frame.identity.fields(),
+                            pcm=frame.data,sample_rate=24000,offset=frame.offset))
+            with self.condition:
+                still_current = self.active is active and not active['cancelled']
+                if still_current:
+                    # Receipt proves framing, not publication. A normal
+                    # terminal must not overtake this callback (and let
+                    # the coordinator retire its last PCM as stale).
+                    active['accepted_audio'] += len(frame.data)
+                    self.condition.notify_all()
+            if still_current:
+                self._send('credit', frame.identity)
 
     def _stderr_reader(self):
         # Drain in bounded chunks, discard every byte. Native output can contain

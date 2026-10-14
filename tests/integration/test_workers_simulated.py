@@ -7,27 +7,44 @@ import threading
 import time
 import unittest
 import uuid
+import weakref
+from unittest.mock import patch
 
 from hugin.workers import WorkerClient
 from hugin.errors import HuginError
+from hugin.protocol import read_frame
 
 ROOT = Path(__file__).resolve().parents[2]
 FAKE = r'''
-import argparse, os, sys, time, threading
+import argparse, gc, os, sys, time, threading, weakref
 from pathlib import Path
 from hugin.config import load_settings
 from hugin.workers.server import WorkerServer
+import hugin.workers.server as server_module
+class TrackedTranscript(str): pass
+synthesis_refs = []
+original_read_control = server_module.read_control
+def tracked_control(*args, **kwargs):
+    command = original_read_control(*args, **kwargs)
+    if command.get('type') == 'synthesize':
+        command['text'] = TrackedTranscript(command['text'])
+        synthesis_refs.append(weakref.ref(command['text']))
+    return command
+server_module.read_control = tracked_control
 class SimulatedEngine:
     device = 'cpu'
     def __init__(self, settings, device):
         assert not any(t.name == 'hugin-control-reader' for t in threading.enumerate())
         print('UNIQUE_PRIVATE_EXCEPTION_AND_CONTENT', file=sys.stderr, flush=True)
+        self.transcript_ref = None
     def transcribe(self, pcm, cancelled):
         if pcm[:2] == b'\x01\x00':
             for _ in range(100):
                 if cancelled(): return ''
                 time.sleep(.005)
-        return 'Grüße. ' * 20000
+        text = TrackedTranscript('Grüße. ' * 20000)
+        self.transcript_ref = weakref.ref(text)
+        return text
     def synthesize(self, text, voice, language, cancelled):
         try:
             count = 1 if text in ('Terminal race','Next chunk') else 100
@@ -37,8 +54,15 @@ class SimulatedEngine:
                 yield b'\x00\x00' * frames
         finally:
             time.sleep(.03)  # Simulated generator close barrier.
-    def synchronize(self): time.sleep(.01)
-    def offload(self): pass
+    def synchronize(self):
+        gc.collect()
+        if any(reference() is not None for reference in synthesis_refs):
+            raise AssertionError('completed synthesis text still referenced in worker')
+        time.sleep(.01)
+    def offload(self):
+        gc.collect()
+        if self.transcript_ref is not None and self.transcript_ref() is not None:
+            raise AssertionError('completed transcript still referenced in worker')
 p=argparse.ArgumentParser()
 p.add_argument('--root', type=Path)
 p.add_argument('--engine')
@@ -90,6 +114,49 @@ class SimulatedWorkerTests(unittest.TestCase):
         self.assertEqual(results[0]['request_id'],request)
         self.assertNotIn('UNIQUE_PRIVATE_EXCEPTION_AND_CONTENT',repr(self.events))
         self.assertEqual(client.offload().result(timeout=5)['type'],'terminal')
+
+    def test_completed_provider_transcript_is_released_before_next_offload(self):
+        client=self.client('stt')
+        terminal=client.transcribe(b'\x00\x00'*16000,str(uuid.uuid4()),1).result(timeout=10)
+        self.assertIsNone(terminal['code'])
+        result=next(event for event in self.events if event['type']=='result')
+        self.assertIs(type(result['text']),str,'client result is a separate UTF-8 decode')
+        # The simulated provider holds only a weak reference to its str subclass.
+        # offload runs after terminal and fails if server idle locals retain it.
+        offloaded=client.offload().result(timeout=5)
+        self.assertIsNone(offloaded['code'])
+        self.assertFalse(any(event['type']=='fault' for event in self.events))
+
+    def test_synthesis_text_is_released_before_terminal(self):
+        client=self.client('tts')
+        terminal=client.synthesize('Terminal race','freya',str(uuid.uuid4()),1).result(timeout=10)
+        self.assertIsNone(terminal['code'])
+        self.assertEqual(len([event for event in self.events if event['type']=='audio']),1)
+        self.assertFalse(any(event['type']=='fault' for event in self.events))
+
+    def test_processed_text_and_pcm_frames_are_released_before_idle_read(self):
+        for engine in ('stt','tts'):
+            with self.subTest(engine=engine):
+                references=[];next_read=threading.Event();received=0
+                expected=len(('Grüße. '*20000).encode()) if engine=='stt' else 6000
+                def observed_read(source):
+                    nonlocal received
+                    if received==expected:next_read.set()
+                    frame=read_frame(source)
+                    received+=len(frame.data)
+                    references.append(weakref.ref(frame))
+                    return frame
+                with patch('hugin.workers.client.read_frame',observed_read):
+                    client=self.client(engine)
+                    request=str(uuid.uuid4())
+                    future=(client.transcribe(b'\x00\x00'*16000,request,1) if engine=='stt'
+                        else client.synthesize('Terminal race','freya',request,1))
+                    self.assertIsNone(future.result(timeout=10)['code'])
+                    self.assertTrue(next_read.wait(2),'reader must be waiting for its next frame')
+                    self.assertTrue(references)
+                    self.assertTrue(all(reference() is None for reference in references),
+                        'reader retains a completed frame while idle')
+                    client.close()
 
     def test_cancel_during_audio_backpressure_reaches_terminal(self):
         entered, release=threading.Event(),threading.Event()

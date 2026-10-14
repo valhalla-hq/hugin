@@ -53,33 +53,45 @@ class WorkerServer:
             raise invalid()
         return command, identity
 
-    def _read_commands(self):
+    def _queue_command(self):
+        # A reader owns a command only until transfer into the bounded queue.
+        # Its next blocking read must not retain the previous text dictionary.
+        command, identity = self._read_command()
+        transferred = False
         try:
-            while True:
-                command, identity = self._read_command()
-                kind = command.get('type')
-                with self.condition:
-                    if kind == 'shutdown':
-                        self.stopping = self.cancelled = True
+            kind = command.get('type')
+            with self.condition:
+                if kind == 'shutdown':
+                    self.stopping = self.cancelled = True
+                    self.condition.notify_all()
+                    if self.active is None:
+                        self.commands.put_nowait((command, identity))
+                        transferred = True
+                    return False
+                if kind in ('cancel','credit'):
+                    if identity == self.active:
+                        if kind == 'cancel':
+                            self.cancelled = True
+                        else:
+                            if self.credit:
+                                raise invalid()
+                            self.credit = True
                         self.condition.notify_all()
-                        if self.active is None:
-                            self.commands.put_nowait((command, identity))
-                        return
-                    if kind in ('cancel','credit'):
-                        if identity == self.active:
-                            if kind == 'cancel':
-                                self.cancelled = True
-                            else:
-                                if self.credit:
-                                    raise invalid()
-                                self.credit = True
-                            self.condition.notify_all()
-                        continue
-                    if self.active is not None:
-                        raise invalid()
+                else:
+                    if self.active is not None:raise invalid()
                     self.active = identity
                     self.cancelled = self.credit = False
                     self.commands.put_nowait((command, identity))
+                    transferred = True
+            return True
+        finally:
+            if not transferred:
+                command.clear()
+
+    def _read_commands(self):
+        try:
+            while self._queue_command():
+                pass
         except EOFError:
             # The parent vanished; its private job owns the process family.
             os._exit(0)
@@ -111,14 +123,79 @@ class WorkerServer:
         draft = bytearray()
         # Input keeps draining after cancellation, bounded by the declared capture.
         while len(draft) < length:
-            frame = read_frame(self.data_in)
-            if (frame.kind != 'pcm' or frame.identity != identity
-                    or frame.offset != len(draft) or len(draft) + len(frame.data) > length):
-                raise invalid()
-            draft.extend(frame.data)
+            self._append_pcm(draft,length,identity)
         if hashlib.sha256(draft).hexdigest() != digest:
             raise invalid()
         return draft
+
+    def _append_pcm(self,draft,length,identity):
+        frame = read_frame(self.data_in)
+        if (frame.kind != 'pcm' or frame.identity != identity
+                or frame.offset != len(draft) or len(draft) + len(frame.data) > length):
+            raise invalid()
+        draft.extend(frame.data)  # The frame scope ends before the next read.
+
+    def _operate(self,backend,command,identity):
+        # All inference text/PCM/stream locals belong to this one operation.
+        # Return only technical terminal facts before synchronizing/publishing.
+        kind = command['type']
+        code = None
+        terminal_safe = True
+        audio_bytes = 0
+        try:
+            if kind == 'offload':
+                backend.offload()
+            elif kind == 'transcribe' and self.engine == 'stt':
+                pcm = self._pcm(command, identity)
+                try:
+                    text = backend.transcribe(pcm, self.is_cancelled)
+                finally:
+                    pcm.clear()
+                raw = text.encode('utf-8')
+                if len(raw) > self.settings.limits['transcript_bytes']:
+                    raise HuginError('resource_limit', 'transcribe')
+                if not self.is_cancelled():
+                    digest = hashlib.sha256(raw).hexdigest()
+                    self.send('result_begin', identity, length=len(raw), sha256=digest)
+                    with self.data_lock:
+                        for offset in range(0, len(raw), self.settings.limits['frame_bytes']):
+                            write_frame(self.data_out, Frame('text', identity, offset,
+                                raw[offset:offset+self.settings.limits['frame_bytes']]))
+                    self.send('result_end', identity, length=len(raw), sha256=digest)
+            elif kind == 'synthesize' and self.engine == 'tts':
+                text, voice, language = command['text'], command['voice'], command['language']
+                if (not isinstance(text, str) or not text.strip() or len(text) > 600
+                        or not isinstance(voice, str) or voice not in self.settings.voices or language not in ('German','English')):
+                    raise invalid()
+                stream = backend.synthesize(text, voice, language, self.is_cancelled)
+                packet = min(self.settings.limits['frame_bytes'],
+                             self.settings.limits['audio_buffer_ms'] * 24, 6000)
+                packet -= packet % 2
+                try:
+                    for pcm in stream:
+                        if not isinstance(pcm, bytes) or len(pcm) % 2 or len(pcm) > 1440000:
+                            raise invalid()
+                        for index in range(0, len(pcm), packet):
+                            if not self._wait_credit():
+                                break
+                            with self.data_lock:
+                                part = pcm[index:index+packet]
+                                write_frame(self.data_out, Frame('pcm', identity, audio_bytes, part))
+                                audio_bytes += len(part)
+                        if self.is_cancelled():
+                            break
+                finally:
+                    stream.close()
+            else:
+                raise invalid()
+        except Exception as exc:
+            code = exc.code if isinstance(exc, HuginError) else 'worker_failed'
+            self.send('fault', identity, code=code, phase=kind, retry='later')
+            if kind == 'initialize':
+                terminal_safe = False
+        finally:
+            command.clear()  # Queue transfer ends here, including every failure.
+        return code,audio_bytes,terminal_safe
 
     def run(self):
         # Native DLL initialization must finish on this thread before any
@@ -131,6 +208,8 @@ class WorkerServer:
             if command['type'] != 'initialize' or command['device'] not in (None,'cpu','cuda'):
                 raise invalid()
             backend = self.factory(self.settings,command['device'])
+            command.clear()
+            del command
             backend.synchronize()
             self.send('ready',identity,device=backend.device,
                       sample_rate=16000 if self.engine == 'stt' else 24000)
@@ -146,78 +225,26 @@ class WorkerServer:
             command, identity = self.commands.get()
             kind = command['type']
             if kind == 'shutdown':
+                command.clear()
                 return
             started = time.perf_counter()
-            code = None
-            terminal_safe = True
-            audio_bytes = 0
-            try:
-                if kind == 'offload':
-                    backend.offload()
-                elif kind == 'transcribe' and self.engine == 'stt':
-                    pcm = self._pcm(command, identity)
-                    try:
-                        text = backend.transcribe(pcm, self.is_cancelled)
-                    finally:
-                        pcm.clear()
-                    raw = text.encode('utf-8')
-                    if len(raw) > self.settings.limits['transcript_bytes']:
-                        raise HuginError('resource_limit', 'transcribe')
-                    if not self.is_cancelled():
-                        digest = hashlib.sha256(raw).hexdigest()
-                        self.send('result_begin', identity, length=len(raw), sha256=digest)
-                        with self.data_lock:
-                            for offset in range(0, len(raw), self.settings.limits['frame_bytes']):
-                                write_frame(self.data_out, Frame('text', identity, offset,
-                                    raw[offset:offset+self.settings.limits['frame_bytes']]))
-                        self.send('result_end', identity, length=len(raw), sha256=digest)
-                elif kind == 'synthesize' and self.engine == 'tts':
-                    text, voice, language = command['text'], command['voice'], command['language']
-                    if (not isinstance(text, str) or not text.strip() or len(text) > 600
-                            or not isinstance(voice, str) or voice not in self.settings.voices or language not in ('German','English')):
-                        raise invalid()
-                    stream = backend.synthesize(text, voice, language, self.is_cancelled)
-                    packet = min(self.settings.limits['frame_bytes'],
-                                 self.settings.limits['audio_buffer_ms'] * 24, 6000)
-                    packet -= packet % 2
-                    try:
-                        for pcm in stream:
-                            if not isinstance(pcm, bytes) or len(pcm) % 2 or len(pcm) > 1440000:
-                                raise invalid()
-                            for index in range(0, len(pcm), packet):
-                                if not self._wait_credit():
-                                    break
-                                with self.data_lock:
-                                    part = pcm[index:index+packet]
-                                    write_frame(self.data_out, Frame('pcm', identity, audio_bytes, part))
-                                    audio_bytes += len(part)
-                            if self.is_cancelled():
-                                break
-                    finally:
-                        stream.close()
-                else:
-                    raise invalid()
-            except Exception as exc:
-                code = exc.code if isinstance(exc, HuginError) else 'worker_failed'
-                self.send('fault', identity, code=code, phase=kind, retry='later')
-                if kind == 'initialize':
+            code,audio_bytes,terminal_safe = self._operate(backend,command,identity)
+            del command  # No payload-bearing local crosses the idle Queue.get.
+            # Terminal acknowledges actual stream closure AND GPU completion.
+            if terminal_safe:
+                try:
+                    backend.synchronize()
+                except Exception:
                     terminal_safe = False
-            finally:
-                # Terminal acknowledges actual stream closure AND GPU completion.
-                if backend is not None and terminal_safe:
-                    try:
-                        backend.synchronize()
-                    except Exception:
-                        terminal_safe = False
-                        self.send('fault', identity, code='worker_failed',
-                                  phase='gpu_synchronize', retry='restart')
-                if not terminal_safe:
-                    return  # EOF/observed own-family exit is the only release proof.
-                with self.condition:
-                    cancelled = self.cancelled or self.stopping
-                    self.active = None
-                self.send('terminal', identity, cancelled=cancelled, code=code,
-                          audio_bytes=audio_bytes, elapsed_seconds=time.perf_counter()-started)
+                    self.send('fault', identity, code='worker_failed',
+                              phase='gpu_synchronize', retry='restart')
+            if not terminal_safe:
+                return  # EOF/observed own-family exit is the only release proof.
+            with self.condition:
+                cancelled = self.cancelled or self.stopping
+                self.active = None
+            self.send('terminal', identity, cancelled=cancelled, code=code,
+                      audio_bytes=audio_bytes, elapsed_seconds=time.perf_counter()-started)
             if self.stopping:
                 return
 

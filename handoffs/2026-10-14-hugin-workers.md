@@ -251,3 +251,44 @@ endpoint source commit after 90cf525; no root edits or process.py edits occurred
 Old Whispering/PipPal remain untouched and GPU load remains prohibited until the
 parent coordinates the controlled pilot. Offline wheelhouse/controller restore
 and genuine GPU/hearing/performance coverage remain open from earlier slices.
+
+## Bounded Worker Privacy/Lifetime Correction
+
+At parent request, inspected WorkerServer.run/command reader/input data reader and
+WorkerClient data/control readers. Confirmed Python loop locals retained the last
+completed provider transcript, encoded transcript bytes, synthesis input/PCM and
+client frame across a later blocking read. The fix belongs at those producers.
+
+- WorkerServer now executes each operation in a short _operate scope, returning
+  only terminal metadata. Text/raw/PCM/part/closed-stream locals are gone before
+  GPU synchronize and terminal. Consumed command dictionaries clear in finally;
+  runner drops the empty dictionary before idle Queue.get. Command reader owns
+  one _queue_command scope and transfers ownership into the bounded queue, never
+  retaining the prior command while reading the next. PCM frame scopes end after
+  appending to the active draft and before the next blocking read.
+- WorkerClient wraps each control event and data frame in one short processing
+  scope. Same validation/cancellation/credit/publication behavior, no idle last
+  event/frame local. AST comparison confirmed both extracted reader bodies are
+  unchanged, and close() is unchanged. Root's closed/closing fix is not included
+  or overwritten by this source commit.
+- Guard-first: simulated provider returns a weakref-capable str subclass and
+  offload checks it after terminal. Original server failed with worker_failed;
+  fixed server passes while client separately decoded result remains available.
+  Public WorkerClient STT/TTS weak Frame guards both failed when the reader was
+  blocked for its next read, then passed after scope extraction.
+- Additional synthesis-input weakref guard checks before fake synchronize/terminal
+  that parsed command text and closed generator references are released. Replayed
+  against original HEAD server source in an isolated simulated subprocess: failed;
+  current source: passed. No provider content or recording was printed/written.
+- Eleven simulated worker tests and full contracts/integration suite (154 tests)
+  pass; docs, Ruff F and diff checks pass. Cancellation under blocked callback,
+  old/new request identity, terminal publication and malformed framing guards
+  remain covered. No native engine/GPU/input/mic/playback or old-stack activity.
+- Deliberate caller-owned RAM results are preserved; active callbacks may still
+  own their in-flight arguments until return. This fixes adapter Python object
+  retention, not secure allocator erasure or native model-cache retention. Those
+  latter behaviors were not tested and no AC009/SEC001 overall completion is
+  claimed. Overall integration and client cleanup barrier remain parent-owned.
+
+Pick up at this separate source checkpoint, preserving exclusive helper ownership.
+Cherry-pick only the latest lifetime source commit; do not merge helper history.
