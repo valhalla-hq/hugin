@@ -27,7 +27,8 @@ Navigation oder zusätzlichen Funktionen. Der bestehende Funktionsvertrag gilt.
   Beendigung, Profil-/Autostartänderung oder produktive Migration. Vor der
   Pause Startwege/Identitäten prüfen, nach dem Pilot den bestehenden Stack
   über dieselben Startwege wieder verfügbar machen. Der sichtbare Hugin-Pilot
-  benutzt weiter ausschließlich Ctrl+Alt+Shift+F9/F10 ohne Maus-Hook.
+  benutzt ausschließlich Strg+Alt+D/V ohne Maus-Hook. Die anfänglichen
+  F9/F10-Kombinationen wurden auf Brians Wunsch Fn-frei vereinfacht.
 
 Reihenfolge: UI/Branding und begrenzte Probe vorbereiten; relevante Guards
 prüfen; bestehenden Stack geordnet pausieren; seriellen GPU-Pilot ausführen;

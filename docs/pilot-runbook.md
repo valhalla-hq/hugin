@@ -27,7 +27,7 @@ vertraglich gesperrt.
 ```
 
 Die Vorschau hat keine Sprachaktionen. Der Pilot verwendet
-Ctrl+Alt+Shift+F9 für Diktat und Ctrl+Alt+Shift+F10 für Vorlesen und registriert
+Strg+Alt+D für Diktat und Strg+Alt+V für Vorlesen und registriert
 keinen Maus-Hook. Escape gilt nur während einer aktiven Aktion. Beide
 Startbefehle nacheinander ausführen und die vorherige Instanz zuerst beenden.
 

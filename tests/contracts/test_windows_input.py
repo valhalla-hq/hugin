@@ -54,8 +54,10 @@ class WindowsInputContracts(unittest.TestCase):
         inputs.start()
         try:
             self.assertIsNone(backend.mouse)
-            self.assertEqual(set(backend.keys), {1, 2})
-            self.assertTrue(all(mod & MOD_NOREPEAT for mod, _ in backend.keys.values()))
+            self.assertEqual(backend.keys, {
+                1: (1 | 2 | MOD_NOREPEAT, ord('D')),
+                2: (1 | 2 | MOD_NOREPEAT, ord('V')),
+            })
             inputs.set_cancel_active(True)
             self.assertIn(3, backend.keys)
             inputs.set_cancel_active(False)

@@ -26,10 +26,19 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 - Private by default.
 - Weitere Arbeit und routinemäßige private Integration folgen dem aktuellen zentralen Lifecycle-Vertrag; keine abweichende lokale Autoritätsregel.
 
+## Pilot-Kürzel
+
+- Nutzerauftrag: einfache Tasten ohne Fn. Strg+Alt+D toggelt Diktat,
+  Strg+Alt+V toggelt Vorlesen. UI und aktuelle Anleitungen angepasst.
+- 268 Vertrags-/Integrationsprüfungen, Dokumentprüfung und echte native
+  Registrierung/Freigabe beider neuer Kürzel samt dynamischem Escape grün.
+- Die laufende Testsitzung wird nach geprüfter Integration geordnet neu
+  gestartet; Rückweg über die unveränderten Altstack-Verknüpfungen erhalten.
+
 ## Next Step
 
-- Nach Review/CI privat integrieren und sichtbaren manuellen Pilot starten. Einmaliger lokaler Rückweg hält die eigene Familie und startet nach Tray-Beenden/geschlossenem Job die unveränderten Startup-lnks; Status im lokalen .runtime/pilot-session-*.json. Danach menschlicher Hör-/Tasten-/Zielvergleich und realen Rückstart prüfen. Normale Maus-/Alt+Y-Hooks bleiben gesperrt.
+- Kürzeländerung nach Review/CI integrieren und Pilot mit Strg+Alt+D/V neu starten. Danach menschlicher Hör-/Tasten-/Zielvergleich. Einmaliger lokaler Rückweg hält die eigene Familie und startet nach Tray-Beenden/geschlossenem Job die unveränderten Startup-lnks; Status im lokalen .runtime/pilot-session-*.json. Normale Maus-/Alt+Y-Hooks bleiben gesperrt.
 
 ## Active Handoff
 
-- `handoffs/2026-10-14-style-pilot.md`
+- `handoffs/2026-10-14-simple-hotkeys.md`

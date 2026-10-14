@@ -43,7 +43,8 @@ Die Vorschau startet keine Eingaben, Aufnahme oder Sprachmodelle. Die CPU-Probe
 erkennt ausschließlich das bestätigte synthetische Tyr-Referenzaudio, übergibt
 an ein RAM-Testziel und schließt eigene Worker; sie verändert keine Zwischenablage.
 
-`--pilot --show` startet das Interface mit Ctrl+Alt+Shift+F9/F10, ohne Maus-Hook.
+`--pilot --show` startet das Interface mit Strg+Alt+D für Diktat und
+Strg+Alt+V für Vorlesen, ohne Maus-Hook. Erneutes Drücken beendet die Aktion.
 Sprachaktionen in diesem Modus sind für den vorbereiteten Hardware-Pilot mit
 exklusiv verfügbarer GPU gedacht. Normale Maus-/Alt+Y-Aktivierung ist derzeit
 gesperrt. Der Benchmark-/Migrationsschritt folgt nach dem Pilot; fehlende
