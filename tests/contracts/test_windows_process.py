@@ -54,6 +54,15 @@ class FakeProcess:
 
 
 class WindowsProcessContracts(unittest.TestCase):
+    def test_job_metrics_are_retained_before_owned_handle_close(self):
+        backend=FakeProcess()
+        expected={'cpu_seconds':2.5,'peak_job_commit_bytes':4096}
+        backend.metrics=lambda job: dict(expected)
+        process=OwnedProcess(['python','worker'],backend=backend)
+        process.kill();process.wait(.1);process.close()
+        backend.metrics=lambda job: self.fail('must not query a closed job handle')
+        self.assertEqual(process.metrics(),expected)
+
     def test_process_cannot_run_before_job_assignment(self):
         backend = FakeProcess()
         process = OwnedProcess(['python', 'worker'], backend=backend)

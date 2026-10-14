@@ -39,11 +39,12 @@ class Capture:
 
 
 class Clipboard:
-    def __init__(self): self.count=0;self.text=None
+    def __init__(self): self.count=0;self.text=None;self.delivered=threading.Event()
     def capture_target(self): return NS(target='synthetic-memory-target')
     def deliver(self,text,target,still_current,*,authorize):
         accepted=still_current() and authorize('synthetic-memory-transaction')
-        if accepted: self.count+=1;self.text=text
+        if accepted:
+            self.count+=1;self.text=text;self.delivered.set()
         return NS(submitted=accepted,restored=True)
     def close(self): self.text=None
 
@@ -54,15 +55,19 @@ class Output:
 
 
 class CPUOnlyPool(EnginePool):
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs);self.instances=[]
     def start(self,engine,*,device=None):
         if engine!='stt': raise RuntimeError('cpu_probe_only')
-        return super().start(engine,device='cpu')
+        future=super().start(engine,device='cpu')
+        self.instances.append(self.workers[engine]);return future
 
 
 def normalize(text): return ' '.join(re.findall(r'\w+',text.casefold()))
 
 
-def probe(root):
+def probe(root,repeats=1):
+    if type(repeats) is not int or not 1<=repeats<=5: raise ValueError('repeat_limit')
     settings=load_settings(root);verify_voice_assets(settings)
     voice=settings.voices['tyr']
     with wave.open(str(voice.reference),'rb') as source:
@@ -74,49 +79,59 @@ def probe(root):
             import audioop
         pcm,_=audioop.ratecv(pcm,2,1,rate,16000,None)
     expected=normalize(voice.reference_text.read_text(encoding='utf-8'))
-    finished=threading.Event();delivered=threading.Event()
+    finished=threading.Event()
     clipboard=Clipboard();controller=None
     def publish(view):
-        if view.text: delivered.set()
+        pass
     def event(value): controller.worker_event(value)
     pool=CPUOnlyPool(root,event)
     controller=Controller(settings,inputs=Inputs(),microphone=Capture(pcm),output=Output(),
         clipboard=clipboard,pool=pool,publish=publish)
     thread=threading.Thread(target=controller.run,args=(finished.set,),name='hugin-cpu-probe')
-    thread.start();started=time.perf_counter()
+    cpu_started=time.process_time()
+    thread.start();started=time.perf_counter();runs=[]
     try:
-        controller.command('dictation')
-        # The capture executor is real, while its PCM source is the approved WAV.
-        deadline=time.monotonic()+5
-        while not controller.microphone.owned and time.monotonic()<deadline: time.sleep(.01)
-        if not controller.microphone.owned: raise TimeoutError('capture_start')
-        controller.command('dictation')
-        if not delivered.wait(60): raise TimeoutError('transcript')
-        # Publish occurs after StageDelivery returns on the serial owner.
-        deadline=time.monotonic()+5
-        while clipboard.count!=1 and time.monotonic()<deadline: time.sleep(.01)
-        actual=normalize(clipboard.text or '')
+        for index in range(repeats):
+            run_started=time.perf_counter();clipboard.delivered.clear()
+            controller.command('dictation')
+            # Real capture executor, approved synthetic PCM source, no device.
+            deadline=time.monotonic()+5
+            while not controller.microphone.owned and time.monotonic()<deadline: time.sleep(.01)
+            if not controller.microphone.owned: raise TimeoutError('capture_start')
+            controller.command('dictation')
+            if not clipboard.delivered.wait(60): raise TimeoutError('transcript')
+            actual=normalize(clipboard.text or '')
+            if actual!=expected or clipboard.count!=index+1: raise ValueError('transcript_mismatch')
+            runs.append({'engine_state':'new_worker' if index==0 else 'resident_model',
+                'elapsed_seconds':round(time.perf_counter()-run_started,3),
+                'reference_words':len(expected.split()),'transcript_words':len(actual.split()),
+                'normalized_exact_match':actual==expected})
         result={'schema_version':1,'scenario':'controller-own-cpu-whisper',
             'elapsed_seconds':round(time.perf_counter()-started,3),
-            'reference_words':len(expected.split()),'transcript_words':len(actual.split()),
-            'normalized_exact_match':actual==expected,'deliveries':clipboard.count,
+            'runs':runs,'deliveries':clipboard.count,
             'device':controller._devices.get('stt'),'content_persisted':False,
             'physical_inputs':False,'native_clipboard':False,'gpu_loaded':False}
-        if actual!=expected or clipboard.count!=1: raise ValueError('transcript_mismatch')
     finally:
         controller.command('quit')
         thread.join(12)
         if thread.is_alive(): raise TimeoutError('controller_cleanup')
     result['owned_workers_remaining']=len(pool.workers)
     result['microphone_owned']=controller.microphone.owned
+    result['controller_cpu_seconds']=round(time.process_time()-cpu_started,3)
+    metrics=pool.instances[0].process.metrics() if len(pool.instances)==1 else None
+    result['worker_family_cpu_seconds']=None if metrics is None else round(metrics['cpu_seconds'],3)
+    result['worker_family_peak_commit_bytes']=None if metrics is None else metrics['peak_job_commit_bytes']
+    result['unmeasured']=['physical working-set RAM peak','agent tokens','GPU tasks','baseline comparison','p50/p95']
+    result['cold_scope']='new worker/model; OS file cache uncontrolled'
     return result
 
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root',type=Path,default=ROOT)
+    parser.add_argument('--repeat',type=int,default=1)
     args=parser.parse_args()
-    try: print(json.dumps(probe(args.root.resolve()),indent=2));return 0
+    try: print(json.dumps(probe(args.root.resolve(),args.repeat),indent=2));return 0
     except Exception:
         print(json.dumps({'scenario':'controller-own-cpu-whisper','error':'probe_failed'}));return 1
 

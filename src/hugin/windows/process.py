@@ -40,6 +40,7 @@ class OwnedProcess:
         self.returncode = None
         self._process = self._thread = self._job = None
         self._assigned = False
+        self._final_metrics = None
         child_descriptors = []
         try:
             self._job = self.backend.create_job()
@@ -124,9 +125,17 @@ class OwnedProcess:
 
     kill = terminate
 
+    def metrics(self):
+        """Held-job accounting; peak commit is not physical working-set RAM."""
+        if self._job is None: return self._final_metrics
+        if not hasattr(self.backend,'metrics'): return None
+        try: return self.backend.metrics(self._job)
+        except HuginError: return None
+
     def close(self):
         if self._process is not None and self.poll() is None:
             raise HuginError('worker_failed', 'process_not_terminal')
+        if self._job is not None: self._final_metrics = self.metrics()
         for name in ('stdin', 'stdout', 'stderr'):
             stream = getattr(self, name)
             if stream is not None:
@@ -290,6 +299,14 @@ class NativeProcess:
         if not self.kernel.QueryInformationJobObject(job, 1, ctypes.byref(accounting), ctypes.sizeof(accounting), None):
             raise HuginError('worker_failed', 'job_observe')
         return accounting.ActiveProcesses
+
+    def metrics(self, job):
+        accounting,limits = _BasicAccounting(),_ExtendedLimits()
+        for kind,value in ((1,accounting),(9,limits)):
+            if not self.kernel.QueryInformationJobObject(job,kind,ctypes.byref(value),ctypes.sizeof(value),None):
+                raise HuginError('worker_failed','job_metrics')
+        return {'cpu_seconds':(accounting.TotalUserTime+accounting.TotalKernelTime)/10000000,
+            'peak_job_commit_bytes':limits.PeakJobMemoryUsed}
 
     def terminate_job(self, job):
         if not self.kernel.TerminateJobObject(job, 1):
