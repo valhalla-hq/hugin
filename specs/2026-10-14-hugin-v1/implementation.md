@@ -25,14 +25,14 @@ mit Ctrl+Alt+Shift+F9/F10; normale Eingaben sind bis T011/T012 gesperrt.
 
 ## Prüfungen am integrierten Controllerstand
 
-`tools/dev.py check --group all`: zuletzt 248 erfolgreiche Prüfungen, darunter
+`tools/dev.py check --group all`: zuletzt 251 erfolgreiche Prüfungen, darunter
 Verträge und simulierte IPC-/Restore-Integrationsfälle. Simulation ist kein
 Nachweis für native Modell-/Hardwareeigenschaften.
 
 `tools/dev.py check --docs`: 19 Anforderungen, 17 AC, keine gefundenen
 Zuordnungs-/Link-/Stimm-/Lock-Probleme. Compileall und Git-Diff-Check grün.
 `windows --interactive` mit expliziten UIA-/Audio-/Endpoint-Testflags:
-43 Prüfungen ohne Skips erfolgreich. Darunter sind ABI-/Producer-Mocks und
+44 Prüfungen ohne Skips erfolgreich. Darunter sind ABI-/Producer-Mocks und
 eigene native Fixtures; dies beweist keine vollständige produktive Zielmatrix.
 
 Die Controller-Guards liefen zuerst wegen fehlender application.py rot, dann
@@ -91,6 +91,17 @@ Für pystray 0.19.5 hält ein schmaler Adapter native Runner und Setupthread
 und bestätigt beide Enden vor Freigabe. Native App-/Tray-Proben bestätigen
 dies samt HICON-Freigabe. Teilstart und KeyboardInterrupt behalten den
 Windowowner. Ein voller Nutzerpuffer kann Quit nicht verwerfen.
+Die UI besitzt zusätzlich ein unabhängiges Stop-Signal. Fehler beim Rendern
+und beim Trayabschluss bleiben typisiert und lassen den geordneten Stop-
+ beziehungsweise Retrypfad offen. Angezeigte und wartende Python-Textobjekte
+werden bei Stop/Fehler freigegeben; ein zuerst roter nativer Weakref-Guard
+prüft dies. Keine Aussage über sichere Löschung nativer Caches.
+
+Finales unabhängiges UI-/Tray-Deltareview am Sourcehead `adb4187`: keine
+weiteren Befunde; die gemeldeten Queue-/Retry-/Renderfehler sind geschlossen.
+Installationspfad-Delta `07c3759` ebenfalls unabhängig ohne offene Befunde.
+Die privaten PR-Checks müssen vor Integration am unveränderten finalen
+Dokumentcheckpoint erneut grün sein. Dies ist kein T900-Hardware-Gesamtgate.
 
 Der Offline-Paketrestore wurde mit allen 122 echten Wheels in drei frischen
 Umgebungen geprüft: exakte Versionen und `pip check`, 266,20 s; idempotente
