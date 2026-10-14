@@ -626,7 +626,10 @@ class Application:
                 if controller: controller.worker_event(value)
             inputs = WindowsInputs(command,pilot=self.pilot)
             signals = WindowsSignals(command)
-            window = HuginWindow(command)
+            try: window = HuginWindow(command)
+            except HuginError as error:
+                if isinstance(getattr(error,'owner',None),HuginWindow): window=error.owner
+                raise
             clipboard=ClipboardService(snapshot_budget=self.settings.limits['clipboard_bytes'])
             for name,delay in approvals.delivery: clipboard.approve_target_class(name,delay)
             for name in approvals.capture_fallback: clipboard.approve_capture_target_class(name)

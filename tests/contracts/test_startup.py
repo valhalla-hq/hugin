@@ -6,6 +6,7 @@ import unittest
 from unittest.mock import patch
 
 from hugin import application
+from hugin.errors import HuginError
 
 
 def module(name,**fields):
@@ -13,7 +14,7 @@ def module(name,**fields):
 
 
 class StartupContracts(unittest.TestCase):
-    def _failure_closes_io_before_instance_release(self,ui_failure=False,join_failure=False,cleanup_failure=False,window_failure=False):
+    def _failure_closes_io_before_instance_release(self,ui_failure=False,join_failure=False,cleanup_failure=False,window_failure=False,window_start_failure=False):
         owners=[];guards=[];released=[];controllers=[];joined=[];commands=[]
         class Owner:
             def __init__(self,*args,**kwargs):self.closed=False;owners.append(self)
@@ -24,6 +25,11 @@ class StartupContracts(unittest.TestCase):
             def request_stop(self):pass
             def run(self):raise RuntimeError('synthetic UI loop failure')
         class Window(Owner):
+            def __init__(self,*args,**kwargs):
+                super().__init__(*args,**kwargs)
+                if window_start_failure:
+                    error=HuginError('interface_failed','window_start');error.owner=self
+                    raise error
             def stop(self):
                 if window_failure: raise RuntimeError('synthetic window cleanup failure')
                 super().stop()
@@ -72,13 +78,16 @@ class StartupContracts(unittest.TestCase):
             patches.enter_context(patch.object(application,'Controller',Controller))
             patches.enter_context(patch.object(application.threading,'Thread',FailedThread))
             app=application.Application(settings,pilot=True)
-            with self.assertRaises(RuntimeError):app.run()
+            with self.assertRaises((RuntimeError,HuginError)):app.run()
         if join_failure or cleanup_failure or window_failure:
             self.assertFalse(guards[0].closed,'unconfirmed cleanup must retain the instance owner')
             self.assertIs(app._startup_owners[0],guards[0])
         else:
             self.assertTrue(guards[0].closed)
-            self.assertTrue(released and all(released),'all started owners must close before mutex release')
+            if window_start_failure:
+                self.assertTrue(next(owner for owner in owners if isinstance(owner,Window)).closed)
+            else:
+                self.assertTrue(released and all(released),'all started owners must close before mutex release')
         if ui_failure:
             self.assertIn('quit',commands)
             self.assertTrue(joined)
@@ -98,8 +107,23 @@ class StartupContracts(unittest.TestCase):
     def test_failed_window_close_retains_instance_and_window_owner(self):
         self._failure_closes_io_before_instance_release(ui_failure=True,window_failure=True)
 
+    def test_partial_window_start_retains_owner_for_startup_cleanup(self):
+        self._failure_closes_io_before_instance_release(window_start_failure=True)
+
 
 class WindowCleanupContracts(unittest.TestCase):
+    def test_window_constructor_failure_preserves_and_closes_partial_root(self):
+        from hugin import ui
+        class Root:
+            closed=False
+            def withdraw(self):raise RuntimeError('synthetic window setup failure')
+            def destroy(self):self.closed=True
+        root=Root()
+        with patch.object(ui.tk,'Tk',return_value=root),patch.object(ui.sys,'platform','fixture'):
+            with self.assertRaises(HuginError) as failure:ui.HuginWindow(lambda *args:None,with_tray=False)
+        self.assertIs(failure.exception.owner.root,root)
+        self.assertTrue(root.closed)
+
     def test_confirmed_window_close_is_idempotent(self):
         from hugin.ui import HuginWindow
         calls=[]

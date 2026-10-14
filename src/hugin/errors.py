@@ -5,6 +5,7 @@ MESSAGES = {
     'asset_integrity': 'Eine bestätigte Stimm- oder Modelldatei stimmt nicht überein.',
     'input_conflict': 'Eine Hugin-Taste ist bereits durch eine andere Anwendung belegt.',
     'input_failed': 'Die Windows-Eingabesteuerung ist nicht verfügbar.',
+    'interface_failed': 'Das Hugin-Fenster konnte nicht vollständig gestartet oder beendet werden.',
     'audio_failed': 'Die Audioausgabe konnte nicht sicher gestoppt werden.',
     'microphone_failed': 'Das Mikrofon ist nicht verfügbar.',
     'capture_limit': 'Die Aufnahme hat ihr Speicherlimit erreicht.',

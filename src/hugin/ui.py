@@ -6,6 +6,7 @@ import queue
 import sys
 import tkinter as tk
 from tkinter import ttk
+from .errors import HuginError
 
 
 @dataclass(frozen=True)
@@ -35,6 +36,20 @@ def tray_image(color='#b58b39'):
 
 class HuginWindow:
     def __init__(self, on_action, *, with_tray=True):
+        self.root=None
+        self._tray=None
+        self._alive=False
+        self._closed=False
+        try: self._build(on_action,with_tray=with_tray)
+        except Exception:
+            # A failed constructor still owns its created root/tray parts.
+            try: self.stop()
+            except Exception: pass
+            error=HuginError('interface_failed','window_start')
+            error.owner=self
+            raise error from None
+
+    def _build(self,on_action,*,with_tray):
         self.on_action = on_action
         if sys.platform == 'win32':
             import ctypes
@@ -211,7 +226,7 @@ class HuginWindow:
         if self._tray:
             self._tray.stop()
             self._tray = None
-        self.root.destroy()
+        if self.root is not None: self.root.destroy()
         self._closed = True
 
     def run(self):
