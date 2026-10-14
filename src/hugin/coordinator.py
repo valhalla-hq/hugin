@@ -37,6 +37,7 @@ class Action(StrEnum):
     INITIALIZE = 'initialize'
     TRANSCRIBE = 'transcribe'
     SYNTHESIZE = 'synthesize'
+    OFFLOAD = 'offload'
 
 
 @dataclass(frozen=True)
@@ -48,7 +49,7 @@ class Job:
 
 @dataclass(frozen=True)
 class Operation:
-    job: Job
+    job: Job | None
     engine: Engine
     engine_instance: str
     request_id: str
@@ -333,7 +334,8 @@ class Coordinator:
     """
 
     def __init__(self, *, instance_id: str, limits: Limits | None = None,
-                 default_voice: str = 'freya', now: float = 0):
+                 default_voice: str = 'freya', now: float = 0,
+                 stt_idle_unload_seconds: int = 90):
         self.limits = limits if limits is not None else Limits()
         if not isinstance(self.limits, Limits):
             raise HuginError('config_invalid', 'coordinator')
@@ -341,6 +343,10 @@ class Coordinator:
             raise HuginError('config_invalid', 'coordinator')
         if default_voice not in ('freya', 'tyr'):
             raise HuginError('config_invalid', 'coordinator')
+        if type(stt_idle_unload_seconds) is not int or not 0 < stt_idle_unload_seconds <= 3600:
+            raise HuginError('config_invalid', 'coordinator')
+        self._stt_idle_unload_seconds = stt_idle_unload_seconds
+        self._stt_idle_since: float | None = None
         for name, ceiling in (('capture_bytes', 16777216), ('transcript_bytes', 262144),
                               ('selection_bytes', 262144), ('frame_bytes', 65536),
                               ('result_ttl_seconds', 67108864)):
@@ -388,7 +394,7 @@ class Coordinator:
             raise HuginError('protocol_invalid', 'clock')
 
     def snapshot(self) -> Snapshot:
-        retired = (self._slot,) if self._slot and self._slot.job != self._job else ()
+        retired = (self._slot,) if self._slot and self._slot.job is not None and self._slot.job != self._job else ()
         return Snapshot(self._state, self._job, self._cancelling, self._generation,
                         self._voice, self._result, self._slot, retired,
                         tuple(self._components.values()), self._error, self._job is not None)
@@ -519,15 +525,33 @@ class Coordinator:
             component = Component(engine, f'{self._instance_id}:worker:{self._worker_number}', False, False)
             self._components[engine] = component
         action = (Action.TRANSCRIBE if engine == Engine.STT else Action.SYNTHESIZE) if component.ready else Action.INITIALIZE
-        self._operation_number += 1
-        operation = Operation(self._job, engine, component.engine_instance,
-                              f'{self._instance_id}:operation:{self._operation_number}', action)
-        self._slot = operation
-        self._slot_result = False
         payload = None if action == Action.INITIALIZE else self._payload
         if action != Action.INITIALIZE:
             self._payload = None
-        effects.append(BeginEngine(operation, payload, self._job_voice))
+        self._begin_operation(component, action, self._job, payload, self._job_voice, effects)
+
+    def _begin_operation(self, component: Component, action: Action, job: Job | None,
+                         payload: bytes | str | None, voice: str | None,
+                         effects: list[Effect]) -> None:
+        # Both callers have proved a free central slot and a known incarnation.
+        assert self._slot is None and component.engine_instance is not None
+        self._operation_number += 1
+        operation = Operation(job, component.engine, component.engine_instance,
+                              f'{self._instance_id}:operation:{self._operation_number}', action)
+        self._slot = operation
+        self._slot_result = False
+        effects.append(BeginEngine(operation, payload, voice))
+
+    def _schedule_idle_offload(self, effects: list[Effect]) -> None:
+        if (self._shutdown or self._job is not None or self._cancelling is not None or
+                self._slot is not None or self._closing_capture is not None or
+                self._closing_delivery is not None or self._audio_reset is not None or
+                self._pending_dictation or self._stt_idle_since is None or
+                self._now - self._stt_idle_since < self._stt_idle_unload_seconds):
+            return
+        component = self._components[Engine.STT]
+        if component.ready and not component.blocked and component.engine_instance is not None:
+            self._begin_operation(component, Action.OFFLOAD, None, None, None, effects)
 
     @staticmethod
     def _split_selection(text: str) -> deque[str]:
@@ -562,6 +586,7 @@ class Coordinator:
             self._now = float(event.now)
             if self._result and self._now >= self._result.expires_at:
                 self._result = None
+            self._schedule_idle_offload(effects)
             return
         if isinstance(event, Shutdown):
             if not self._shutdown:
@@ -713,10 +738,12 @@ class Coordinator:
             if component is None or component.engine_instance != event.engine_instance:
                 return
             self._components[event.engine] = Component(event.engine, None, False, False)
+            if event.engine == Engine.STT:
+                self._stt_idle_since = None
             if self._slot and self._slot.engine == event.engine and self._slot.engine_instance == event.engine_instance:
                 operation = self._slot
                 self._slot = None
-                if operation.job == self._job:
+                if operation.job is not None and operation.job == self._job:
                     self._fail(HuginError('worker_failed'), 'engine', effects)
             self._settle_cancel(effects)
             self._schedule(effects)
@@ -731,7 +758,7 @@ class Coordinator:
         operation = event.operation
         if operation != self._slot:
             return
-        current = operation.job == self._job
+        current = operation.job is not None and operation.job == self._job
         component = self._components[operation.engine]
         if isinstance(event, EngineReady):
             if operation.action == Action.INITIALIZE and not component.blocked:
@@ -742,12 +769,24 @@ class Coordinator:
             self._components[operation.engine] = Component(operation.engine, operation.engine_instance, False, True)
             if current:
                 self._fail(event.error, 'engine', effects)
+            elif operation.action == Action.OFFLOAD:
+                self._error = Failure(event.error.code, 'offload')
+                if self._job is None:
+                    self._state = State.ERROR
         elif isinstance(event, EngineTerminal):
             self._slot = None
             valid_terminal = (operation.action != Action.INITIALIZE or component.ready)
             if not valid_terminal:
                 self._components[operation.engine] = Component(operation.engine, operation.engine_instance, False, True)
-            if current and (event.success is not True or not valid_terminal or
+            if operation.action == Action.OFFLOAD:
+                self._stt_idle_since = None
+                if event.success is not True or component.blocked:
+                    self._components[operation.engine] = Component(operation.engine, operation.engine_instance, False, True)
+                    if self._error is None:
+                        self._error = Failure('worker_failed', 'offload')
+                    if self._job is None:
+                        self._state = State.ERROR
+            elif current and (event.success is not True or not valid_terminal or
                             operation.action == Action.TRANSCRIBE and not self._slot_result):
                 self._components[operation.engine] = Component(operation.engine, operation.engine_instance, False, True)
                 self._fail(HuginError('worker_failed' if not event.success else 'protocol_invalid'), 'engine', effects)
@@ -757,6 +796,10 @@ class Coordinator:
                 else:
                     self._tts_terminal = True
                     effects.append(DrainAudio(operation.job, self._audio_sequence))
+            component = self._components[operation.engine]
+            if (operation.engine == Engine.STT and operation.action in (Action.INITIALIZE, Action.TRANSCRIBE)
+                    and component.ready and not component.blocked):
+                self._stt_idle_since = self._now
             self._settle_cancel(effects)
             self._schedule(effects)
         elif not current:
