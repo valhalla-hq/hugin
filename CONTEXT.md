@@ -20,6 +20,15 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 - Whispering/PipPal und produktive Tasten/Autostarts sind unverändert. Keine Hugin-Gesamtabnahme behauptet.
 - GitHub main-Protection-Abfrage liefert HTTP403 wegen Tarifgrenze; keine Policy geändert. Vertraglicher PR-/Review-/CI-Gate bleibt maßgeblich.
 
+## Bounded Helper: GPU-Probe
+
+- Eigener Worktree C:/Users/brian/brian-projects/worktrees/hugin/hugin-gpu-probe-mjolnir, Branch codex/hugin-gpu-probe-mjolnir, Basis main e762108bf189ce3428f6fba9cca6f2cbb412a7ce. Preflight-Control e3deecae6673a024aa9015a4387737fbec04c795.
+- Sourcecheckpoint c8bad0b5db0ee95e36869de5cf570ae51fa0b9fe ergänzt nur tools/probe_gpu.py und gezielte simulierte Ablaufguards; separater Sourcefix e1fc382e9ac34693e1a68416d2525fb93927bbff synchronisiert die Cancel-Callback-Fakten vor der Terminalauswertung. Beide sauber gepusht; dieser Kontext/Handoff folgt separat ohne Sourceänderung.
+- Standardmodus plant lesend. Nur --run startet echte WorkerClient/private-IPC/OwnedProcess-Worker seriell: STT CUDA kalt/warm, Offload, bestätigter Abschluss, neuer CUDA-bestätigter STT-Worker und erneute Transkription, bestätigter Abschluss vor Qwen. Freya/Tyr gleicher synthetischer Text, bounded PCM und optional neue exklusive 24-kHz-PCM16-WAVs unter .runtime/pilot-audio. Cancel nach erstem Chunk; Callback und Terminal teilen die konfigurierte Cancel-Frist.
+- Final 14 Probe-Guards grün, einschließlich zuerst rotem Terminal-vor-Callback-Regressionsguard; Ruff F/Syntax/Diff/CLI-Plan grün. Initialer Probecheckpoint: komplette Source-Suite 265 Fälle/23,154s, docs 19 Anforderungen/17 AC grün. Bestehender Restore-Suitetest installiert nur ein winziges Fixture im eigenen frischen Temp; keine echte Runtime-/Engineinstallation. Reine Assetprüfung: 17 Wörter, 207560 Bytes PCM16/16 kHz, 6,48625s; kein Worker gestartet.
+- Keine GPU-/Mikrofon-/Playback-/Altstackaktion durch diesen Helper. Root ist für Altstack-Pause und den einzigen autorisierten Hardwarelauf verantwortlich. Same-process-STT-Reload, physisches RAM, GPU-Peak, p50/p95, Hörqualität und physische Zielmatrix bleiben ungemessen. Sourcefix wird vor Root-Integration unabhängig geprüft.
+- Unabhängiger UI-Standardsreview: fester Fremdsourcehead 82c619b706979c6ac6b68c3cf3a4a64dcaf6e8f2 gegen e762108, nur ui.py/branding.py/tests/windows. Keine neuen Befunde; 7 native UI/Visual-Tests, 8 Cleanup-/Pump-Guards und eigener nativer Brand-Tray-Abschluss mit zwei beendeten Threads und freigegebenen Textreferenzen grün. Bestehende Grenze: 768px/150% lässt am Mindestmaß keine vollständige Diktatzeile zu; bereits Basis fehlerhaft. Kein Bestehen dieses zusätzlichen Falles behauptet. Eigene GPU-/Ops-Quellen zählen nicht als unabhängig geprüft.
+
 ## Decisions
 
 - Private by default.
@@ -27,8 +36,8 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Next Step
 
-- Kontrollierten Hardware-Pilot mit Brian abstimmen. Normale Eingaben bleiben technisch gesperrt; Pilot Ctrl+Alt+Shift+F9/F10. Altstack vor einer gesondert abgestimmten Pilotpause nicht beenden. GPU-/Hör-/Zielmatrix-Abnahme und produktiver Wechsel sind weiterhin offen.
+- Root schließt den unabhängigen Review von e1fc382, integriert ausschließlich die geprüften Sourcecommits und führt die gesondert autorisierte Altstack-Pause/GPU-Probe selbst aus. Dieser Helper startet keine Modelle. Ownership bleibt bis zum regulären Release des sauberen Metadatacheckpoints aktiv; keine Worktree-/Runtime-/Cachelöschung.
 
 ## Active Handoff
 
-- `handoffs/2026-10-14-hugin-v1.md`
+- `handoffs/2026-10-14-hugin-gpu-probe.md`
