@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "python": "3.12.10",
+  "stt": {
+    "source": "valhalla-hq/whispering-local-stt runtime server.py (read-only parameter reference)",
+    "packages": "stt.txt",
+    "model": "stt-model.json",
+    "cuda": "cuda.json",
+    "decode": {"language": null, "task": "transcribe", "beam_size": 5, "temperature": 0.0, "initial_prompt": null, "condition_on_previous_text": false, "vad_filter": true, "vad_parameters": {"min_silence_duration_ms": 500}},
+    "runtime": {"cuda_compute_type": "int8_float16", "cpu_compute_type": "int8", "cpu_threads": 6, "num_workers": 1, "local_files_only": true, "idle_offload_seconds": 90, "offload_owner": "parent GPU scheduler"}
+  },
+  "tts": {
+    "source": "valhalla-hq/local-voice-reader qwen_reader_worker.py (read-only parameter reference)",
+    "packages": "tts.txt",
+    "model": "tts-model.json",
+    "faster_qwen_repository": "https://github.com/andimarafioti/faster-qwen3-tts",
+    "faster_qwen_revision": "a70afc0f81f7f5f8801c3227968f1102f43f211c",
+    "faster_qwen_version": "0.3.2",
+    "inference": {"seed": 42, "cuda_seed": 42, "dtype": "bfloat16", "attention": "sdpa", "xvec_only": false, "chunk_size": 8, "max_seq_len": 1024, "max_new_tokens": 640, "warmup_prefill_len": 128, "threads": 4, "sample_rate": 24000, "local_files_only": true},
+    "voices": "../config/voices.json",
+    "notice": "../notices/Faster-Qwen3-TTS-MIT.md"
+  },
+  "package_lock_method": "Exact observed transitive versions remain in controller.txt/stt.txt/tts.txt. runtime-wheels.json is the sole SHA256 wheel artifact lock for all three Python 3.12.10 win_amd64 profiles, including fixed Git/sdist source-build provenance. Preparation alone may download; restore uses only verified local wheel URIs with --no-index --no-deps --require-hashes and checks exact installed metadata plus pip check. qwen-tts requires gradio; no optional demo/GGML extras were added. See ../docs/offline-restore.md and the helper handoff for verification scope.",
+  "cuda_lock_method": "SHA256 and sizes of CUDA12 runtime/cuBLAS/cuDNN9 plus zlib from observed torch 2.9.1+cu128 distribution. Preparation copies these bytes to Hugin-owned .runtime/cuda; runtime never reads old paths.",
+  "gpu_verification": "Not performed by helper; parent must coordinate residency, initialization, inference and cancellation."
+}

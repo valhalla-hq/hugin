@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "voices": {
+    "freya": {
+      "name": "Freya",
+      "source_id": "deutsch-3",
+      "reference": "assets/voices/deutsch-3/referenz.wav",
+      "reference_text": "assets/voices/deutsch-3/referenz.txt",
+      "files": {
+        "referenz.wav": "d85db7c94800a4d3b22a5fd2c05f825825a17c33c385cfa603c3d9fcaa9905dc",
+        "referenz.txt": "f9929eb90bc28e3ff42b64130597676d4a83148307cd09c368708c4eb294a0dc",
+        "bestaetigte-hoerprobe.wav": "cd3d1d11bd09c354548d4b9da0a266b8301242c2ede53fe583658b53c2f5e447"
+      }
+    },
+    "tyr": {
+      "name": "Tyr",
+      "source_id": "deutsch-a",
+      "reference": "assets/voices/deutsch-a/referenz.wav",
+      "reference_text": "assets/voices/deutsch-a/referenz.txt",
+      "files": {
+        "bestaetigte-hoerprobe.wav": "8544d40187c79ef04d99a0a1c55be0ff24e23a3866ac2fecdb465dabdbe93f77",
+        "referenz.txt": "a64b31763b6b7f8b0997a1cdd1cf8988e51d3903ea87a19a5eaf00ae10f54ee0",
+        "referenz.wav": "99322687550514995cb4451de956b225f94d857805f607b8307242e7ac649af6"
+      }
+    }
+  }
+}

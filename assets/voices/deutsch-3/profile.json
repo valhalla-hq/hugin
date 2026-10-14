@@ -1,0 +1,23 @@
+{
+  "id": "deutsch-3",
+  "approved": true,
+  "role": "primary",
+  "label": "Stimme 3 – ruhig, weiblich",
+  "user_feedback": "Nummer 3 soll Default werden; die bestätigte männliche Stimme A bleibt Backup.",
+  "model": "Qwen3-TTS-12Hz-0.6B-Base",
+  "model_revision": "5d83992436eae1d760afd27aff78a71d676296fc",
+  "engine": "faster-qwen3-tts 0.3.2",
+  "language": "German",
+  "reference_mode": "ICL",
+  "reference": "profiles/deutsch-3-bestaetigt/referenz.wav",
+  "reference_text": "profiles/deutsch-3-bestaetigt/referenz.txt",
+  "approved_audio": "profiles/deutsch-3-bestaetigt/bestaetigte-hoerprobe.wav",
+  "seed": 42,
+  "chunk_size": 8,
+  "max_seq_len": 1024,
+  "files": {
+    "referenz.wav": "d85db7c94800a4d3b22a5fd2c05f825825a17c33c385cfa603c3d9fcaa9905dc",
+    "referenz.txt": "f9929eb90bc28e3ff42b64130597676d4a83148307cd09c368708c4eb294a0dc",
+    "bestaetigte-hoerprobe.wav": "cd3d1d11bd09c354548d4b9da0a266b8301242c2ede53fe583658b53c2f5e447"
+  }
+}

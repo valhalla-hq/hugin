@@ -1,0 +1,27 @@
+schema_version = 1
+default_voice = "freya"
+language = "German"
+
+[paths]
+stt_model = ".runtime/models/stt"
+tts_model = ".runtime/models/tts"
+state = ".runtime/state"
+
+[limits]
+capture_bytes = 16777216
+frame_bytes = 65536
+control_bytes = 65536
+transcript_bytes = 262144
+selection_bytes = 262144
+clipboard_bytes = 33554432
+audio_buffer_ms = 250
+result_ttl_seconds = 300
+cancel_seconds = 2
+exit_seconds = 5
+ready_seconds = 60
+
+[stt]
+device = "cuda"
+compute_type = "int8_float16"
+cpu_threads = 6
+idle_unload_seconds = 90

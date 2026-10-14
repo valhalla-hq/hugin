@@ -1,0 +1,22 @@
+{
+  "id": "deutsch-a",
+  "approved": true,
+  "user_feedback": "Option A ist sehr gut, das behalten wir. Damit machen wir weiter.",
+  "model": "Qwen3-TTS-12Hz-0.6B-Base",
+  "model_revision": "5d83992436eae1d760afd27aff78a71d676296fc",
+  "language": "German",
+  "engine": "faster-qwen3-tts 0.3.2",
+  "reference_mode": "ICL",
+  "reference": "profiles/deutsch-a-bestaetigt/referenz.wav",
+  "reference_text": "profiles/deutsch-a-bestaetigt/referenz.txt",
+  "approved_audio": "profiles/deutsch-a-bestaetigt/bestaetigte-hoerprobe.wav",
+  "seed": 42,
+  "chunk_size": 8,
+  "max_seq_len": 1024,
+  "files": {
+    "bestaetigte-hoerprobe.wav": "8544d40187c79ef04d99a0a1c55be0ff24e23a3866ac2fecdb465dabdbe93f77",
+    "referenz.txt": "a64b31763b6b7f8b0997a1cdd1cf8988e51d3903ea87a19a5eaf00ae10f54ee0",
+    "referenz.wav": "99322687550514995cb4451de956b225f94d857805f607b8307242e7ac649af6"
+  },
+  "role": "backup"
+}

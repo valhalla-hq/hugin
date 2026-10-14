@@ -1,0 +1,3 @@
+* text=auto eol=lf
+*.wav binary
+assets/voices/**/referenz.txt -text whitespace=cr-at-eol
