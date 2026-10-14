@@ -21,12 +21,18 @@ class FakeClipboard:
         self.snapshot_failure = None
         self.copy_owner = self.target.hwnd
         self.clipboard_locked = False
+        self.direct_text = None
+        self.after_direct = lambda: None
 
     def capture_target(self):
         return self.target
 
     def modifiers_down(self):
         return self.modifiers
+
+    def read_direct_selection(self, target, limit, cancelled):
+        self.after_direct()
+        return self.direct_text
 
     def sequence(self):
         return self.seq
@@ -95,6 +101,40 @@ class ClipboardContracts(unittest.TestCase):
         self.assertEqual(service.capture_selection(lambda: False).status, 'target_unverified')
         self.assertEqual(backend.mutations, 0)
         self.assertEqual(backend.injected, [])
+
+    def test_direct_selection_needs_no_clipboard_fallback_approval(self):
+        backend = FakeClipboard()
+        backend.direct_text = 'selected directly'
+        backend.snapshot_failure = 'format_unsupported'
+        saved = backend.data.copy()
+        service = ClipboardService(backend=backend)
+        result = service.capture_selection(lambda: False)
+        self.assertEqual((result.status, result.text), ('captured', 'selected directly'))
+        self.assertEqual(backend.mutations, 0)
+        self.assertEqual(backend.injected, [])
+        self.assertEqual(backend.data, saved)
+
+    def test_empty_direct_selection_never_uses_clipboard_text(self):
+        backend = FakeClipboard()
+        backend.direct_text = ''
+        result = ClipboardService(backend=backend).capture_selection(lambda: False)
+        self.assertEqual(result.status, 'selection_empty')
+        self.assertIsNone(result.text)
+        self.assertEqual(backend.mutations, 0)
+
+    def test_cancel_or_target_change_after_direct_read_discards_text(self):
+        for reason in ('cancel', 'target'):
+            backend = FakeClipboard()
+            backend.direct_text = 'must not publish'
+            state = {'cancelled': False}
+            if reason == 'cancel':
+                backend.after_direct = lambda: state.update(cancelled=True)
+            else:
+                backend.after_direct = lambda: setattr(backend, 'target', replace(backend.target, focus=201))
+            result = ClipboardService(backend=backend).capture_selection(lambda: state['cancelled'])
+            self.assertEqual(result.status, 'cancelled' if reason == 'cancel' else 'target_changed')
+            self.assertIsNone(result.text)
+            self.assertEqual(backend.mutations, 0)
 
     def test_unknown_delayed_or_oversize_snapshot_never_mutates(self):
         for reason in ('format_unsupported', 'format_delayed', 'snapshot_limit'):
