@@ -32,9 +32,17 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 - Bounded Helper auf Mjolnir: `codex/hugin-windows-mjolnir`, exklusiver Worktree `C:/Users/brian/brian-projects/worktrees/hugin/hugin-windows-mjolnir`; Ownership bleibt aktiv. Integration bleibt beim Accountable Executor auf `codex/hugin-v1-mjolnir`.
 - Implementierungscommit `7d10c31`: direkte native Eingaben/Pilotmodus, fail-closed Clipboard-/Zieltransaktionen, benutzergebundener Instanzmutex und Job-Object-Workerfamilien. API und Plattformgrenzen: `docs/windows-api.md`.
 - Folgecommit `7dad3ad`: Standard-Edit-Auswahl wird direkt mit bounded EM_GETSEL/WM_GETTEXT gelesen, ohne Clipboard-Mutation, mit UTF-16-Auswahlgrenzen sowie Abbruch-/Zielprüfungen. Read-only und editable sind getrennt; Passwortfelder werden nicht gelesen.
-- Geprüft: 36 contracts (32 neue Windows-Guards und 4 Konfigurationschecks), 13 Windows-ABI-/Producer-Mocks, Docs-Check und Compile. Kein echter Hook/Hotkey, keine echte Clipboard-Mutation, kein Mikrofon/Modell, keine Workerbeendigung ausgeführt.
+- Stand vor UIA-Folgeauftrag: 36 contracts (32 neue Windows-Guards und 4 Konfigurationschecks), 13 Windows-ABI-/Producer-Mocks, Docs-Check und Compile. Keine produktiven Eingaben, Clipboard-Mutationen, Mikrofone oder Modelle aktiviert.
 - Clipboard-Auswahl- und Paste-Fallback bleiben pro Zielklasse gesperrt, bis deren Pilotnachweis vorliegt. Browser/UIA, native Standard-Edit-Prüfung und die echte Zielmatrix bleiben offen; Integration der beiden Sourcecommits durch Parent.
+
+## UIA Helper Checkpoint
+
+- UIA-Sourcecommit `c97cabe`: comtypes TextPattern-Auswahl in einer eigenen held-job One-shot-Probe, 2 s Initialdeadline, 256 MiB Job-Commitlimit, begrenztes privates UTF-8-Framing. Keine Dokumentvolltext-Fallbacks, kein Fokussetzen oder Clipboard-Schreiben.
+- Vor jedem GetText werden aktuelle Fokus-/Fensteridentität und Password-Status erneut geprüft; auch das umschließende Element des gewählten Bereichs muss explizit nicht geschützt sein. Auswahl-/Endpunkt-/Text-Nachprüfung verwirft veränderte Ergebnisse.
+- comtypes 1.4.17 ist durch Parent installiert; Version im gepinnten Controller gelesen. Gen-Namespace ausschließlich unter .runtime/controller, Interfaces in Memory (gen_dir=None), fremde/read-only Runtime failclosed vor Client-Cache-Initialisierung.
+- Geprüft: 61 contracts, 16 ABI-/Producer-Mocks plus eine echte native RichEdit-Fixture, Docs und Compile. Native Fixture liest nur synthetische Auswahl aus eigenem unsichtbaren HWND, ohne fremde Auswahl/Fokusänderung/Clipboard-Mutation; tatsächlicher Job-/Pipe-/Normalexit geprüft. Browser/Codex und produktive GetFocusedElement-Bindung bleiben unbewiesen.
+- Parent übernimmt Sourcecommit `c97cabe` gezielt; dessen additive Prozess-Metriken in process.py erhalten, Input/Core/ApplicationRoot nicht überschreiben. UIA close/retry behält Besitzer bei Fehlern. Ownership bleibt aktiv.
 
 ## Active Handoff
 
-- `handoffs/2026-10-14-hugin-windows-helper.md` (dieser Helper-Branch; Haupthandoff weiterhin `handoffs/2026-10-14-hugin-v1.md` auf dem Integrationsbranch)
+- `handoffs/2026-10-14-hugin-windows-uia-helper.md` (dieser Helper-Branch; Haupthandoff weiterhin `handoffs/2026-10-14-hugin-v1.md` auf dem Integrationsbranch)
