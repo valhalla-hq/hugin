@@ -236,3 +236,49 @@ Relevant primary contracts:
 [EnumClipboardFormats](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-enumclipboardformats),
 [AssignProcessToJobObject](https://learn.microsoft.com/en-us/windows/win32/api/jobapi2/nf-jobapi2-assignprocesstojobobject),
 [CreateProcessW](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw).
+
+## Tray ownership
+
+`TrayOwner(fresh_pystray_icon).start()` owns a new Win32 pystray 0.19.5 icon.
+`close(timeout=2)` confirms closure; `closed`, `ready`, `error`, and forwarded
+`title`/`icon`/`menu` are available. Every lifecycle failure is a sanitized
+`HuginError` with `owner` pointing to the same retained adapter. Start/close are
+single-use; close is idempotent after successful cleanup. Root UI integration
+must keep that owner on failure and call `close` again, including constructor
+failure before the window has been assigned. No input or engine owner is started.
+
+The pinned producer's public `Icon.stop()` posts a native message, joins only
+its setup thread and clears `_running`. It neither checks the post result nor
+joins its native message thread. The adapter therefore uses the exact Win32
+`_run` in its own held runner and its own held readiness/visibility thread;
+it does not call `run_detached` or create pystray's untracked setup thread.
+No pystray method is replaced. An existing running icon or another producer
+version is rejected before adopting its resources.
+
+Close invalidates visibility, waits for its own visibility thread, waits for
+the native runner to establish its own windows, reposts `_stop` to the same
+icon regardless of `_running`, and joins that runner. Successful `_run` return
+means the pinned native loop's checked window/menu/class cleanup completed.
+The adapter then explicitly calls `_release_icon`, which pystray otherwise
+defers to a destructor. A silent failed PostMessage, late native startup,
+blocked visibility call, thread-start failure or release failure cannot report
+closed. The total wait/lock budget is at most the supplied 0–5 second deadline;
+this does not forcibly interrupt a stuck native DLL call.
+
+A strong live-owner registry preserves the icon and callbacks even if a caller
+loses its exception. Failure before any native window was created can release
+the known constructor class. A native loop exception after partial window
+creation has no proven cleanup fact: it remains owned and fails closed rather
+than manipulating a potentially stale HWND from another thread. No PID/HWND
+lookup or foreign-window cleanup is used.
+
+The contracts cover timeout/retry, stop before ready, blocked visibility,
+concurrent close deadlines, setup/native thread-start failures, constructor
+resource cleanup, sanitized errors and property forwarding. Producer mocks
+cover the false `_running` retry and exact constructor/HICON release. The
+explicit `HUGIN_NATIVE_TRAY=1` smoke creates only a small synthetic Hugin tray,
+then observes both owned threads ended, its own HWND absent from pystray's
+registry, released HICON and unchanged foreground HWND/clipboard sequence.
+It does not establish Explorer restart, suspend/resume or Shell failure
+behavior. Source facts were read from the pinned installed `_base.py` and
+`_win32.py`; upstream library internals are deliberately version-bound here.
