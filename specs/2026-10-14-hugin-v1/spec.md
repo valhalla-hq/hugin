@@ -102,8 +102,19 @@ V1 enthält keine KI-Textkorrektur, Übersetzung, Sprachbefehle, dauerhafte Hist
 
 ## Prüfstatus und offene technische Nachweise
 
-Alle AC stehen auf **nicht ausgeführt für Hugin**. Aktuelle Bestandsnachweise sind keine Hugin-Abnahme. Hardware-Pilot muss insbesondere Hook-Zustellung, Clipboard-/Fokus-Abdeckung, Qwen-Abbruch und gemeinsame VRAM-Residenz entscheiden. Daraus darf ein begrenzter technischer Plan angepasst werden; bestätigte Produktanforderungen ändern sich nicht stillschweigend.
+Teilnachweise aus Contracts, privater Worker-IPC, eigener CPU-Spracherkennung,
+nativen Geräte-/Instanz-/Pilotregistrierungen und UI stehen in
+[implementation.md](implementation.md). Keine vollständige Gesamt-Abnahme.
+Der Hardware-Pilot muss insbesondere physische Hook-Zustellung,
+Clipboard-/Fokus-Abdeckung, beide Stimmen, Qwen-Abbruch und gemeinsame
+VRAM-Residenz entscheiden. Bestätigte Produktanforderungen ändern sich dabei
+nicht stillschweigend.
 
 ## Änderungslog
 
 - 14.10.2026: V1 aus Grill-me, Bestandsaufnahme und akzeptiertem STORM-Vorschlag festgehalten. Kleines Interface, Freya/Tyr und die drei Ergänzungen Escape, letztes Diktat, Diagnose sind enthalten. Keine Implementierung ausgeführt.
+- 14.10.2026, Umsetzung: Native Tk-/Tray-/Audio-/Windows-Adapter und private
+  Worker-IPC verbunden. Direkte Auswahl ohne Clipboard-Mutation bevorzugt;
+  ungeprüfte Paste-Ziele bleiben manuell kopierbar. Start-, Audio-Terminal-
+  und Cleanup-Barrieren durch unabhängiges Review präzisiert. Normalbetrieb
+  bleibt bis zum geprüften Wechsel gesperrt; GPU-Pilot braucht freie Kapazität.

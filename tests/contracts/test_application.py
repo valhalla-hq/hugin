@@ -205,5 +205,41 @@ class ApplicationContracts(unittest.TestCase):
         self.assertEqual(self.pool.workers,{})
         self.assertTrue(self.controller.shutdown_ready())
 
+    def test_deliberate_quit_retries_identified_audio_reset_barrier(self):
+        self.controller.command('read');self.pump()
+        real_stop=self.controller.output.stop
+        failures=[True,True]
+        def stop():
+            if failures:
+                failures.pop()
+                raise HuginError('audio_failed','transient_reset')
+            real_stop()
+        self.controller.output.stop=stop
+        self.controller.command('cancel');self.pump()
+        self.assertIsNotNone(self.controller.core.snapshot().cancelling_job)
+        self.controller.command('quit');self.pump()
+        self.assertTrue(self.controller.shutdown_ready())
+
+    def test_system_resume_invalidates_active_capture_and_never_replays_it(self):
+        self.controller.command('dictation');self.pump()
+        self.assertTrue(self.controller.microphone.owned)
+        self.controller.command('system_resume');self.pump()
+        self.assertFalse(self.controller.microphone.owned)
+        self.assertIsNone(self.controller.core.snapshot().job)
+        self.assertFalse(self.pool.starts)
+
+    def test_io_cleanup_attempts_each_owner_and_retains_failed_one(self):
+        calls=[]
+        def fail(): calls.append('output');raise HuginError('audio_failed','close')
+        self.controller.output.close=fail
+        self.controller.inputs.stop=lambda:calls.append('inputs')
+        self.controller.clipboard.close=lambda:calls.append('clipboard')
+        self.assertFalse(self.controller.finish_io())
+        self.assertEqual(calls,['inputs','output','clipboard'])
+        self.controller.output.close=lambda:calls.append('output-retry')
+        self.controller.command('quit');self.pump()
+        self.assertTrue(self.controller.finish_io())
+        self.assertEqual(calls,['inputs','output','clipboard','output-retry'])
+
 
 if __name__ == '__main__': unittest.main()
