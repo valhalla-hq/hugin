@@ -47,12 +47,16 @@ def main():
     check.add_argument('--group',choices=('contracts','integration','windows','all'),default='contracts')
     check.add_argument('--interactive',action='store_true')
     bench = sub.add_parser('benchmark')
-    bench.add_argument('--scenario',default='baseline-and-hugin')
+    bench.add_argument('--scenario',choices=('baseline-and-hugin','own-cpu'),default='baseline-and-hugin')
     bench.add_argument('--cold-warm',action='store_true')
     args = parser.parse_args()
     if args.command == 'benchmark':
-        print('Benchmark harness is not implemented yet.',file=sys.stderr)
-        return 2
+        if args.scenario == 'baseline-and-hugin':
+            print('Full GPU/baseline benchmark awaits the exclusive hardware pilot.',file=sys.stderr)
+            return 2
+        from probe_cpu import probe
+        print(json.dumps(probe(ROOT,2 if args.cold_warm else 1),indent=2))
+        return 0
     if args.docs:
         return docs()
     if args.group == 'windows' and not args.interactive:

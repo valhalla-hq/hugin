@@ -410,6 +410,7 @@ class NativeClipboard:
         self._owner_failed = False
         self._token: bytes | None = None
         self._unfreed: set[int] = set()
+        self._selection_probe = None
 
     def _window_loop(self):
         try:
@@ -626,7 +627,17 @@ class NativeClipboard:
         range survives this call. EM_GETSEL offsets are UTF-16 code units.
         """
         if target.control_class.lower() != 'edit' or target.selection is None:
-            return None
+            if self._selection_probe is None:
+                from hugin.windows.selection import SelectionProbe
+                self._selection_probe = SelectionProbe()
+            result = self._selection_probe.read(target, cancelled)
+            if result.status == 'captured':
+                return result.text
+            if result.status == 'selection_empty':
+                return ''
+            if result.status == 'selection_unsupported':
+                return None  # Clipboard fallback still requires class approval.
+            raise ClipboardFailure(result.status)
         if cancelled():
             raise ClipboardFailure('cancelled')
         if self.capture_target() != target:
@@ -746,6 +757,9 @@ class NativeClipboard:
         time.sleep(seconds)
 
     def close(self):
+        if self._selection_probe is not None:
+            self._selection_probe.close()
+            self._selection_probe = None
         for handle in tuple(self._unfreed):
             if not self.kernel.GlobalFree(handle):
                 self._unfreed.remove(handle)

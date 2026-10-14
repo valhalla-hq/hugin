@@ -41,11 +41,19 @@ def main():
         if not args.pilot:
             # Productive hooks require the separately checked migration record.
             # Development launches cannot take the old stack's mouse bindings.
-            raise HuginError('unsupported','activation_pending')
+            raise HuginError('activation_pending','activation')
         from .application import Application
         return Application(settings,pilot=args.pilot,show=args.show).run()
     except HuginError as error:
-        print(error.message,file=sys.stderr)
+        if sys.stderr is not None:
+            print(error.message,file=sys.stderr)
+        elif sys.platform == 'win32':
+            import ctypes
+            from ctypes import wintypes
+            dialog = ctypes.WinDLL('user32').MessageBoxW
+            dialog.argtypes = [wintypes.HWND,wintypes.LPCWSTR,wintypes.LPCWSTR,wintypes.UINT]
+            dialog.restype = ctypes.c_int
+            dialog(None,error.message,'Hugin',0x10)
         return 1
 
 

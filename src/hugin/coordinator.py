@@ -226,6 +226,11 @@ class Shutdown(Event):
     pass
 
 
+@dataclass(frozen=True)
+class RetryCleanup(Event):
+    """Explicit quit retry; never resume a pending user action."""
+
+
 class Effect:
     """An instruction for an adapter; effects are never executed by the reducer."""
 
@@ -579,6 +584,15 @@ class Coordinator:
         return chunks
 
     def _reduce(self, event: Event, effects: list[Effect]) -> None:
+        if isinstance(event, RetryCleanup):
+            # Ownership lives here, including after Shutdown. A retry requests
+            # work again; only the matching adapter acknowledgement releases it.
+            self._pending_dictation = False
+            if self._audio_reset is not None:
+                effects.append(ResetAudio(self._audio_reset))
+            if self._closing_capture is not None:
+                effects.append(StopRecording(self._closing_capture, discard=True))
+            return
         if isinstance(event, Tick):
             self._validate_time(event.now)
             if event.now < self._now:

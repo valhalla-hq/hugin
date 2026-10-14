@@ -20,7 +20,7 @@
     "voices": "../config/voices.json",
     "notice": "../notices/Faster-Qwen3-TTS-MIT.md"
   },
-  "package_lock_method": "Transitive dependency closure from installed distribution metadata; exact observed versions, default environment markers, no optional demo/GGML extras. qwen-tts itself requires gradio. These are version locks, not cryptographic wheel locks; offline wheelhouse restore remains unverified.",
+  "package_lock_method": "Exact observed transitive versions remain in controller.txt/stt.txt/tts.txt. runtime-wheels.json is the sole SHA256 wheel artifact lock for all three Python 3.12.10 win_amd64 profiles, including fixed Git/sdist source-build provenance. Preparation alone may download; restore uses only verified local wheel URIs with --no-index --no-deps --require-hashes and checks exact installed metadata plus pip check. qwen-tts requires gradio; no optional demo/GGML extras were added. See ../docs/offline-restore.md and the helper handoff for verification scope.",
   "cuda_lock_method": "SHA256 and sizes of CUDA12 runtime/cuBLAS/cuDNN9 plus zlib from observed torch 2.9.1+cu128 distribution. Preparation copies these bytes to Hugin-owned .runtime/cuda; runtime never reads old paths.",
   "gpu_verification": "Not performed by helper; parent must coordinate residency, initialization, inference and cancellation."
 }

@@ -24,8 +24,8 @@ mit Ctrl+Alt+Shift+F9/F10; normale Eingaben sind bis T011/T012 gesperrt.
 
 ## Prüfungen am integrierten Controllerstand
 
-`tools/dev.py check --group all`: 108 erfolgreiche Prüfungen, darunter
-103 Contracts und fünf simulierte IPC-Integrationsfälle. Simulation ist kein
+`tools/dev.py check --group all`: zuletzt 132 erfolgreiche Prüfungen, darunter
+117 Contracts und 15 simulierte IPC-/Restore-Integrationsfälle. Simulation ist kein
 Nachweis für native Modell-/Hardwareeigenschaften.
 
 `tools/dev.py check --docs`: 19 Anforderungen, 17 AC, keine gefundenen
@@ -35,6 +35,29 @@ Die Windows-ABI-/Producer-Mocks und eigene UI werden separat geprüft.
 Die Controller-Guards liefen zuerst wegen fehlender application.py rot, dann
 grün: Initialisierung vor Inferenz, Fremdidentität, Abbruch unmittelbar am
 Clipboard-Commit, Reset vor Mikrofon sowie Diagnose/RAM-Ablauf.
+
+Die eigene CPU-Probe durch den integrierten Controller benötigt 13,862 s für
+den ersten abgeschlossenen Ablauf: 17 Wörter normalisiert exakt, genau eine
+Übergabe an ein RAM-Testziel, danach null eigene Worker und kein offenes
+Mikrofon. Kein GPU-/physischer Eingabe-/nativer Clipboard-Nachweis; CPU-Zeit,
+Familien-RAM und Agent-Tokens in dieser Probe ungemessen.
+
+Native Geräteproben: kurze Mikrofonaufnahme ausschließlich im RAM, Schließen
+bestätigt; waveOut mit synthetischem Null-PCM, Reset/Backpressure/Headers und
+Schließen bestätigt. Pilot-Hotkeys/Escape registriert und wieder freigegeben,
+Einzelinstanz in einem zweiten echten Prozess geprüft. Versteckter
+App-/Tray-Pilot startet und beendet samt Mutex-Freigabe. UI bei 200 Prozent
+DPI gerendert und visuell geprüft; ein Größenfehler wurde korrigiert. Physische
+Tasten, hörbare Stimmen und DPI 100/150 bleiben offen.
+
+Unabhängige Spec-/Standards-Reviews am festen Stand 8d604bb fanden Rennen
+zwischen letztem PCM-Callback und Terminal, eine alte Ready-Frist sowie
+Cleanup-/Queue-/Capture-Abschlussfehler. Die produzierenden Grenzen wurden
+korrigiert; jeder reproduzierte Fall erhielt einen zuerst roten Guard.
+Expliziter Cleanup-Retry erhält die ursprüngliche Ressourcenidentität und
+wiederholt keine Textübergabe. Audio-Terminal wartet auf angenommene Blöcke;
+Cancel bleibt davon unabhängig. Nachfolgeprüfung und Gesamtpilot bleiben
+eigene Gates.
 
 ## Noch keine Abnahme
 

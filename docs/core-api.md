@@ -60,6 +60,7 @@ alone.
 | `DeliveryFinished(job, error=None)` | Delivery/clipboard cleanup is complete, whether inserted or suppressed. A cancelled delivery still needs this acknowledgement. |
 | `CopyResult()` / `DeleteResult()` | `CopyText(text)` for an explicit copy; deletion only clears the RAM slot. |
 | `Shutdown()` | Clears result/current job and emits necessary cleanup plus `ShutdownEngine(engine, engine_instance)`; retains outstanding ownership until acknowledged. |
+| `RetryCleanup()` | Explicit Quit retry, allowed before and after `Shutdown`. Re-emits `ResetAudio(job)` for the retained reset owner and `StopRecording(job, discard=True)` for a retained capture-close owner. Clears pending dictation intent; creates no job/generation, releases no GPU work and never repeats delivery. |
 
 `BeginEngine(operation, payload=None, voice=None)` is the only GPU-start effect.
 Initialization has no payload; transcription has capture bytes; synthesis has
@@ -134,3 +135,15 @@ states do not prove cleanup complete: inspect the retained job/slot/barrier.
 Contract tests exercise reducer-visible races, not physical input, clipboard
 preservation, actual audio silence, GPU memory, IPC framing or real providers.
 Those remain T003–T010 integration/hardware gates.
+
+Cleanup retry probe (synthetic, 14 October 2026): two failed `output.stop()`
+calls during Cancel leave the reset owner held. A later Quit's successful fast
+stop alone does not acknowledge that owner's barrier. A probe of the planned
+adapter binding dispatches `RetryCleanup()` before `Shutdown()`; the emitted
+`ResetAudio` succeeds, matching `AudioReset` clears the owner and shutdown
+becomes ready. Without that binding the identical sequence remains blocked.
+The root adapter must execute retries through its existing serialized capture
+executor and return closure acknowledgements only after actual stream closure.
+Six public Core guards cover stopped/starting capture cleanup, failed audio,
+STOPPING, retained GPU work, pending dictation and delivery/result preservation.
+This proves the event contract, not native silence or device recovery.

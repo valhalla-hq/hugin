@@ -33,6 +33,32 @@ class Settings:
     voices: Mapping[str, Voice]
 
 
+def read_config_text(path: Path, limit=65536) -> str:
+    try:
+        with path.open('rb') as source: data=source.read(limit+1)
+        if len(data)>limit: raise ValueError
+        return data.decode('utf-8')
+    except (OSError,ValueError,UnicodeError):
+        raise HuginError('config_invalid','configuration') from None
+
+
+def read_json_object(path: Path, limit=65536) -> dict:
+    def reject_constant(_): raise ValueError
+    def unique(pairs):
+        result={}
+        for key,value in pairs:
+            if key in result: raise ValueError
+            result[key]=value
+        return result
+    try:
+        value=json.loads(read_config_text(path,limit),object_pairs_hook=unique,
+            parse_constant=reject_constant)
+        if not isinstance(value,dict): raise ValueError
+        return value
+    except (ValueError,TypeError,RecursionError):
+        raise HuginError('config_invalid','configuration') from None
+
+
 def _keys(value, names):
     if not isinstance(value, dict) or set(value) != set(names):
         raise HuginError('config_invalid', 'configuration')
@@ -50,7 +76,7 @@ def _owned_path(root: Path, value: object) -> Path:
 def load_settings(root: Path) -> Settings:
     root = root.resolve()
     try:
-        data = tomllib.loads((root / 'config/hugin.toml').read_text(encoding='utf-8'))
+        data = tomllib.loads(read_config_text(root/'config/hugin.toml'))
         _keys(data, ('schema_version', 'default_voice', 'language', 'paths', 'limits', 'stt'))
         if type(data['schema_version']) is not int or data['schema_version'] != 1:
             raise HuginError('config_invalid', 'configuration')
@@ -74,7 +100,7 @@ def load_settings(root: Path) -> Settings:
             raise HuginError('config_invalid', 'configuration')
         if any(type(stt[key]) is not int or not 0 < stt[key] <= 3600 for key in ('cpu_threads','idle_unload_seconds')):
             raise HuginError('config_invalid', 'configuration')
-        manifest = json.loads((root / 'config/voices.json').read_text(encoding='utf-8'))
+        manifest = read_json_object(root/'config/voices.json')
         _keys(manifest, ('schema_version', 'voices'))
         if type(manifest['schema_version']) is not int or manifest['schema_version'] != 1 or set(manifest['voices']) != {'freya','tyr'}:
             raise HuginError('config_invalid', 'configuration')

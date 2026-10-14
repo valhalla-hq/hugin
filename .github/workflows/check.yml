@@ -9,4 +9,4 @@ jobs:
         with:
           python-version: '3.12'
       - run: python tools/dev.py check --docs
-      - run: python tools/dev.py check --group contracts
+      - run: python tools/dev.py check --group all

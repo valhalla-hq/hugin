@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
+from datetime import datetime,timezone
 import itertools
 import json
 import queue
@@ -14,7 +15,10 @@ import time
 import uuid
 
 from . import coordinator as c
+from . import __version__
 from .errors import HuginError, MESSAGES
+from .config import read_json_object
+from .diagnostics import observed_versions
 from .ui import View
 
 
@@ -59,10 +63,11 @@ class Controller:
     """Construct and pump on one owner thread; callbacks call command/worker_event."""
     def __init__(self, settings, *, inputs, microphone, output, clipboard, pool,
                  publish, capture_executor=None, audio_executor=None, maintenance_executor=None,
-                 selection_executor=None):
+                 selection_executor=None,signals=None):
         self.settings = settings
         self.inputs,self.microphone,self.output = inputs,microphone,output
         self.clipboard,self.pool,self.publish = clipboard,pool,publish
+        self.signals = signals
         self.run_id = uuid.uuid4()
         self.core = c.Coordinator(instance_id=str(self.run_id),now=time.monotonic(),
             stt_idle_unload_seconds=settings.stt['idle_unload_seconds'],
@@ -92,15 +97,18 @@ class Controller:
         self._stop = False
         self._closed = False
         self._last_input = None
+        self._last_input_utc = None
+        self._engine_versions = observed_versions(settings.root)
         self._capture_failed = False
         self._devices = {}
+        self._closed_io = set()
+        self._io_cleanup_failed = set()
 
     def _voice(self):
         path = self.settings.paths['state']/'preferences.json'
         if not path.exists(): return self.settings.default_voice
         try:
-            if path.stat().st_size > 1024: raise ValueError
-            data = json.loads(path.read_text(encoding='utf-8'))
+            data = read_json_object(path,1024)
             if set(data) != {'schema_version','voice'} or type(data['schema_version']) is not int or data['schema_version'] != 1 or data['voice'] not in ('freya','tyr'):
                 raise ValueError
             return data['voice']
@@ -141,12 +149,13 @@ class Controller:
         """Prompt invalidation before clipboard waits; no model work on input threads."""
         with self._lock:
             job = self._snapshot.job
-            invalidates = kind in ('cancel','quit') or (job is not None and job.kind == c.JobKind.READING
+            invalidates = kind in ('cancel','quit','system_pause','system_resume','devices_changed') or (job is not None and job.kind == c.JobKind.READING
                 and (kind in ('dictation','read') or kind == 'voice' and value != self._snapshot.voice))
             if invalidates and job:
                 self._token(job).set()
             if kind in ('dictation','read','cancel'):
                 self._last_input = time.monotonic()
+                self._last_input_utc = datetime.now(timezone.utc).isoformat(timespec='seconds')
         if invalidates:
             try: self.output.stop()
             except HuginError as error: self._post(_Failure(error),priority=0)
@@ -203,8 +212,16 @@ class Controller:
     def handle(self, event, *, audio_ack=None):
         if isinstance(event,_Command):
             mapping = {'dictation':c.DictationToggle,'read':c.ReadToggle,'cancel':c.Cancel,
-                'copy':c.CopyResult,'clear':c.DeleteResult,'quit':c.Shutdown}
+                'copy':c.CopyResult,'clear':c.DeleteResult,'quit':c.Shutdown,
+                'system_pause':c.Cancel,'system_resume':c.Cancel,'devices_changed':c.Cancel}
             if event.kind == 'voice': event = c.VoiceSelected(event.value)
+            elif event.kind in ('system_pause','system_resume','devices_changed'):
+                self.handle(c.Cancel())
+                # Cancel while the registry still owns each worker; only then
+                # close their CUDA contexts and wait for observed family exit.
+                for engine,(incarnation,_) in tuple(self._incarnations.items()):
+                    self._close_engine(c.Engine(engine),incarnation)
+                return
             elif event.kind == 'diagnose':
                 result = self.clipboard.copy(self.diagnostic())
                 if result.status != 'copied': self._runtime_error = HuginError('clipboard_failed','diagnostic')
@@ -212,7 +229,9 @@ class Controller:
             elif event.kind in mapping:
                 if event.kind == 'quit':
                     self._stop = True
+                    self._io_cleanup_failed.clear()
                     for key in tuple(self._cleanup_failed): self._close_engine(*key,retry=True)
+                    self.handle(c.RetryCleanup())
                 event = mapping[event.kind]()
             else: return
         if isinstance(event,_Started):
@@ -328,7 +347,7 @@ class Controller:
             operation = effect.operation
             if operation.job: self._token(operation.job).set()
             with self._lock: binding = self._bindings.get(operation.engine.value)
-            if binding and binding.operation == operation and operation.action != c.Action.INITIALIZE:
+            if binding and binding.operation == operation and operation.action != c.Action.INITIALIZE and operation.engine.value in self.pool.workers:
                 try: self.pool.cancel(operation.engine.value,binding.request,binding.generation)
                 except HuginError: pass
             self._deadlines[(operation.engine,operation.engine_instance)] = time.monotonic()+self.settings.limits['cancel_seconds']
@@ -355,7 +374,8 @@ class Controller:
             def drain():
                 try:
                     # A silent completed stream has no native player to drain.
-                    if self._audio_job is None or self.output.drain(effect.job.request_id,token.is_set):
+                    if self._audio_job != effect.job or self.output.drain(effect.job.request_id,token.is_set):
+                        if self._audio_job == effect.job: self._audio_job=None
                         self._post(c.AudioFinished(effect.job,effect.through_sequence))
                 except Exception as error: self._post(_Failure(_safe_error(error,'audio')))
             self.audio_executor.submit(drain)
@@ -468,6 +488,9 @@ class Controller:
         if self.inputs.error:
             self._runtime_error = self.inputs.error
             self.handle(c.Cancel())
+        if self.signals is not None and self.signals.error:
+            self._runtime_error = self.signals.error
+            self.handle(c.Cancel())
         # Tokens contain no content. Retain only owners still capable of output.
         with self._lock:
             live = {snapshot.job,snapshot.cancelling_job}
@@ -476,13 +499,18 @@ class Controller:
 
     def diagnostic(self):
         snap = self.core.snapshot()
-        data = {'schema_version':1,'app':'Hugin','version':'0.1.0',
-            'state':snap.state.value,'voice':snap.voice,'input_ready':bool(self.inputs.running),
+        data = {'schema_version':1,'app':'Hugin','version':__version__,
+            'state':snap.state.value,'voice':snap.voice,'input_ready':bool(self.inputs.running and not self.inputs.error),
+            'profile_id':self.settings.voices[snap.voice].source_id,
+            'engine_versions':self._engine_versions,
+            'engine_versions_source':'installed metadata at application startup',
+            'last_input_utc':self._last_input_utc,
             'input_age_seconds':None if self._last_input is None else round(max(0,time.monotonic()-self._last_input),2),
-            'components':{item.engine.value:{'ready':item.ready,'blocked':item.blocked,
+            'components':{item.engine.value:{'ready':item.ready and (item.engine,item.engine_instance) not in self._closing | self._cleanup_failed,
+                'blocked':item.blocked or (item.engine,item.engine_instance) in self._cleanup_failed,
                 'device':self._devices.get(item.engine.value)} for item in snap.components},
             'error_code':self._runtime_error.code if self._runtime_error else snap.error.code if snap.error else None,
-            'pending_cleanup':bool(self._closing or self._cleanup_failed) or self._capture_failed}
+            'pending_cleanup':bool(self._closing or self._cleanup_failed or self._io_cleanup_failed) or self._capture_failed}
         return json.dumps(data,ensure_ascii=False,indent=2)
 
     def view(self):
@@ -493,11 +521,24 @@ class Controller:
             c.State.CANCELLING:'Wird gestoppt',c.State.ERROR:'Aktion beendet',c.State.STOPPING:'Hugin wird beendet'}
         error = self._runtime_error.code if self._runtime_error else snap.error.code if snap.error else None
         components = ' · '.join(('Whisper' if item.engine == c.Engine.STT else 'Qwen')+': '+
-            ('gestört' if item.blocked else 'bereit' if item.ready else 'bei Bedarf') for item in snap.components)
-        return View(status=labels[snap.state],voice=snap.voice,text=snap.result.text if snap.result else '',
+            ('wird beendet' if (item.engine,item.engine_instance) in self._closing else
+             'Bereinigung offen' if (item.engine,item.engine_instance) in self._cleanup_failed else
+             'gestört' if item.blocked else 'bereit' if item.ready else 'bei Bedarf') for item in snap.components)
+        pilot = getattr(self.inputs,'pilot',False)
+        activity = 'error' if error else {c.State.IDLE:'idle',c.State.RECORDING:'recording',c.State.TTS_PLAYING:'playing'}.get(snap.state,'preparing')
+        status=labels[snap.state]
+        if not self.inputs.running or self.inputs.error: status='Eingaben nicht bereit'
+        elif self.signals is not None and not self.signals.ready and not self._stop:
+            status='Windows-Verbindung nicht bereit'
+        view = View(status=status,voice=snap.voice,text=snap.result.text if snap.result else '',
             detail='Erneut drücken, um das Diktat abzuschließen.' if snap.state == c.State.RECORDING else '',
-            mode='Lokal · Pilot' if getattr(self.inputs,'pilot',False) else 'Lokal',components=components,
-            error=MESSAGES.get(error,'') if error else '')
+            mode='Lokal · Pilot' if pilot else 'Lokal',components=components,
+            error=MESSAGES.get(error,'') if error else '',activity=activity)
+        if pilot:
+            from dataclasses import replace
+            view=replace(view,dictation_shortcut='Ctrl+Alt+Shift+F9 · erneut: fertig',
+                reading_shortcut='Text markieren · Ctrl+Alt+Shift+F10 · erneut: Stopp')
+        return view
 
     def _publish(self): self.publish(self.view())
 
@@ -507,14 +548,28 @@ class Controller:
         return self._stop and not (snap.gpu_slot or snap.cancelling_job or self._closing or
             self._cleanup_failed or self.pool.workers or self.microphone.owned or capture_pending)
 
+    def finish_io(self):
+        """Retain each failed owner; completed owners never repeat cleanup."""
+        owners=[('inputs',self.inputs,self.inputs.stop),('output',self.output,self.output.close),
+            ('clipboard',self.clipboard,self.clipboard.close)]
+        if self.signals is not None: owners.insert(1,('signals',self.signals,self.signals.close))
+        for name,owner,close in owners:
+            if name in self._closed_io: continue
+            try:
+                if not getattr(owner,'closed',False): close()
+                self._closed_io.add(name)
+            except Exception as cause:
+                self._runtime_error=_safe_error(cause,'shutdown_'+name)
+                if getattr(owner,'closed',False): self._closed_io.add(name)
+                else: self._io_cleanup_failed.add(name)
+        return not self._io_cleanup_failed
+
     def run(self, on_closed):
         while not self._closed:
             try:
                 self.pump_once(.025)
                 self.tick()
-                if self.shutdown_ready():
-                    if not getattr(self.inputs,'closed',False): self.inputs.stop()
-                    self.output.close(); self.clipboard.close()
+                if self.shutdown_ready() and not self._io_cleanup_failed and self.finish_io():
                     for executor in (self.capture_executor,self.audio_executor,self.maintenance_executor,self.selection_executor):
                         executor.shutdown(wait=True,cancel_futures=True)
                     self._closed = True
@@ -537,7 +592,10 @@ class Application:
         from .windows.input import WindowsInputs
         from .windows.instance import InstanceGuard
         from .windows.clipboard import ClipboardService
+        from .windows.signals import WindowsSignals
         from .workers import EnginePool
+        from .targets import load_target_approvals
+        approvals=load_target_approvals(self.settings.root)
         guard = InstanceGuard()
         if not guard.acquire():
             guard.close()
@@ -551,12 +609,17 @@ class Application:
             def event(value):
                 if controller: controller.worker_event(value)
             inputs = WindowsInputs(command,pilot=self.pilot)
+            signals = WindowsSignals(command)
             window = HuginWindow(command)
+            clipboard=ClipboardService(snapshot_budget=self.settings.limits['clipboard_bytes'])
+            for name,delay in approvals.delivery: clipboard.approve_target_class(name,delay)
+            for name in approvals.capture_fallback: clipboard.approve_capture_target_class(name)
             controller = Controller(self.settings,inputs=inputs,
                 microphone=Microphone(self.settings.limits['capture_bytes']),
                 output=PCMOutput(buffer_ms=max(1,self.settings.limits['audio_buffer_ms']//2)),
-                clipboard=ClipboardService(snapshot_budget=self.settings.limits['clipboard_bytes']),
-                pool=EnginePool(self.settings.root,event),publish=window.post)
+                clipboard=clipboard,
+                pool=EnginePool(self.settings.root,event),publish=window.post,signals=signals)
+            signals.start()
             inputs.start()
             thread = threading.Thread(target=controller.run,args=(window.request_stop,),name='hugin-owner',daemon=False)
             thread.start()
@@ -566,15 +629,11 @@ class Application:
             thread.join()
             return 0
         finally:
-            if thread is None:
-                errors = []
-                if controller:
-                    for owner in (controller.inputs,controller.output,controller.clipboard):
-                        try:
-                            if owner is controller.inputs: owner.stop()
-                            else: owner.close()
-                        except HuginError as error: errors.append(error)
-                    for executor in (controller.capture_executor,controller.audio_executor,controller.maintenance_executor,controller.selection_executor):
-                        executor.shutdown(wait=True,cancel_futures=True)
-                if window: window.stop()
-            guard.close()
+            try:
+                if thread is None:
+                    if controller:
+                        if not controller.finish_io(): self._startup_owners=controller
+                        for executor in (controller.capture_executor,controller.audio_executor,controller.maintenance_executor,controller.selection_executor):
+                            executor.shutdown(wait=True,cancel_futures=True)
+                    if window: window.stop()
+            finally: guard.close()

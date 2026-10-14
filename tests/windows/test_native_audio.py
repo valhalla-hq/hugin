@@ -25,10 +25,14 @@ class NativeAudio(unittest.TestCase):
     def test_native_zero_pcm_reset_releases_backpressure_and_owned_headers(self):
         output = PCMOutput(buffer_ms=125)
         cancelled = threading.Event()
+        errors = []
         writer = None
         try:
             output.start('native-synthetic')
-            writer = threading.Thread(target=lambda:output.write(b'\0\0'*24000,'native-synthetic',cancelled.is_set))
+            def write():
+                try: output.write(b'\0\0'*24000,'native-synthetic',cancelled.is_set)
+                except Exception as error: errors.append(type(error).__name__)
+            writer = threading.Thread(target=write)
             writer.start()
             time.sleep(.04)
             cancelled.set()
@@ -37,6 +41,7 @@ class NativeAudio(unittest.TestCase):
             elapsed = time.perf_counter()-started
             writer.join(1)
             self.assertFalse(writer.is_alive())
+            self.assertEqual(errors,[])
             self.assertLess(elapsed,.3)
         finally:
             cancelled.set()

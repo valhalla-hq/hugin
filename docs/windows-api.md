@@ -52,9 +52,61 @@ the bound target before and after reading. They never touch the clipboard;
 read-only Edit controls can be read, password controls cannot. The whole
 control buffer is bounded before allocation; large controls fail explicitly
 even when their selection is short. This is simulated-boundary coverage until
-the native target pilot, not a Browser/Word/UIA claim.
+the native target pilot.
 
-For other controls, a private clipboard probe and new sequence are required;
+Other controls use UI Automation TextPattern in an isolated selection probe.
+The implementation uses **comtypes==1.4.17**, a Windows-only dependency with no
+required transitive packages. The parent owns its controller lock/installation;
+the helper did not change the lock/installation. No custom COM vtable
+declarations are added. An explicitly enabled native probe has read only an
+owned hidden RichEdit fixture; it has not read the user's foreground selection.
+
+The probe binds GetFocusedElement to the foreground window's UIA ancestor
+(at most 64 parents), permitting a renderer PID only when that ancestry is
+proven. It uses the nearest TextPattern on that path and GetSelection, requiring
+one contiguous range. GetText always receives the positive character bound
+`262145` and the UTF-8 result must fit 256 KiB. Multiple/unknown ranges,
+password controls and missing identities fail closed. There is no DocumentRange,
+ValuePattern or document-full-text fallback. Runtime IDs, focused process,
+cloned range endpoints, selected text and the native window target are read
+again before returning the text. The service rechecks the caller
+target/cancellation after the probe as well.
+Immediately before each GetText, the current focused element/runtime ID,
+process/foreground target and password status are checked again. The selected
+range's enclosing element must also explicitly report non-password status.
+
+`SelectionProbe.read(target, cancelled)` is synchronous and belongs in the
+existing capture-effect worker, never the serial controller/UI/input owner.
+COM and foreign provider calls run exclusively in its own suspended/assigned/
+resumed OwnedProcess family. Initial deadline is 2 seconds including normal
+startup; cancellation is polled every 10 ms. Timeout/cancel terminates only the
+held job, confirms family exit (up to 3 seconds) and joins its private pipe
+threads (one shared 1-second budget) before releasing handles. OS process
+creation itself is not an interruptible foreign-provider call. No hard
+end-to-end latency is claimed before native measurement.
+
+The probe job has a 256 MiB committed-memory limit; this is not a measured
+working-set figure and does not limit memory in a foreign provider's process.
+Its request is at most 4092 bytes plus a four-byte length. Its response has a
+fixed six-byte version/status/length header and at most 256 KiB of raw UTF-8,
+without JSON expansion. Private stderr is discarded and makes the result fail;
+malformed/trailing/truncated output never becomes partial selected text.
+Failure to terminate/close retains the process owner and blocks another probe.
+
+COM uses an MTA in the child. The explicit CoInitializeEx/CoUninitialize pair
+surrounds provider object use, which ends before collection/apartment teardown;
+comtypes also balances its own import-time MTA reference at process shutdown.
+Before importing comtypes.client, its static `gen` namespace is provisioned
+additively only beneath the active Hugin `.runtime/controller` package, and
+its resolved paths/writability are checked. A foreign/read-only runtime fails
+before client cache initialization, preventing the SDK's user-profile cache
+fallback. Existing namespace files are preserved. UIA interface generation then
+uses `gen_dir=None` and Python `-B`, so generated interface/bytecode content is
+not written by this probe. The static runtime namespace contains no text.
+No selection/history files, focus changes or clipboard mutations are added.
+
+Only when direct reading reports an unsupported pattern may the caller use
+a private clipboard probe and new sequence;
 old clipboard text is never substituted for a missing selection. Clipboard
 capture starts disabled per target class: a pilot must explicitly call
 `approve_capture_target_class(control_class)` after checking copy-response
@@ -114,8 +166,8 @@ Important native limits remain open:
 - Clipboard locking protects the final sequence check and SendInput handoff;
   it cannot make a foreign app's later clipboard read atomic. Unproved restore
   timing or target identity keeps automatic delivery disabled.
-- Standard Edit reads and caret/selection APIs do not establish native
-  Word/browser/Codex/PDF coverage. UIA TextPattern remains an explicit follow-up.
+- Standard Edit/UIA implementations and caret/selection APIs do not establish
+  native Word/browser/Codex/PDF coverage. The browser matrix remains unproved.
   No target matrix is approved by this implementation slice.
 
 ## Instance and worker ownership
@@ -131,6 +183,8 @@ close_fds=True, creationflags=CREATE_NO_WINDOW, cwd=None, env=None)` provides
 `stdin/stdout/stderr`, `pid`, `poll()`, `wait(timeout)`, `terminate()`, `kill()`
 and `close()`. Only PIPE/DEVNULL and explicit inherited handle lists are
 supported; no shell, ambient process search or executable-name cleanup exists.
+Optional `memory_limit=<bytes>` applies a job committed-memory limit before
+creation; its default is None, preserving the model workers' existing contract.
 An optional `startupinfo.lpAttributeList['handle_list']` forwards the worker's
 private data-pipe handles. Native executable paths must be explicit files.
 
@@ -155,10 +209,28 @@ boundaries and configuration checks. `tests/windows/test_windows_abi.py`
 verifies x64 structure sizes, exact ctypes signatures and mocked producer
 behavior without native effects. It is not the interactive hardware suite.
 
+`HUGIN_NATIVE_UIA=1` enables `test_windows_uia_native.py` explicitly. Its child
+creates only a hidden owned RichEdit, selects synthetic `A😀Z` by EM_SETSEL in
+that control, and calls UIA ElementFromHandle/GetSelection/GetText and
+CompareEndpoints. It checks its HWND/PID ownership before reading and observes
+unchanged foreground HWND/clipboard sequence. No ShowWindow, SetFocus,
+SetForegroundWindow, injected keys, clipboard mutation or foreign selection is
+used. The child is supervised with the actual OwnedProcess job and private
+framing; normal exit/handle cleanup was observed. The first hidden Standard-Edit
+attempt reported unsupported TextPattern, so RichEdit is the explicit UIA
+fixture (Standard Edit uses WM_GETTEXT in production). This does not test the
+production focused-element/ancestor binding or browser/Codex target matrix.
+Native timeout/forced family cleanup and a foreign sentinel remain separate.
+
 Relevant primary contracts:
 [WM_GETTEXT](https://learn.microsoft.com/en-us/windows/win32/winmsg/wm-gettext),
 [EM_GETSEL](https://learn.microsoft.com/en-us/windows/win32/controls/em-getsel),
 [SendMessageTimeoutW](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendmessagetimeoutw),
+[UIA GetSelection](https://learn.microsoft.com/en-us/windows/win32/api/uiautomationclient/nf-uiautomationclient-iuiautomationtextpattern-getselection),
+[UIA GetText](https://learn.microsoft.com/en-us/windows/win32/api/uiautomationclient/nf-uiautomationclient-iuiautomationtextrange-gettext),
+[UIA CompareEndpoints](https://learn.microsoft.com/en-us/windows/win32/api/uiautomationclient/nf-uiautomationclient-iuiautomationtextrange-compareendpoints),
+[UIA threading](https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-threading),
+[comtypes 1.4.17](https://pypi.org/project/comtypes/1.4.17/),
 [RegisterHotKey](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerhotkey),
 [clipboard operations](https://learn.microsoft.com/en-us/windows/win32/dataxchg/clipboard-operations),
 [EnumClipboardFormats](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-enumclipboardformats),

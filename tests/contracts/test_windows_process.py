@@ -14,8 +14,9 @@ class FakeProcess:
         self.attach_fails = False
         self.closed = []
 
-    def create_job(self):
+    def create_job(self, memory_limit=None):
         self.events.append('job')
+        self.memory_limit = memory_limit
         return 100
 
     def create_suspended(self, command, stdio, extra_handles, cwd, env, flags):
@@ -54,6 +55,15 @@ class FakeProcess:
 
 
 class WindowsProcessContracts(unittest.TestCase):
+    def test_job_metrics_are_retained_before_owned_handle_close(self):
+        backend=FakeProcess()
+        expected={'cpu_seconds':2.5,'peak_job_commit_bytes':4096}
+        backend.metrics=lambda job: dict(expected)
+        process=OwnedProcess(['python','worker'],backend=backend)
+        process.kill();process.wait(.1);process.close()
+        backend.metrics=lambda job: self.fail('must not query a closed job handle')
+        self.assertEqual(process.metrics(),expected)
+
     def test_process_cannot_run_before_job_assignment(self):
         backend = FakeProcess()
         process = OwnedProcess(['python', 'worker'], backend=backend)
@@ -113,6 +123,13 @@ class WindowsProcessContracts(unittest.TestCase):
         owner.wait(0.01)
         owner.close()
         self.assertEqual(set(backend.closed), {100, 101, 102})
+
+    def test_probe_memory_limit_is_applied_before_process_creation(self):
+        backend = FakeProcess()
+        process = OwnedProcess(['python', 'worker'], backend=backend, memory_limit=256 * 1024 * 1024)
+        self.assertEqual(backend.memory_limit, 256 * 1024 * 1024)
+        process.kill()
+        process.close()
 
 
 class FakeMutex:

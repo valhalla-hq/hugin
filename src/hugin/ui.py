@@ -17,6 +17,9 @@ class View:
     text: str = ''
     components: str = 'Sprachkomponenten werden geprüft.'
     error: str = ''
+    activity: str = 'preparing'
+    dictation_shortcut: str = 'Vordere Taste oder Alt+Y · erneut: fertig'
+    reading_shortcut: str = 'Text markieren · hintere Taste · erneut: Stopp'
 
 
 def tray_image(color='#b58b39'):
@@ -176,6 +179,8 @@ class HuginWindow:
         self.components.configure(text=view.components)
         self.error.configure(text=view.error)
         self.voice.current(0 if view.voice=='freya' else 1)
+        self._shortcut_labels[0].configure(text=view.dictation_shortcut)
+        self._shortcut_labels[1].configure(text=view.reading_shortcut)
         if old is None or old.text != view.text:
             self.text.configure(state='normal')
             self.text.delete('1.0','end')
@@ -185,6 +190,9 @@ class HuginWindow:
         self.clear.configure(state='normal' if view.text else 'disabled')
         if self._tray and (old is None or old.status!=view.status):
             self._tray.title='Hugin · '+view.status
+            color = {'idle':'#7dc19b','recording':'#ed7167','playing':'#80bded',
+                'error':'#ed7167'}.get(view.activity,'#dfb96c')
+            self._tray.icon=tray_image(color)
 
     def show(self):
         self.root.deiconify()
