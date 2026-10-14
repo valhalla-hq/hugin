@@ -13,8 +13,9 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 ## Current State
 
 - Private Initialisierung und Katalogregistrierung abgeschlossen, main e555d7d76045dddde35cdeb2e63ce17f048df559.
-- Aktiver Task codex/hugin-v1-mjolnir; Planungsunterlagen, Referenzstimmen, Locks und erste Controller-/Prüfgrundlage übernommen.
-- Erste Konfigurations-/Asset-Guards wurden zuerst rot, dann grün geprüft. Controller-Pakete isoliert installiert; Sounddevice sieht Standardgeräte, Mikrofon noch nicht geöffnet.
+- Aktiver Task codex/hugin-v1-mjolnir, Draft PR https://github.com/valhalla-hq/hugin/pull/1.
+- Coordinator, Windows-Adapter, Worker-IPC, eigene Audioadapter und kleines Interface verbunden. 108 Contracts/simulierte Integrationsprüfungen grün; docs/compile/diff geprüft.
+- Eigene STT/TTS-Umgebungen/Modelle im Worker-Helper vorbereitet; CPU-Whisper über native private IPC geprüft. Parent-Runtime wird additiv vorbereitet. GPU-/Hör-/physische Abnahme offen.
 - Whispering/PipPal und produktive Tasten/Autostarts sind unverändert. Keine Hugin-Gesamtabnahme behauptet.
 - GitHub main-Protection-Abfrage liefert HTTP403 wegen Tarifgrenze; keine Policy geändert. Vertraglicher PR-/Review-/CI-Gate bleibt maßgeblich.
 
@@ -25,12 +26,11 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Next Step
 
-- T001 abschließen und die vertikalen Tasks der Spec abarbeiten; Prüfstatus je AC führen. Produktive Eingaben erst nach vorbereitetem, geprüftem Wechsel übernehmen.
+- Integrierten Controller unabhängig gegen Spec und Standards prüfen, UIA-Leseweg und Restore vervollständigen, danach native Pilotnachweise sammeln. Normale Eingaben bleiben technisch gesperrt; Pilot Ctrl+Alt+Shift+F9/F10.
 
 ## Active Handoff
 
-- `handoffs/2026-10-14-hugin-core.md` for this bounded helper branch.
-- Overall accountable execution remains `handoffs/2026-10-14-hugin-v1.md`.
+- `handoffs/2026-10-14-hugin-v1.md`.
 
 ## Bounded Core Helper Checkpoint — 14 October 2026
 

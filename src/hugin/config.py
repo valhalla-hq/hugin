@@ -85,6 +85,9 @@ def load_settings(root: Path) -> Settings:
                 raise HuginError('config_invalid', 'configuration')
             if item['name'] != {'freya':'Freya','tyr':'Tyr'}[key]:
                 raise HuginError('config_invalid', 'configuration')
+            directory = 'assets/voices/'+item['source_id']+'/'
+            if item['reference'] != directory+'referenz.wav' or item['reference_text'] != directory+'referenz.txt':
+                raise HuginError('config_invalid', 'configuration')
             hashes = item['files']
             if not isinstance(hashes, dict) or set(hashes) != {'referenz.wav','referenz.txt','bestaetigte-hoerprobe.wav'}:
                 raise HuginError('config_invalid', 'configuration')
