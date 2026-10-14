@@ -1,16 +1,20 @@
 """Wheel identity and offline inputs, without installing real engine packages."""
 import hashlib
 import json
+import os
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import unittest
 import zipfile
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools'))
 from runtime_packages import (assemble_manifest, load_wheel_lock, package_pins,
                               validate_wheelhouse, wheel_metadata, write_requirements)
+import prepare_engines
 
 
 def fixture_wheel(folder, name='fixture_pkg', version='1.0', *, tag='py3-none-any', metadata_extra=''):
@@ -39,6 +43,79 @@ class RuntimePackageContracts(unittest.TestCase):
 
     def tearDown(self):
         self.temp.cleanup()
+
+    def test_build_environment_junction_outside_runtime_fails_before_any_build_work(self):
+        foreign=self.root/'other-installation';foreign.mkdir()
+        runtime=self.root/'.runtime/wheel-build'
+        owner={'schema_version':1,'python':prepare_engines.PYTHON,
+            'build_tools':dict(prepare_engines.BUILD_TOOLS),'source_date_epoch':prepare_engines.SOURCE_DATE_EPOCH}
+        (foreign/'hugin-build.json').write_text(json.dumps(owner),encoding='utf-8')
+        try:runtime.symlink_to(foreign,target_is_directory=True)
+        except OSError:
+            if os.name!='nt':self.skipTest('directory links unavailable')
+            # These absolute endpoints are both fresh children of this fixture.
+            assert runtime.parent.resolve().is_relative_to(self.root) and foreign.resolve().is_relative_to(self.root)
+            subprocess.run(['cmd','/c','mklink','/J',str(runtime),str(foreign)],check=True,capture_output=True)
+        self.assertEqual(runtime.resolve(),foreign.resolve())
+        spec={'kind':'pypi-sdist','version':'1.5.0',
+            'archive_url':'https://files.pythonhosted.org/packages/sox-1.5.0.tar.gz'}
+        with patch.object(prepare_engines,'_fetch_source',return_value='a'*64) as fetch,\
+                patch.object(prepare_engines,'_download') as download,\
+                patch.object(prepare_engines,'inspect_wheels',return_value=()),\
+                patch.object(prepare_engines,'_python_facts'),\
+                patch.object(prepare_engines,'_pip',side_effect=ValueError('stop_before_install')) as pip:
+            with self.assertRaisesRegex(ValueError,'build_environment_outside_runtime'):
+                prepare_engines._build_source_wheel(self.root,self.house,'sox',spec,'a'*64)
+        fetch.assert_not_called();download.assert_not_called();pip.assert_not_called()
+        self.assertFalse((foreign/'build-requirements.txt').exists())
+
+    def test_build_environment_rejects_pathless_or_other_path_owner_before_download(self):
+        runtime=self.root/'.runtime/wheel-build';runtime.mkdir()
+        marker=runtime/'hugin-build.json'
+        old={'schema_version':1,'python':prepare_engines.PYTHON,
+            'build_tools':dict(prepare_engines.BUILD_TOOLS),'source_date_epoch':prepare_engines.SOURCE_DATE_EPOCH}
+        moved=dict(old,schema_version=2,runtime=str(self.root/'other-installation'))
+        spec={'kind':'pypi-sdist','version':'1.5.0',
+            'archive_url':'https://files.pythonhosted.org/packages/sox-1.5.0.tar.gz'}
+        for owner in (old,moved):
+            with self.subTest(owner=owner):
+                original=json.dumps(owner)
+                marker.write_text(original,encoding='utf-8')
+                with patch.object(prepare_engines,'_fetch_source') as fetch:
+                    with self.assertRaisesRegex(ValueError,'build_environment_ownership_conflict'):
+                        prepare_engines._build_source_wheel(self.root,self.house,'sox',spec,'a'*64)
+                fetch.assert_not_called()
+                self.assertEqual(marker.read_text(encoding='utf-8'),original)
+                self.assertFalse((runtime/'build-requirements.txt').exists())
+
+    def test_owned_build_marker_binds_final_path_and_matching_reuse_does_not_reinstall(self):
+        runtime=self.root/'.runtime/wheel-build'
+        executable=runtime/('Scripts/python.exe' if os.name=='nt' else 'bin/python')
+        def create(path):
+            self.assertEqual(path,runtime.resolve())
+            executable.parent.mkdir(parents=True)
+            executable.write_bytes(b'synthetic interpreter fixture')
+        def pip(_executable,*arguments,**kwargs):
+            self.assertEqual(_executable,executable)
+            if arguments[0]=='wheel':fixture_wheel(self.house/'tts',name='sox',version='1.5.0')
+        spec={'kind':'pypi-sdist','version':'1.5.0',
+            'archive_url':'https://files.pythonhosted.org/packages/sox-1.5.0.tar.gz'}
+        with patch.object(prepare_engines,'_fetch_source',return_value='a'*64),\
+                patch.object(prepare_engines,'_download'),\
+                patch.object(prepare_engines,'inspect_wheels',return_value=()),\
+                patch.object(prepare_engines,'_python_facts'),\
+                patch.object(prepare_engines.venv,'EnvBuilder') as builder,\
+                patch.object(prepare_engines,'_installed_versions',return_value=dict(prepare_engines.BUILD_TOOLS)),\
+                patch.object(prepare_engines,'_pip',side_effect=pip) as installed:
+            builder.return_value.create.side_effect=create
+            first=prepare_engines._build_source_wheel(self.root,self.house,'sox',spec,'a'*64)
+            again=prepare_engines._build_source_wheel(self.root,self.house,'sox',spec,'a'*64)
+        owner=json.loads((runtime/'hugin-build.json').read_text(encoding='utf-8'))
+        self.assertEqual(owner['schema_version'],2)
+        self.assertEqual(owner['runtime'],str(runtime.resolve()))
+        self.assertEqual(first,again)
+        self.assertEqual(builder.return_value.create.call_count,1)
+        self.assertEqual([call.args[1] for call in installed.call_args_list],['install','wheel'])
 
     def test_lock_covers_exact_profile_pins_and_keeps_wheel_identity(self):
         lock = load_wheel_lock(self.root)

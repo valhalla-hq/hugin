@@ -231,7 +231,28 @@ def _source_spec(root,name,version):
     return dict(kind='pypi-sdist',version=version,archive_url=item['url']),item['digests']['sha256']
 
 
+def _build_environment_spec(root):
+    root=Path(root).resolve()
+    runtime=(root/'.runtime/wheel-build').resolve()
+    if not runtime.is_relative_to(root/'.runtime') or runtime == root/'.runtime':
+        raise ValueError('build_environment_outside_runtime')
+    marker=runtime/'hugin-build.json'
+    executable=runtime/('Scripts/python.exe' if os.name=='nt' else 'bin/python')
+    requirements=runtime/'build-requirements.txt'
+    # Neither a directory junction nor an individual output/executable link
+    # may redirect build writes or installation into a different environment.
+    if any(path.resolve() != path for path in (marker,executable,requirements)):
+        raise ValueError('build_environment_outside_runtime')
+    owner={'schema_version':2,'runtime':str(runtime),'python':PYTHON,
+           'build_tools':dict(BUILD_TOOLS),'source_date_epoch':SOURCE_DATE_EPOCH}
+    if runtime.exists() and (not marker.is_file() or json.loads(marker.read_text(encoding='utf-8')) != owner):
+        raise ValueError('build_environment_ownership_conflict')
+    return runtime,executable,marker,requirements,owner
+
+
 def _build_source_wheel(root,house,name,spec,expected_hash):
+    # Establish the write owner before source/tool downloads or build writes.
+    runtime,executable,marker,requirements,owner=_build_environment_spec(root)
     source=house/(name+('.zip' if spec['kind']=='git-archive' else '.tar.gz'))
     spec=dict(spec,archive_sha256=_fetch_source(spec['archive_url'],source,expected_hash),
               build_tools=dict(BUILD_TOOLS),source_date_epoch=SOURCE_DATE_EPOCH)
@@ -246,18 +267,11 @@ def _build_source_wheel(root,house,name,spec,expected_hash):
     tools=house/'_build_tools'
     _download(sys.executable,tools,dict(BUILD_TOOLS),'https://pypi.org/simple')
     tool_records=inspect_wheels(tools,dict(BUILD_TOOLS),'_build_tools')
-    runtime=root/'.runtime/wheel-build'
-    marker=runtime/'hugin-build.json'
-    owner={'schema_version':1,'python':PYTHON,'build_tools':dict(BUILD_TOOLS),'source_date_epoch':SOURCE_DATE_EPOCH}
-    if runtime.exists() and (not marker.exists() or json.loads(marker.read_text()) != owner):
-        raise ValueError('build_environment_ownership_conflict')
     if not runtime.exists():
         runtime.mkdir(parents=True)
         marker.write_text(json.dumps(owner,indent=2)+'\n',encoding='utf-8')
         venv.EnvBuilder(with_pip=True).create(runtime)
-    executable=runtime/('Scripts/python.exe' if os.name=='nt' else 'bin/python')
     _python_facts(executable)
-    requirements=runtime/'build-requirements.txt'
     lines=[f'{(house/item.file).resolve().as_uri()} --hash=sha256:{item.sha256}' for item in tool_records]
     requirements.write_text('\n'.join(lines)+'\n',encoding='utf-8')
     _pip(executable,'install','--disable-pip-version-check','--no-index',

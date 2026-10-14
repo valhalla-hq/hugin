@@ -292,3 +292,63 @@ client frame across a later blocking read. The fix belongs at those producers.
 
 Pick up at this separate source checkpoint, preserving exclusive helper ownership.
 Cherry-pick only the latest lifetime source commit; do not merge helper history.
+
+## Fixed Root Standards/Ops Review and Bounded Build Owner Fix
+
+Reviewed exact root HEAD 94e5269433f3526c82466cb7478f12f2d5fdc055 via read-only
+git show. Own Privacy/Signals code is excluded from independent review coverage.
+Only fake I/O, in-memory fixed-source modules and fresh temporary filesystem
+fixtures were used. No root tracked files or root .runtime were changed.
+
+Reproduced findings at that fixed head:
+
+1. P1 tools/prepare_engines.py:249-264: .runtime/wheel-build was not resolved or
+   checked for containment. Its generic tool-version marker did not bind the
+   runtime path. A junction to another installation's identically marked build
+   environment received build-requirements.txt and would run pip there. Guard
+   uses two own fresh directories and stops the fake pip before any install.
+2. P1 src/hugin/application.py:624-639: thread is assigned before Thread.start.
+   A start failure after signals/inputs start skips finish_io/window.stop because
+   thread is not None, while InstanceGuard is still released. Parent owns fix.
+3. P2 src/hugin/workers/client.py:155,405-413: the PCM-transfer thread is absent
+   from _threads. close can set closed=True while that owned thread still hashes
+   and holds input PCM. Guard blocks only a fake hash, no child. Parent owns fix.
+4. P2 src/hugin/config.py:91: frame_bytes=1 is accepted although PCM framing
+   requires even sizes; TTS rounds its packet to zero and STT fragments fail
+   protocol validation. Parent owns fix.
+
+Raw fixed-head repro guards remain locally at the ignored helper path
+C:/Users/brian/brian-projects/worktrees/hugin/hugin-workers-mjolnir/.runtime/reviews/root_94e526_ops_guards.py.
+They intentionally assert desired behavior and remain red against historical
+94e5269. They do not use current root source or mutate its runtime. Root already
+reproduced the other findings and is fixing them independently.
+
+The parent requested only finding 1's source fix in this helper. Merged the fixed
+review baseline locally as 7a75860 (helper CONTEXT retained), then changed only
+tools/prepare_engines.py and tests/contracts/test_runtime_packages.py plus this
+helper context/handoff. Parent should cherry-pick the subsequent fix commit only,
+not that baseline merge or the whole helper history.
+
+- _build_environment_spec now resolves/contains the build path before source or
+  build-tool downloads and any build writes. Marker/executable/requirements links
+  cannot redirect those accesses. A schema-2 owner binds the canonical final
+  runtime, Python, tool pins and source epoch. Existing pathless/moved/foreign
+  markers are rejected and preserved, never silently upgraded or adopted.
+- A full existing matching wheelhouse still returns early without using a build
+  environment. Rebuilding through an old pathless marker now requires separately
+  reviewed recreation/adoption; this fix performs none in any existing runtime.
+- Guard-first source contract reproduced the junction escape before the fix;
+  twelve package contracts now pass, including old/moved marker preservation and
+  matching build reuse without repeat pip calls. Full source suite 216 passed in
+  17.149 seconds; docs/Ruff F/diff checks green. Test builds use tiny synthetic
+  wheel bytes in temporary directories with fake download/interpreter/pip calls.
+- No source/wheel/package/model lock changed and no new real wheel was built,
+  downloaded or installed by this fix. Full source suite's existing tiny fixture
+  install was executed only in its own temporary environment.
+
+No additional independently reproduced finding in runtime_packages wheel/hash/
+pin validation, restore's normal profile environments, default-deny target
+approvals or normal CLI activation gate. These were source/fixture checks, not a
+new full 122-wheel offline restoration, GPU/provider/native-device or migration
+pilot. The remaining real hardware/production acceptance gaps remain open.
+Ownership remains active; root integration and the other three fixes stay parent-owned.
