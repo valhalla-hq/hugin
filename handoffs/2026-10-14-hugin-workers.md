@@ -121,3 +121,44 @@ restore guards and this helper's context/handoff. No tracked parent files writte
 After pushing this checkpoint, the parent requested a separate read-only
 Standards review of its fixed head 8d604bb628898e96c2de5ecefee214356cdd040c.
 Do not edit parent application/audio/UI/Windows files during that review.
+
+## PCM Terminal Correction Checkpoint
+
+Restore follow-up was pushed as de58d14893e5a743e74dbdad6e9cf0c50edc09e7.
+The parent then requested a separate producer fix after discovering that the
+client could complete a successful terminal before its final PCM callback.
+
+- Root cause: `received` advanced before callback publication, and the control
+  reader used that count to resolve terminal. It could retire the coordinator
+  operation or start the next chunk before the last block was accepted.
+- Structural fix: distinct per-request `received` and `accepted_audio` counts.
+  Non-canceled terminal waits for declared PCM callbacks to return; receipt alone
+  proves only framing. Cancellation bypasses the publication barrier, while
+  declared framed bytes are drained before retiring identity. Returning stale
+  callbacks never credit/increment a new request.
+- Guard-first: last-callback and immediate next-chunk tests failed before the
+  fix, then passed. Public simulated WorkerClient tests deliberately block the
+  final callback, chain a new request from the terminal future, and cancel an
+  old blocked callback before a new request. Existing cancellation remains
+  independent of audio callback backpressure. These are simulation guarantees,
+  not native Qwen/GPU coverage.
+- 26 total source tests, docs, Ruff F and whitespace checks passed. No root
+  edits, native actions, GPU model load, audio playback or microphone use.
+
+Read-only Standards review at fixed parent 8d604bb628898e96c2de5ecefee214356cdd040c
+found three root integration issues, all reproduced with Git-object code and
+fake I/O only and delivered to the parent for correction:
+
+1. P1 application.py:107-114/384: `_Closed` can be dropped when the event queue
+   is full, permanently retaining `_closing` after the queue drains. Cleanup
+   acknowledgements need bounded, non-lossy retention by resource owner.
+2. P1 application.py:446-450: shutdown can cancel the queued microphone stop
+   while a delayed start finishes, marking the controller closed while it still
+   owns capture. Await the capture lifecycle cleanup barrier before closing.
+3. P2 application.py:447-456 and windows/input.py:145-146: a sticky input error
+   is re-raised after cleanup and prevents orderly shutdown indefinitely;
+   startup finally also skips later owners after a first cleanup exception.
+   Separate operational failure from remaining resource ownership.
+
+Those root findings are not fixed in this helper. The accountable parent owns
+their integration, re-review and native verification. Ownership remains active.

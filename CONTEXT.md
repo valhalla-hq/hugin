@@ -47,3 +47,9 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 - Effective free disk before materialization was 543,585,005,568 bytes. New environments have path/engine/pin ownership markers; repeat apply verifies versions and does not reinstall matching packages.
 - 23 source tests pass, including 7 restore guards. Parent CPU speech probe used the approved synthetic Tyr reference (6.48625 seconds), resampled only in RAM from 22050 to 16000 Hz. Normalized comparison: 104 characters, 17 words, Hamming/character-edit/word-edit distances all 0. Worker family exit confirmed; separate sentinel preserved. No payload or recording written, no GPU model loaded.
 - Controller restore, cryptographic wheel locks, offline wheelhouse/restore and native GPU/voice/pilot coverage remain open. Package-cache hits do not establish offline reproducibility.
+
+## PCM Publication Barrier Correction
+
+- Parent review found successful terminal futures could overtake the last PCM callback because framing receipt was counted as publication. Client now owns separate per-request received/accepted-audio counts. Non-canceled terminals wait for all callbacks; cancellation bypasses publication waits after framed bytes are drained. Returning old callbacks cannot acknowledge a newer request.
+- Guard-first public WorkerClient regressions reproduced the last-callback and next-chunk race before the fix; 26 total tests now pass, including independent cancellation under backpressure and old/new request identities. No GPU or native actions used for this correction.
+- Separate read-only Standards review of parent fixed head 8d604bb628898e96c2de5ecefee214356cdd040c reported three reproduced cleanup findings to the parent: lossy capacity handling for owner-close acknowledgements, pending capture shutdown, and sticky input-error cleanup. Parent owns those root fixes; no parent edits made here.

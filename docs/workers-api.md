@@ -49,6 +49,11 @@ allocates the other half to its native player, making their combined budget
 at most 12000 bytes / 250 ms initially. Cancellation has its own
 control pipe and wakes the worker's credit wait independently of audio. The
 parent must still reject stale generations at its audio/text boundaries.
+Normal terminal futures wait until every declared PCM byte has completed its
+audio callback. Framing receipt and completed callback publication are separate
+per-request counts, so a terminal cannot retire the final block before the
+controller accepts it. A canceled terminal bypasses that publication wait;
+returning stale callbacks cannot credit or acknowledge a newer request.
 `cancel(engine, request_id, generation)` is identity matched and returns bool.
 It invalidates client transcript drafts immediately. It does not assert native
 work has stopped. Only a matching terminal or observed family exit releases
