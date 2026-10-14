@@ -8,7 +8,7 @@ from hugin.coordinator import (
     DeliverText, DeliveryCommit, DeliveryFinished, DictationToggle, DrainAudio, Engine,
     EngineAudio, EngineExited, EngineFault, EngineReady, EngineResult,
     EngineTerminal, JobKind, Limits, PersistVoice, PlayAudio, ReadToggle,
-    RecordingStarted, RecordingStopped, ResetAudio, SelectionReady, SetEscape,
+    RecordingStarted, RecordingStopped, ResetAudio, RetryCleanup, SelectionReady, SetEscape,
     Shutdown, StageDelivery, StartRecording, State, StopRecording, Tick,
     VoiceSelected,
 )
@@ -606,6 +606,76 @@ class CoordinatorContracts(unittest.TestCase):
         self.core.dispatch(EngineExited(Engine.STT, offload.engine_instance))
         self.assertIsNone(self.core.snapshot().gpu_slot)
         self.assertEqual(self.core.snapshot().state, State.STOPPING)
+
+    def test_explicit_cleanup_retry_reissues_only_held_audio_reset_during_shutdown(self):
+        job, operation = self.reading()
+        self.core.dispatch(Cancel())
+        self.core.dispatch(AudioReset(job, False))
+        self.core.dispatch(Shutdown())
+        generation = self.core.snapshot().generation
+        self.assertEqual(self.core.dispatch(RetryCleanup()), (ResetAudio(job),))
+        self.assertEqual(self.core.snapshot().generation, generation)
+        self.assertEqual(self.core.snapshot().gpu_slot, operation)
+        self.assertEqual(self.core.snapshot().state, State.STOPPING)
+        self.assertEqual(self.effects(AudioReset(job), StartRecording), [])
+        self.assertIsNone(self.core.snapshot().cancelling_job)
+        self.assertEqual(self.core.snapshot().gpu_slot, operation)
+        self.core.dispatch(EngineTerminal(operation))
+        self.assertEqual(self.core.dispatch(RetryCleanup()), ())
+
+    def test_explicit_cleanup_retry_reissues_discard_capture_stop_until_ack(self):
+        job = self.record()
+        self.core.dispatch(Shutdown())
+        generation = self.core.snapshot().generation
+        self.assertEqual(self.core.dispatch(RetryCleanup()), (StopRecording(job, discard=True),))
+        self.assertEqual(self.core.snapshot().generation, generation)
+        self.assertEqual(self.core.snapshot().cancelling_job, job)
+        self.core.dispatch(RecordingStopped(job))
+        self.assertIsNone(self.core.snapshot().cancelling_job)
+        self.assertEqual(self.core.dispatch(RetryCleanup()), ())
+        self.assertEqual(self.core.snapshot().state, State.STOPPING)
+
+    def test_cleanup_retry_never_repeats_delivery_and_preserves_finished_result(self):
+        job, operation, _ = self.transcription('Preserved result')
+        self.core.dispatch(DeliveryCommit(job, 'own-transaction', True))
+        self.core.dispatch(Cancel())
+        result = self.core.snapshot().result
+        generation = self.core.snapshot().generation
+        self.assertEqual(self.core.dispatch(RetryCleanup()), ())
+        self.assertEqual(self.core.snapshot().generation, generation)
+        self.assertEqual(self.core.snapshot().gpu_slot, operation)
+        self.assertEqual(self.core.snapshot().cancelling_job, job)
+        self.assertEqual(self.core.snapshot().result, result)
+        self.core.dispatch(Shutdown())
+        self.assertEqual(self.core.dispatch(RetryCleanup()), ())
+        # Shutdown intentionally cleared the result; retry cannot recreate it.
+        self.assertIsNone(self.core.snapshot().result)
+        self.assertEqual(self.effects(DeliveryCommit(job, 'own-transaction', True), DeliverText), [])
+
+    def test_cleanup_retry_does_not_release_cancelled_engine_without_terminal(self):
+        job = self.record()
+        begin, = self.stop(job)
+        operation = self.initialized(begin.operation)
+        self.core.dispatch(Cancel())
+        generation = self.core.snapshot().generation
+        self.assertEqual(self.core.dispatch(RetryCleanup()), ())
+        self.assertEqual(self.core.snapshot().generation, generation)
+        self.assertEqual(self.core.snapshot().gpu_slot, operation)
+        self.assertEqual(self.core.snapshot().cancelling_job, job)
+
+    def test_cleanup_retry_clears_pending_dictation_before_quit_cleanup_ack(self):
+        old_job, operation = self.reading()
+        self.core.dispatch(DictationToggle())
+        self.assertEqual(self.core.dispatch(RetryCleanup()), (ResetAudio(old_job),))
+        self.assertEqual(self.effects(AudioReset(old_job), StartRecording), [])
+        self.assertIsNone(self.core.snapshot().job)
+        self.assertEqual(self.core.snapshot().gpu_slot, operation)
+
+    def test_cleanup_retry_while_idle_has_no_effect_or_new_generation(self):
+        generation = self.core.snapshot().generation
+        self.assertEqual(self.core.dispatch(RetryCleanup()), ())
+        self.assertEqual(self.core.snapshot().generation, generation)
+        self.assertEqual(self.core.snapshot().state, State.IDLE)
 
 
 if __name__ == '__main__':
