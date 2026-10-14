@@ -35,7 +35,91 @@ class FakeWindow:
         self.notify=None
 
 
+class FakeEndpoints:
+    def __init__(self):
+        self.closed=True
+        self.ready=False
+        self.owner=None
+        self.notify=None
+        self.close_failures=0
+        self.open_failure=False
+        self.close_entered=threading.Event()
+        self.close_release=None
+    def open(self,notify,on_error):
+        self.owner=threading.get_ident()
+        self.closed=False
+        self.notify=notify
+        if self.open_failure:raise RuntimeError('PRIVATE device name')
+        self.ready=True
+    def close(self):
+        assert self.owner==threading.get_ident()
+        self.close_entered.set()
+        if self.close_release is not None:self.close_release.wait(3)
+        if self.close_failures:
+            self.close_failures-=1
+            raise HuginError('input_failed','audio_endpoints_cleanup')
+        self.ready=False
+        self.closed=True
+        self.notify=None
+
+
 class WindowsSignalContracts(unittest.TestCase):
+    def test_native_endpoint_backend_creation_failure_cannot_restart_without_notifications(self):
+        backend=FakeWindow();owner=WindowsSignals(lambda action:None)
+        with patch('hugin.windows.signals._NativeSignalWindow',return_value=backend),patch(
+            'hugin.windows.audio_endpoints.AudioEndpointNotifications',side_effect=RuntimeError('PRIVATE')):
+            with self.assertRaises(HuginError):owner.start()
+        with self.assertRaises(HuginError):owner.start()
+        self.assertTrue(owner.closed);self.assertFalse(owner.ready)
+        self.assertNotIn('PRIVATE',str(owner.error))
+        owner.close()
+
+    def test_endpoint_close_return_requires_actual_resource_release(self):
+        backend=FakeWindow();endpoints=FakeEndpoints()
+        owner=WindowsSignals(lambda action:None,backend=backend,endpoints=endpoints);owner.start()
+        original=endpoints.close;endpoints.close=lambda:None
+        try:
+            with self.assertRaises(HuginError):owner.close()
+            self.assertFalse(owner.closed);self.assertFalse(backend.closed)
+        finally:endpoints.close=original;owner.close()
+
+    def test_endpoint_registration_and_cleanup_share_native_window_owner_thread(self):
+        backend=FakeWindow();endpoints=FakeEndpoints();actions=[];delivered=threading.Event()
+        def callback(action):actions.append(action);delivered.set()
+        owner=WindowsSignals(callback,backend=backend,endpoints=endpoints);owner.start()
+        try:
+            self.assertEqual(endpoints.owner,backend.owner)
+            self.assertNotEqual(endpoints.owner,threading.get_ident())
+            endpoints.notify('devices_changed')
+            self.assertTrue(delivered.wait(2))
+            self.assertEqual(actions,['devices_changed'])
+        finally:owner.close()
+        self.assertTrue(endpoints.closed);self.assertTrue(owner.closed)
+
+    def test_endpoint_unregister_failure_retains_signal_owner_and_window_for_retry(self):
+        backend=FakeWindow();endpoints=FakeEndpoints();endpoints.close_failures=1
+        owner=WindowsSignals(lambda action:None,backend=backend,endpoints=endpoints);owner.start()
+        with self.assertRaises(HuginError):owner.close()
+        self.assertFalse(owner.closed);self.assertFalse(backend.closed)
+        self.assertIsNotNone(endpoints.notify)
+        owner.close();self.assertTrue(owner.closed);self.assertTrue(endpoints.closed)
+
+    def test_endpoint_partial_start_is_cleaned_on_original_thread(self):
+        backend=FakeWindow();endpoints=FakeEndpoints();endpoints.open_failure=True
+        owner=WindowsSignals(lambda action:None,backend=backend,endpoints=endpoints)
+        with self.assertRaises(HuginError):owner.start()
+        owner.close();self.assertTrue(owner.closed);self.assertTrue(endpoints.closed)
+
+    def test_blocked_endpoint_unregister_has_bounded_close_and_retains_until_ack(self):
+        backend=FakeWindow();endpoints=FakeEndpoints();endpoints.close_release=threading.Event()
+        owner=WindowsSignals(lambda action:None,backend=backend,endpoints=endpoints);owner.start()
+        try:
+            with self.assertRaises(HuginError):owner.close(timeout=.05)
+            self.assertTrue(endpoints.close_entered.is_set())
+            self.assertFalse(owner.closed);self.assertFalse(endpoints.closed)
+        finally:endpoints.close_release.set();owner.close()
+        self.assertTrue(owner.closed)
+
     def test_close_before_start_never_creates_an_owner_later(self):
         backend=FakeWindow();owner=WindowsSignals(lambda action:None,backend=backend)
         owner.close()
