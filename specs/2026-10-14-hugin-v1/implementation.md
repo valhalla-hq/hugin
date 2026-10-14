@@ -25,14 +25,14 @@ mit Ctrl+Alt+Shift+F9/F10; normale Eingaben sind bis T011/T012 gesperrt.
 
 ## Prüfungen am integrierten Controllerstand
 
-`tools/dev.py check --group all`: zuletzt 229 erfolgreiche Prüfungen, darunter
+`tools/dev.py check --group all`: zuletzt 248 erfolgreiche Prüfungen, darunter
 Verträge und simulierte IPC-/Restore-Integrationsfälle. Simulation ist kein
 Nachweis für native Modell-/Hardwareeigenschaften.
 
 `tools/dev.py check --docs`: 19 Anforderungen, 17 AC, keine gefundenen
 Zuordnungs-/Link-/Stimm-/Lock-Probleme. Compileall und Git-Diff-Check grün.
 `windows --interactive` mit expliziten UIA-/Audio-/Endpoint-Testflags:
-37 Prüfungen ohne Skips erfolgreich. Darunter sind ABI-/Producer-Mocks und
+43 Prüfungen ohne Skips erfolgreich. Darunter sind ABI-/Producer-Mocks und
 eigene native Fixtures; dies beweist keine vollständige produktive Zielmatrix.
 
 Die Controller-Guards liefen zuerst wegen fehlender application.py rot, dann
@@ -84,6 +84,13 @@ UI-loop-Ausnahmen und unbestätigter Cleanup halten ihre Owner; die
 Einzelinstanz wird erst nach Controller- und Fensterabschluss freigegeben.
 Zusätzliche Guards wurden jeweils vor dem Fix reproduziert. Build-Umgebungen
 binden den endgültigen Pfad; ein Junction darf keine fremde Runtime beschreiben.
+Die Venv-Prüfung umfasst innere Umleitungen und die tatsächlichen Pip-
+Schreibziele; gelesene Base-Stdlib wird davon getrennt. Ein Hosted-CI-
+Fixturefehler durch Windows-Kurzpfade wurde am Fixture-Eingang korrigiert.
+Für pystray 0.19.5 hält ein schmaler Adapter native Runner und Setupthread
+und bestätigt beide Enden vor Freigabe. Native App-/Tray-Proben bestätigen
+dies samt HICON-Freigabe. Teilstart und KeyboardInterrupt behalten den
+Windowowner. Ein voller Nutzerpuffer kann Quit nicht verwerfen.
 
 Der Offline-Paketrestore wurde mit allen 122 echten Wheels in drei frischen
 Umgebungen geprüft: exakte Versionen und `pip check`, 266,20 s; idempotente
