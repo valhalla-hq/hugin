@@ -292,11 +292,10 @@ class DeliveryLease:
         if not self._lock_held:return
         try:
             self._probe._cleanup()
-            if self._fault:raise ClipboardFailure('target_probe_failed')
-        except ClipboardFailure:raise
         except Exception:raise ClipboardFailure('target_cleanup_failed') from None
         finally:
             self._lock_held=False;self._probe._lock.release()
+        if self._fault:raise ClipboardFailure('target_probe_failed')
 
 
 class SelectionProbe:
