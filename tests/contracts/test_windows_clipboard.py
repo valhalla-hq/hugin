@@ -70,19 +70,21 @@ class FakeClipboard:
             raise ClipboardFailure('clipboard_changed')
         return self.data[13].decode('utf-16-le').rstrip('\0')
 
-    def commit_paste(self, expected, target, still_current, authorize=None, transaction=None):
+    def commit_paste(self, expected, target, still_current, authorize=None, transaction=None,commit=None):
         self.before_commit()
-        if self.seq != expected:
-            raise ClipboardFailure('clipboard_changed')
-        if self.target != target:
-            raise ClipboardFailure('target_changed')
-        if not still_current():
-            raise ClipboardFailure('cancelled')
-        if self.modifiers:
-            raise ClipboardFailure('modifiers_active')
-        if authorize is not None and not authorize(transaction):
-            raise ClipboardFailure('commit_rejected')
-        self.pastes += 1
+        submitted=False
+        def fast_commit():
+            nonlocal submitted
+            if submitted:raise ClipboardFailure('commit_rejected',submitted=True)
+            if self.seq != expected:raise ClipboardFailure('clipboard_changed')
+            if self.target != target:raise ClipboardFailure('target_changed')
+            if not still_current():raise ClipboardFailure('cancelled')
+            if self.modifiers:raise ClipboardFailure('modifiers_active')
+            if authorize is not None and not authorize(transaction):raise ClipboardFailure('commit_rejected')
+            self.pastes+=1;submitted=True
+        if commit is None:fast_commit()
+        else:commit(transaction,fast_commit)
+        if not submitted:raise ClipboardFailure('commit_rejected')
 
     def sleep(self, seconds):
         pass

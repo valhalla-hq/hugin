@@ -9,9 +9,10 @@ import sys
 if __package__ in (None, ''):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from hugin.windows.selection import (REQUEST_LIMIT, SelectionResult, decode_request,
-                                     encode_response, read_exact)
-from hugin.windows.clipboard import MAX_TEXT_BYTES
+from hugin.windows.selection import (REQUEST_LIMIT, SelectionResult,
+                                     encode_response, read_exact,TargetResult,
+                                     decode_operation,encode_target_response)
+from hugin.windows.clipboard import MAX_TEXT_BYTES,UiaTargetIdentity
 
 
 class _SelectionFailure(Exception):
@@ -160,6 +161,105 @@ def read_uia_selection(automation, uia, target, native_target, cancelled, limit)
         return SelectionResult('selection_failed')
 
 
+def _edit_pattern(focus,uia):
+    if not focus or not _flag(focus.CurrentHasKeyboardFocus):
+        raise _SelectionFailure('target_changed')
+    if (focus.CurrentControlType!=uia.UIA_EditControlTypeId or not _flag(focus.CurrentIsEnabled)
+            or _flag(focus.CurrentIsPassword)):
+        raise _SelectionFailure('target_unverifiable')
+    for identity in (uia.UIA_IsTextPatternAvailablePropertyId,uia.UIA_IsValuePatternAvailablePropertyId):
+        if focus.GetCurrentPropertyValue(identity) is not True:
+            raise _SelectionFailure('target_unverifiable')
+    value=focus.GetCurrentPattern(uia.UIA_ValuePatternId).QueryInterface(uia.IUIAutomationValuePattern)
+    if _flag(value.CurrentIsReadOnly):raise _SelectionFailure('target_unverifiable')
+    pattern=focus.GetCurrentPattern(uia.UIA_TextPatternId).QueryInterface(uia.IUIAutomationTextPattern)
+    if type(pattern.SupportedTextSelection) is not int or pattern.SupportedTextSelection!=1:
+        raise _SelectionFailure('target_unverifiable')
+    return pattern
+
+
+def _bind_edit(automation,uia,target):
+    """A focused editable Edit, never a document ancestor or class whitelist."""
+    focus=automation.GetFocusedElement();root=automation.ElementFromHandle(target.hwnd)
+    if not root:raise _SelectionFailure('target_changed')
+    pattern=_edit_pattern(focus,uia)
+    pid=focus.CurrentProcessId
+    if type(pid) is not int or not 0<pid<1<<32 or root.CurrentProcessId!=target.pid:
+        raise _SelectionFailure('target_changed')
+    current=focus
+    for _ in range(64):
+        if not current:break
+        if automation.CompareElements(current,root):
+            return _Binding(_identity(focus),_identity(root),_identity(focus),pid,pattern)
+        current=automation.RawViewWalker.GetParentElement(current)
+    raise _SelectionFailure('target_changed')
+
+
+def _position(selected,endpoint,uia):
+    clone=selected.Clone()
+    moved=clone.MoveEndpointByUnit(endpoint,uia.TextUnit_Character,-MAX_TEXT_BYTES-1)
+    if type(moved) is not int or not -MAX_TEXT_BYTES<=moved<=0:
+        raise _SelectionFailure('target_unverifiable')
+    returned=clone.MoveEndpointByUnit(endpoint,uia.TextUnit_Character,-moved)
+    # Units may degrade to a coarser provider unit. Require an exact roundtrip,
+    # rather than assuming CompareEndpoints returns a character distance.
+    if type(returned) is not int or returned!=-moved or clone.CompareEndpoints(endpoint,selected,endpoint)!=0:
+        raise _SelectionFailure('target_unverifiable')
+    return -moved
+
+
+def _insertion(automation,uia,binding):
+    selected=_selected(binding.pattern)
+    if selected is None or selected.CompareEndpoints(0,selected,1)!=0:
+        # Codex has no TextPattern2. A noncollapsed range cannot prove which
+        # endpoint is the active caret, so it is deliberately unsupported.
+        raise _SelectionFailure('target_unverifiable')
+    enclosing=selected.GetEnclosingElement()
+    if not enclosing or _identity(enclosing)!=binding.element_id or _flag(enclosing.CurrentIsPassword):
+        raise _SelectionFailure('target_unverifiable')
+    document=binding.pattern.DocumentRange
+    if (not document or selected.CompareEndpoints(0,document,0)<0
+            or selected.CompareEndpoints(1,document,1)>0):
+        raise _SelectionFailure('target_unverifiable')
+    # Chromium's movement can escape an Edit's DocumentRange into page text.
+    # Subtract its local origin so unrelated page output does not move the
+    # insertion point identity. No GetText, Value, Select or focus mutation.
+    origin=_position(document,0,uia)
+    position=_position(selected,0,uia)-origin
+    if not 0<=position<=MAX_TEXT_BYTES:raise _SelectionFailure('target_unverifiable')
+    return position,selected.Clone()
+
+
+def read_uia_target(automation,uia,target,native_target,cancelled):
+    try:
+        if cancelled():return TargetResult('cancelled')
+        if native_target()!=target:return TargetResult('target_changed')
+        first=_bind_edit(automation,uia,target)
+        position,original=_insertion(automation,uia,first)
+        if cancelled():return TargetResult('cancelled')
+        _confirm_focus(automation,first,target,native_target)
+        second=_bind_edit(automation,uia,target)
+        current_position,current=_insertion(automation,uia,second)
+        if ((first.focus_id,first.root_id,first.element_id,first.focus_pid,position)!=
+            (second.focus_id,second.root_id,second.element_id,second.focus_pid,current_position)
+                or any(original.CompareEndpoints(endpoint,current,endpoint)!=0 for endpoint in (0,1))):
+            return TargetResult('target_changed')
+        final_focus=automation.GetFocusedElement()
+        if not final_focus or _identity(final_focus)!=first.focus_id:
+            return TargetResult('target_changed')
+        final=_selected(_edit_pattern(final_focus,uia))
+        if final is None or any(original.CompareEndpoints(endpoint,final,endpoint)!=0 for endpoint in (0,1)):
+            return TargetResult('target_changed')
+        _confirm_focus(automation,second,target,native_target)
+        if cancelled():return TargetResult('cancelled')
+        return TargetResult('target_captured',UiaTargetIdentity(first.focus_id,first.root_id,
+            first.element_id,first.focus_pid,position))
+    except _SelectionFailure as failure:
+        return TargetResult('target_unverifiable' if failure.status=='selection_unsupported' else failure.status)
+    except Exception:
+        return TargetResult('target_probe_failed')
+
+
 def _system_typelib():
     import ctypes
     from ctypes import wintypes as W
@@ -173,12 +273,14 @@ def _system_typelib():
     return str(Path(path.value) / 'UIAutomationCore.dll')
 
 
-def _com_read(client, uia, target):
+def _com_read(client, uia, target,operation='selection'):
     from hugin.windows.clipboard import NativeClipboard, MAX_TEXT_BYTES
     native = NativeClipboard()
     try:
         automation = client.CreateObject(uia.CUIAutomation, interface=uia.IUIAutomation, clsctx=1)
-        return read_uia_selection(automation, uia, target, native.capture_target, lambda: False, MAX_TEXT_BYTES)
+        if operation=='target':
+            return read_uia_target(automation,uia,target,native.capture_native_target,lambda:False)
+        return read_uia_selection(automation, uia, target, native.capture_native_target, lambda: False, MAX_TEXT_BYTES)
     finally:
         native.close()
 
@@ -215,27 +317,28 @@ def _load_comtypes():
     return comtypes, client
 
 
-def run_native(target):
+def run_native(target,operation='selection'):
+    result_type=TargetResult if operation=='target' else SelectionResult
     if sys.platform != 'win32':
-        return SelectionResult('dependency_unavailable')
+        return result_type('dependency_unavailable')
     # comtypes initializes its importing thread. Select MTA before import;
     # its process-shutdown hook balances that initial apartment reference.
     sys.coinit_flags = 0
     try:
         comtypes, client = _load_comtypes()
     except (ImportError, OSError, _SelectionFailure):
-        return SelectionResult('dependency_unavailable')
+        return result_type('dependency_unavailable')
     import gc
     initialized = False
     try:
         comtypes.CoInitializeEx(comtypes.COINIT_MULTITHREADED)
         initialized = True
         uia = client.GetModule(_system_typelib())
-        return _com_read(client, uia, target)
+        return _com_read(client, uia, target,operation)
     except _SelectionFailure as failure:
-        return SelectionResult(failure.status)
+        return result_type(failure.status)
     except Exception:
-        return SelectionResult('selection_failed')
+        return result_type('target_probe_failed' if operation=='target' else 'selection_failed')
     finally:
         # Provider interfaces leave _com_read before apartment teardown.
         gc.collect()
@@ -245,17 +348,18 @@ def run_native(target):
 
 def main():
     import struct
+    operation='selection'
     try:
         length = struct.unpack('!I', read_exact(sys.stdin.buffer, 4))[0]
         if length > REQUEST_LIMIT:
             raise ValueError('selection request limit')
-        target = decode_request(read_exact(sys.stdin.buffer, length))
+        operation,target = decode_operation(read_exact(sys.stdin.buffer, length))
         if sys.stdin.buffer.read(1) != b'':
             raise ValueError('trailing selection request')
-        result = run_native(target)
-        data = encode_response(result.status, result.text)
+        result = run_native(target,operation)
+        data = encode_target_response(result) if operation=='target' else encode_response(result.status, result.text)
     except Exception:
-        data = encode_response('selection_failed')
+        data = encode_target_response(TargetResult('target_probe_failed')) if operation=='target' else encode_response('selection_failed')
     try:
         view = memoryview(data)
         while view:

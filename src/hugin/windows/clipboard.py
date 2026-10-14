@@ -9,7 +9,7 @@ from collections.abc import Callable
 from contextlib import contextmanager
 import ctypes
 from ctypes import wintypes as W
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import sys
 import threading
 import time
@@ -29,6 +29,23 @@ class ClipboardFailure(Exception):
 
 
 @dataclass(frozen=True)
+class UiaTargetIdentity:
+    focus_id: tuple[int, ...]
+    root_id: tuple[int, ...]
+    element_id: tuple[int, ...]
+    focus_pid: int
+    position: int  # Exact, roundtripped insertion point relative to the Edit provider.
+
+    def __post_init__(self):
+        for parts in (self.focus_id,self.root_id,self.element_id):
+            if type(parts) is not tuple or not 0<len(parts)<=64 or any(
+                    type(part) is not int or not -(1<<31)<=part<1<<31 for part in parts):
+                raise ValueError('invalid UIA runtime identity')
+        if type(self.focus_pid) is not int or not 0<self.focus_pid<1<<32 or type(self.position) is not int or not 0<=self.position<=MAX_TEXT_BYTES:
+            raise ValueError('invalid UIA insertion point')
+
+
+@dataclass(frozen=True)
 class WindowTarget:
     hwnd: int
     focus: int
@@ -39,11 +56,17 @@ class WindowTarget:
     caret: tuple[int, int, int, int, int] | None
     selection: tuple[int, int] | None
     editable: bool = True
+    uia: UiaTargetIdentity | None = None
+    package_family: str | None = None
+
+    @property
+    def without_uia(self):
+        return replace(self,uia=None) if self.uia is not None else self
 
     @property
     def verifiable(self):
         return bool(self.editable and self.hwnd and self.focus and self.process_created and
-                    self.caret is not None and self.selection is not None)
+                    ((self.caret is not None and self.selection is not None) or isinstance(self.uia,UiaTargetIdentity)))
 
 
 @dataclass(frozen=True)
@@ -79,7 +102,7 @@ class ClipboardService:
         self.snapshot_budget = snapshot_budget
         self.selection_timeout = selection_timeout
         self._lock = threading.Lock()
-        self._approved: dict[str, float] = {}
+        self._approved: dict[tuple[str,str|None], float] = {}
         self._capture_approved: set[str] = set()
         self._pending_restore: tuple[ClipboardSnapshot, int] | None = None
 
@@ -99,11 +122,17 @@ class ClipboardService:
             self.backend = NativeClipboard()
         return self.backend
 
-    def approve_target_class(self, control_class: str, restore_delay: float):
+    def approve_target_class(self, control_class: str, restore_delay: float,*,package_family=None):
         """Caller must have explicit pilot proof for this class and delay."""
         if not isinstance(control_class, str) or not control_class or not 0.02 <= restore_delay <= 2:
             raise ValueError('invalid pilot approval')
-        self._approved[control_class] = restore_delay
+        if package_family is not None and (not isinstance(package_family,str) or not 17<=len(package_family)<=64 or '\0' in package_family):
+            raise ValueError('invalid package family approval')
+        self._approved[control_class,package_family] = restore_delay
+
+    def _restore_delay(self,target):
+        scoped=self._approved.get((target.control_class,target.package_family))
+        return scoped if scoped is not None else self._approved.get((target.control_class,None))
 
     def approve_capture_target_class(self, control_class: str):
         """Internal pilot seam; includes the copy-response attribution limit."""
@@ -111,11 +140,36 @@ class ClipboardService:
             raise ValueError('invalid capture pilot approval')
         self._capture_approved.add(control_class)
 
-    def capture_target(self) -> ClipboardResult:
+    def capture_native_target(self) -> ClipboardResult:
+        """Fast Win32 facts only; this does not assert delivery verifiability."""
         if not self._lock.acquire(blocking=False):
             return ClipboardResult('clipboard_busy')
         try:
-            target = self._native().capture_target()
+            backend=self._native()
+            capture=getattr(backend,'capture_native_target',backend.capture_target)
+            return ClipboardResult('native_target_captured',target=capture().without_uia)
+        except ClipboardFailure as failure:
+            return ClipboardResult(failure.status)
+        finally:self._lock.release()
+
+    @staticmethod
+    def _delivery_target(backend,expected=None,cancelled=lambda:False):
+        if hasattr(backend,'capture_native_target'):
+            return backend.capture_target(expected=expected,cancelled=cancelled)
+        return backend.capture_target()  # Existing fake/native-independent adapter seam.
+
+    @staticmethod
+    def _selection_target(backend):
+        return getattr(backend,'capture_native_target',backend.capture_target)().without_uia
+
+    def capture_target(self,*,expected=None,cancelled=lambda:False) -> ClipboardResult:
+        if not self._lock.acquire(blocking=False):
+            return ClipboardResult('clipboard_busy')
+        try:
+            if cancelled():return ClipboardResult('cancelled')
+            target = self._delivery_target(self._native(),expected,cancelled)
+            if expected is not None and target.without_uia!=expected.without_uia:
+                return ClipboardResult('target_changed')
             return ClipboardResult('target_captured' if target.verifiable else 'target_unverifiable', target=target)
         except ClipboardFailure as failure:
             return ClipboardResult(failure.status)
@@ -164,12 +218,12 @@ class ClipboardService:
                 return ClipboardResult('cancelled')
             backend = self._native()
             self._check_recovery(backend)
-            target = backend.capture_target()
+            target = self._selection_target(backend)
             if hasattr(backend, 'read_direct_selection'):
                 text = backend.read_direct_selection(target, MAX_TEXT_BYTES, cancelled)
                 if cancelled():
                     return ClipboardResult('cancelled')
-                if backend.capture_target() != target:
+                if self._selection_target(backend) != target:
                     return ClipboardResult('target_changed')
                 if text is not None:
                     if not isinstance(text, str) or '\0' in text:
@@ -188,7 +242,7 @@ class ClipboardService:
             snapshot = backend.snapshot(self.snapshot_budget)
             if cancelled():
                 return ClipboardResult('cancelled')
-            if backend.capture_target() != target:
+            if self._selection_target(backend) != target:
                 return ClipboardResult('target_changed')
             marker = '__hugin_selection_' + uuid.uuid4().hex
             owned_sequence = backend.stage(self._text_formats(marker), snapshot.sequence)
@@ -200,14 +254,14 @@ class ClipboardService:
             if backend.sequence() != owned_sequence:
                 owned_sequence = None
                 return ClipboardResult('clipboard_changed')
-            if backend.capture_target() != target:
+            if self._selection_target(backend) != target:
                 return ClipboardResult('target_changed')
             backend.copy_selection(target)
             deadline = time.monotonic() + self.selection_timeout
             while time.monotonic() < deadline:
                 if cancelled():
                     return ClipboardResult('cancelled')
-                if backend.capture_target() != target:
+                if self._selection_target(backend) != target:
                     return ClipboardResult('target_changed')
                 current = backend.sequence()
                 if current != owned_sequence:
@@ -239,19 +293,21 @@ class ClipboardService:
 
     def deliver(self, text: str, target: WindowTarget | None,
                 still_current: Callable[[], bool], *,
-                authorize: Callable[[ClipboardTransaction], bool] | None = None) -> ClipboardResult:
+                authorize: Callable[[ClipboardTransaction], bool] | None = None,
+                commit=None) -> ClipboardResult:
         try:
-            return self._deliver(text, target, still_current, authorize)
+            return self._deliver(text, target, still_current, authorize,commit)
         except ClipboardFailure as failure:
             return ClipboardResult(failure.status, submitted=failure.submitted)
 
     def _deliver(self, text: str, target: WindowTarget | None,
-                 still_current: Callable[[], bool], authorize) -> ClipboardResult:
+                 still_current: Callable[[], bool], authorize,commit) -> ClipboardResult:
         if not self._lock.acquire(blocking=False):
             return ClipboardResult('clipboard_busy')
         snapshot = None
         owned_sequence = None
         submitted = False
+        restore_delay=None
         try:
             formats = self._text_formats(text)
             if not still_current():
@@ -260,9 +316,12 @@ class ClipboardService:
                 return ClipboardResult('target_unverifiable')
             backend = self._native()
             self._check_recovery(backend)
-            if backend.capture_target() != target:
+            # Class policy and cheap native identity precede clipboard mutation.
+            # The one expensive UIA refresh happens only in commit_paste.
+            if self._selection_target(backend).without_uia != target.without_uia:
                 return ClipboardResult('target_changed')
-            if target.control_class not in self._approved:
+            restore_delay=self._restore_delay(target)
+            if restore_delay is None:
                 return ClipboardResult('target_unverified')
             if backend.modifiers_down():
                 return ClipboardResult('modifiers_active')
@@ -271,9 +330,12 @@ class ClipboardService:
             transaction = ClipboardTransaction(uuid.uuid4().hex, owned_sequence, target)
             # The adapter rechecks sequence/transaction, target and generation
             # while holding the clipboard lock immediately before SendInput.
-            backend.commit_paste(owned_sequence, target, still_current, authorize, transaction)
+            if commit is None:
+                backend.commit_paste(owned_sequence, target, still_current, authorize, transaction)
+            else:
+                backend.commit_paste(owned_sequence,target,still_current,authorize,transaction,commit=commit)
             submitted = True
-            backend.sleep(self._approved[target.control_class])
+            backend.sleep(restore_delay)
             restored = self._restore(backend, snapshot, owned_sequence)
             owned_sequence = None
             return ClipboardResult('submitted', submitted=True, restored=restored)
@@ -282,7 +344,7 @@ class ClipboardService:
             if failure.owned_sequence is not None:
                 owned_sequence = failure.owned_sequence
             if submitted and owned_sequence is not None:
-                backend.sleep(self._approved[target.control_class])
+                backend.sleep(restore_delay)
             return ClipboardResult(failure.status, submitted=submitted)
         finally:
             try:
@@ -394,6 +456,10 @@ class NativeClipboard:
         ):
             function = getattr(self.kernel, name)
             function.argtypes, function.restype = arguments, result
+        family=getattr(self.kernel,'GetPackageFamilyName',None)
+        if family is not None:
+            family.argtypes=[W.HANDLE,ctypes.POINTER(W.UINT),W.LPWSTR]
+            family.restype=W.LONG
         self.allowed = {1, 7, 8, 13, 15, 16, 17}
         for name in ('HTML Format', 'Rich Text Format'):
             identity = self.user.RegisterClipboardFormatW(name)
@@ -571,7 +637,20 @@ class NativeClipboard:
         self._token = uuid.uuid4().hex.encode('ascii')
         return self.replace((*formats, (self.tx_format, self._token)), expected)
 
-    def capture_target(self):
+    def _package_family(self,process):
+        query=getattr(self.kernel,'GetPackageFamilyName',None)
+        if query is None:return None
+        length=W.UINT()
+        # AppModel family names are at most 64 WCHARs plus their terminator.
+        if query(process,ctypes.byref(length),None)!=122 or not 18<=length.value<=65:
+            return None
+        capacity=length.value;buffer=ctypes.create_unicode_buffer(capacity)
+        if query(process,ctypes.byref(length),buffer)!=0 or not 18<=length.value<=capacity:
+            return None
+        value=buffer.value
+        return value if len(value)+1==length.value else None
+
+    def capture_native_target(self):
         hwnd = self.user.GetForegroundWindow()
         pid = W.DWORD()
         thread = self.user.GetWindowThreadProcessId(hwnd, ctypes.byref(pid)) if hwnd else 0
@@ -591,6 +670,7 @@ class NativeClipboard:
                                                ctypes.byref(kernel), ctypes.byref(user)):
                 raise ClipboardFailure('target_unverifiable')
             creation = created.dwLowDateTime | (created.dwHighDateTime << 32)
+            package_family=self._package_family(process)
         finally:
             if not self.kernel.CloseHandle(process):
                 raise ClipboardFailure('clipboard_failed')
@@ -617,7 +697,29 @@ class NativeClipboard:
             if ok:
                 selection = (start.value, end.value)
         return WindowTarget(int(hwnd), int(info.hwndFocus), pid.value, thread, creation,
-                            name.value, caret, selection, editable)
+                            name.value, caret, selection, editable,package_family=package_family)
+
+    def capture_target(self,*,expected=None,cancelled=lambda:False):
+        """Complete delivery proof; call off the controller/audio owner.
+
+        The child probe calls capture_native_target only. UIA facts never
+        recursively supplement themselves or reinterpret the native basis.
+        """
+        if cancelled():raise ClipboardFailure('cancelled')
+        base=self.capture_native_target()
+        if expected is not None and base!=expected.without_uia:
+            raise ClipboardFailure('target_changed')
+        if base.verifiable:return base
+        if self._selection_probe is None:
+            from hugin.windows.selection import SelectionProbe
+            self._selection_probe=SelectionProbe()
+        result=self._selection_probe.capture_target(base,cancelled)
+        if cancelled():raise ClipboardFailure('cancelled')
+        if self.capture_native_target()!=base:raise ClipboardFailure('target_changed')
+        if result.status=='target_unverifiable':return base
+        if result.status!='target_captured':raise ClipboardFailure(result.status)
+        if result.identity is None:raise ClipboardFailure('target_unverifiable')
+        return replace(base,uia=result.identity)
 
     def read_direct_selection(self, target, limit, cancelled):
         """Standard Edit uses system-marshaled WM messages, without clipboard.
@@ -640,7 +742,7 @@ class NativeClipboard:
             raise ClipboardFailure(result.status)
         if cancelled():
             raise ClipboardFailure('cancelled')
-        if self.capture_target() != target:
+        if self.capture_native_target() != target:
             raise ClipboardFailure('target_changed')
         start, end = target.selection
         if start == end:
@@ -661,7 +763,7 @@ class NativeClipboard:
             raise ClipboardFailure('target_changed')
         if cancelled():
             raise ClipboardFailure('cancelled')
-        if self.capture_target() != target:
+        if self.capture_native_target() != target:
             raise ClipboardFailure('target_changed')
         data = ctypes.string_at(ctypes.addressof(buffer) + start * 2, (end - start) * 2)
         try:
@@ -694,7 +796,7 @@ class NativeClipboard:
             raise ClipboardFailure('input_partial', submitted=key == 0x56 and sent >= 2)
 
     def copy_selection(self, target):
-        if self.capture_target() != target:
+        if self.capture_native_target() != target:
             raise ClipboardFailure('target_changed')
         if self.modifiers_down():
             raise ClipboardFailure('modifiers_active')
@@ -728,8 +830,9 @@ class NativeClipboard:
             except UnicodeError:
                 raise ClipboardFailure('text_invalid') from None
 
-    def commit_paste(self, expected, target, still_current, authorize=None, transaction=None):
+    def commit_paste(self, expected, target, still_current, authorize=None, transaction=None,commit=None):
         submitted = False
+        active=False;attempted=False;gate=threading.Lock()
         try:
             with self._opened():
                 if self.sequence() != expected or self.user.GetClipboardOwner() != self.hwnd:
@@ -738,16 +841,30 @@ class NativeClipboard:
                 size = self.kernel.GlobalSize(token_handle) if token_handle else 0
                 if size != len(self._token or b'') or not size or self._read_handle(token_handle, size) != self._token:
                     raise ClipboardFailure('clipboard_changed')
-                if self.capture_target() != target:
+                if self.capture_target(expected=target,cancelled=lambda:not still_current()) != target:
                     raise ClipboardFailure('target_changed')
-                if self.modifiers_down():
-                    raise ClipboardFailure('modifiers_active')
-                if not still_current():
-                    raise ClipboardFailure('cancelled')
-                if authorize is not None and not authorize(transaction):
-                    raise ClipboardFailure('commit_rejected')
-                self._chord(0x56)
-                submitted = True
+                active=True
+                def fast_commit():
+                    nonlocal submitted,attempted
+                    # The caller marshals only this short closure to its input
+                    # owner. Revoke it before the clipboard lock can be released.
+                    with gate:
+                        if not active or attempted:raise ClipboardFailure('commit_rejected')
+                        attempted=True
+                        if self.capture_native_target()!=target.without_uia:
+                            raise ClipboardFailure('target_changed')
+                        if self.modifiers_down():raise ClipboardFailure('modifiers_active')
+                        if not still_current():raise ClipboardFailure('cancelled')
+                        if authorize is not None and not authorize(transaction):
+                            raise ClipboardFailure('commit_rejected')
+                        self._chord(0x56)
+                        submitted=True
+                try:
+                    if commit is None:fast_commit()
+                    else:commit(transaction,fast_commit)
+                    if not submitted:raise ClipboardFailure('commit_rejected')
+                finally:
+                    with gate:active=False
         except ClipboardFailure as failure:
             failure.submitted = failure.submitted or submitted
             raise
