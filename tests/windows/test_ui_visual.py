@@ -62,8 +62,8 @@ class NativeVisualContract(unittest.TestCase):
                     text='Dieser Text ist ausschließlich eine Darstellungsprobe.',
                     components='Whisper · bereit    Qwen · bereit',
                     error='Synthetischer Diagnosehinweis: Der Prüfadapter meldet eine begrenzte Störung. Bitte erneut versuchen.',
-                    dictation_shortcut='Ctrl+Alt+Shift+F9 · erneut: fertig',
-                    reading_shortcut='Text markieren · Ctrl+Alt+Shift+F10 · erneut: Stopp'))
+                    dictation_shortcut='Strg+Alt+D · erneut: fertig',
+                    reading_shortcut='Text markieren · Strg+Alt+V · erneut: Stopp'))
                 window.show()
                 self.assert_visible_controls(window)
                 width,height=window.root.minsize()

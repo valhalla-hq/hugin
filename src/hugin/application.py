@@ -553,8 +553,8 @@ class Controller:
             error=MESSAGES.get(error,'') if error else '',activity=activity)
         if pilot:
             from dataclasses import replace
-            view=replace(view,dictation_shortcut='Ctrl+Alt+Shift+F9 · erneut: fertig',
-                reading_shortcut='Text markieren · Ctrl+Alt+Shift+F10 · erneut: Stopp')
+            view=replace(view,dictation_shortcut='Strg+Alt+D · erneut: fertig',
+                reading_shortcut='Text markieren · Strg+Alt+V · erneut: Stopp')
         return view
 
     def _publish(self): self.publish(self.view())

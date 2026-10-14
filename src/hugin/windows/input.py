@@ -169,10 +169,10 @@ class WindowsInputs:
         try:
             presses = MousePresses(self._enqueue)
             self._backend.open(None if self.pilot else presses.handle)
-            mods = (1 | 2 | 4) if self.pilot else 1
-            self._backend.register(1, mods | MOD_NOREPEAT, 0x78 if self.pilot else 0x59)
+            mods = (1 | 2) if self.pilot else 1
+            self._backend.register(1, mods | MOD_NOREPEAT, 0x44 if self.pilot else 0x59)
             if self.pilot:
-                self._backend.register(2, mods | MOD_NOREPEAT, 0x79)
+                self._backend.register(2, mods | MOD_NOREPEAT, 0x56)
             self.running = True
             self._ready.set()
             while not self._halt.is_set():

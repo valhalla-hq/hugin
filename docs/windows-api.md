@@ -26,7 +26,7 @@ toggle and reports ready.
   explicit; Escape is absent while idle.
 - Normal mode reserves XBUTTON1/2 and Alt+Y. One DOWN/UP pair emits one action;
   `INJECTED` is accepted and `LOWER_IL_INJECTED` is excluded.
-- Pilot mode has **no mouse hook** and uses Ctrl+Alt+Shift+F9/F10 for
+- Pilot mode has **no mouse hook** and uses Ctrl+Alt+D/V for
   dictation/read. Do not start normal mode while the old stack owns its keys.
 
 Physical mouse delivery, browser navigation suppression, OS hook removal and

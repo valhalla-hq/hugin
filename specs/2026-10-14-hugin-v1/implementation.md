@@ -4,7 +4,7 @@ Dieser Bericht enthält die früheren Implementierungsteilnachweise vom
 14.10.2026. Aktuelle Darstellung, autorisierte vorübergehende Apppause und
 abgeschlossene serielle CUDA-Probe: [erster GPU-Pilot](../../docs/pilot-2026-10-14.md).
 Kein produktiver Wechsel; Profile und Autostarts bleiben erhalten. Hugin läuft ausschließlich im Pilot
-mit Ctrl+Alt+Shift+F9/F10; normale Eingaben sind bis T011/T012 gesperrt.
+mit Strg+Alt+D/V; normale Eingaben sind bis T011/T012 gesperrt.
 
 ## Implementiert und geprüft
 
