@@ -284,5 +284,24 @@ class ApplicationContracts(unittest.TestCase):
         self.assertEqual(data['profile_id'],'deutsch-3')
         self.assertIsNotNone(data['last_input_utc'])
 
+    def test_diagnostic_tracks_cancelled_native_operation_until_terminal(self):
+        self.controller.command('read');self.pump()
+        self.pool.future.set_result({'engine_instance':'actual-tts','device':'cuda'});self.pump()
+        self.controller.command('cancel');self.pump()
+        self.assertTrue(json.loads(self.controller.diagnostic())['pending_cleanup'])
+        self.assertFalse(json.loads(self.controller.diagnostic())['components']['tts']['ready'])
+        self.pool.inference_futures[-1].set_result({'code':None,'cancelled':True});self.pump()
+        self.assertFalse(json.loads(self.controller.diagnostic())['pending_cleanup'])
+
+    def test_diagnostic_clears_capture_cleanup_after_confirmed_close(self):
+        def partial_start():
+            self.controller.microphone.owned=True
+            raise HuginError('microphone_failed','synthetic_partial_start')
+        self.controller.microphone.start=partial_start
+        self.controller.command('dictation');self.pump()
+        self.assertFalse(self.controller.microphone.owned)
+        self.assertIsNone(self.controller.core.snapshot().cancelling_job)
+        self.assertFalse(json.loads(self.controller.diagnostic())['pending_cleanup'])
+
 
 if __name__ == '__main__': unittest.main()

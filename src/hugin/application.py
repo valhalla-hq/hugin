@@ -99,7 +99,6 @@ class Controller:
         self._last_input = None
         self._last_input_utc = None
         self._engine_versions = observed_versions(settings.root)
-        self._capture_failed = False
         self._devices = {}
         self._closed_io = set()
         self._io_cleanup_failed = set()
@@ -297,7 +296,6 @@ class Controller:
                     self._post(c.RecordingStarted(effect.job))
                 except Exception as error:
                     if self.microphone.owned:
-                        self._capture_failed = True
                         self._post(_Failure(HuginError('microphone_failed','capture_cleanup')))
                     else: self._post(c.RecordingStarted(effect.job,_safe_error(error,'capture')))
             self._capture_submit(start)
@@ -313,7 +311,6 @@ class Controller:
                     try: self.microphone.cancel()
                     except HuginError: pass
                 if self.microphone.owned:
-                    self._capture_failed = True
                     self._post(_Failure(HuginError('microphone_failed','capture_cleanup')))
                 else: self._post(c.RecordingStopped(effect.job,data,target,error))
             self._capture_submit(stop)
@@ -505,6 +502,12 @@ class Controller:
 
     def diagnostic(self):
         snap = self.core.snapshot()
+        retiring={(op.engine,op.engine_instance) for op in snap.retired_operations}
+        capture_active=snap.job is not None and snap.job.kind == c.JobKind.DICTATION
+        selection_active=snap.job is not None and snap.job.kind == c.JobKind.READING
+        with self._lock:
+            abandoned_io=bool((self.microphone.owned or self._capture_tasks) and not capture_active
+                or self._selection_tasks and not selection_active)
         data = {'schema_version':1,'app':'Hugin','version':__version__,
             'state':snap.state.value,'voice':snap.voice,'input_ready':bool(self.inputs.running and not self.inputs.error),
             'profile_id':self.settings.voices[snap.voice].source_id,
@@ -512,15 +515,17 @@ class Controller:
             'engine_versions_source':'installed metadata at application startup',
             'last_input_utc':self._last_input_utc,
             'input_age_seconds':None if self._last_input is None else round(max(0,time.monotonic()-self._last_input),2),
-            'components':{item.engine.value:{'ready':item.ready and (item.engine,item.engine_instance) not in self._closing | self._cleanup_failed,
+            'components':{item.engine.value:{'ready':item.ready and (item.engine,item.engine_instance) not in self._closing | self._cleanup_failed | retiring,
                 'blocked':item.blocked or (item.engine,item.engine_instance) in self._cleanup_failed,
                 'device':self._devices.get(item.engine.value)} for item in snap.components},
             'error_code':self._runtime_error.code if self._runtime_error else snap.error.code if snap.error else None,
-            'pending_cleanup':bool(self._closing or self._cleanup_failed or self._io_cleanup_failed) or self._capture_failed}
+            'pending_cleanup':bool(self._closing or self._cleanup_failed or self._io_cleanup_failed
+                or snap.retired_operations or snap.cancelling_job or abandoned_io)}
         return json.dumps(data,ensure_ascii=False,indent=2)
 
     def view(self):
         snap = self.core.snapshot()
+        retiring={(op.engine,op.engine_instance) for op in snap.retired_operations}
         labels = {c.State.IDLE:'Bereit',c.State.STARTING:'Mikrofon wird geöffnet',c.State.RECORDING:'Aufnahme läuft',
             c.State.TRANSCRIBING:'Diktat wird verarbeitet',c.State.DELIVERING:'Text wird übergeben',
             c.State.TTS_PREPARING:'Vorlesen wird vorbereitet',c.State.TTS_PLAYING:'Vorlesen läuft',
@@ -529,10 +534,14 @@ class Controller:
         components = ' · '.join(('Whisper' if item.engine == c.Engine.STT else 'Qwen')+': '+
             ('wird beendet' if (item.engine,item.engine_instance) in self._closing else
              'Bereinigung offen' if (item.engine,item.engine_instance) in self._cleanup_failed else
+             'wird gestoppt' if (item.engine,item.engine_instance) in retiring else
              'gestört' if item.blocked else 'bereit' if item.ready else 'bei Bedarf') for item in snap.components)
         pilot = getattr(self.inputs,'pilot',False)
         activity = 'error' if error else {c.State.IDLE:'idle',c.State.RECORDING:'recording',c.State.TTS_PLAYING:'playing'}.get(snap.state,'preparing')
         status=labels[snap.state]
+        if snap.state == c.State.IDLE and retiring:
+            status='Vorherige Verarbeitung wird beendet'
+            if not error: activity='preparing'
         if not self.inputs.running or self.inputs.error: status='Eingaben nicht bereit'
         elif self.signals is not None and not self.signals.ready and not self._stop:
             status='Windows-Verbindung nicht bereit'
