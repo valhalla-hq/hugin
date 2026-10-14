@@ -37,8 +37,19 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Next Step
 
-- Kürzeländerung nach Review/CI integrieren und Pilot mit Strg+Alt+D/V neu starten. Danach menschlicher Hör-/Tasten-/Zielvergleich. Einmaliger lokaler Rückweg hält die eigene Familie und startet nach Tray-Beenden/geschlossenem Job die unveränderten Startup-lnks; Status im lokalen .runtime/pilot-session-*.json. Normale Maus-/Alt+Y-Hooks bleiben gesperrt.
+- Main 8c64029c8068a6fe3c58d177a1ed7b0c353ca773 mit Strg+Alt+D/V läuft sichtbar;
+  geordneter Altstack-Rückstart und erneute Pause beim Kürzelwechsel bestätigt.
+- Aktiver Task codex/hugin-pilot-fixes-mjolnir: Brian meldet fehlende Codex-
+  Übergabe bei unverändertem Ziel und abgehacktes Audio bei beiden Stimmen.
+  Vertrag/Plan: specs/2026-10-14-hugin-v1/pilot-fixes.md.
+- Reproduziert: leere Delivery-Freigabe, fehlende native Chromium-Caretfakten,
+  irreführende Controller-Meldung; Audiohelper findet Queue-leer-Lücken durch
+  einen einzigen vollen WAVEHDR. Guard-first Korrekturen und native Codex-/
+  Wiedergabeprüfung laufen. Keine generelle Zielklassenfreigabe.
+- Laufende alte Testsitzung bleibt bis zur geprüften Aktualisierung verfügbar.
+  Einmaliger lokaler Rückweg hält die eigene Familie und startet nach Tray-
+  Beenden die unveränderten Startup-lnks. Normale Maus-/Alt+Y-Hooks gesperrt.
 
 ## Active Handoff
 
-- `handoffs/2026-10-14-simple-hotkeys.md`
+- `handoffs/2026-10-14-pilot-fixes.md`

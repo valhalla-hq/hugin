@@ -124,6 +124,34 @@ class ApplicationContracts(unittest.TestCase):
         self.assertEqual(self.clipboard.submissions, [])
         self.assertEqual(self.controller.core.snapshot().result.text, 'private marker')
 
+    def assert_delivery_rejection(self, status, expected_code):
+        self.clipboard.deliver = lambda *args, **kwargs: NS(
+            status=status, submitted=False, restored=False)
+        self.dictation_ready()
+        request,generation=self.pool.inference[-1]
+        self.controller.worker_event(dict(type='result',engine='stt',engine_instance='actual-stt',
+            request_id=request,generation=generation,text='synthetic rejected dictation'))
+        self.pump()
+        self.assertEqual(self.controller.core.snapshot().error.code,expected_code)
+        self.assertEqual(self.controller.view().text,'synthetic rejected dictation')
+        self.assertEqual(self.clipboard.submissions,[])
+        self.assertNotIn('synthetic rejected dictation',self.controller.diagnostic())
+
+    def test_unapproved_delivery_does_not_claim_target_changed(self):
+        self.assert_delivery_rejection('target_unverified','target_unverified')
+
+    def test_unverifiable_delivery_does_not_claim_target_changed(self):
+        self.assert_delivery_rejection('target_unverifiable','target_unverifiable')
+
+    def test_clipboard_rejection_does_not_claim_target_changed(self):
+        self.assert_delivery_rejection('format_unsupported','clipboard_failed')
+
+    def test_cold_model_load_is_distinguished_from_transcription(self):
+        self.controller.command('dictation');self.pump()
+        self.controller.command('dictation');self.pump()
+        self.assertEqual(self.controller.view().status,'Whisper wird geladen')
+        self.assertIn('Whisper: wird geladen',self.controller.view().components)
+
     def test_foreign_worker_identity_cannot_publish_text(self):
         self.dictation_ready()
         request, generation = self.pool.inference[-1]

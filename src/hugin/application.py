@@ -391,7 +391,9 @@ class Controller:
                 committed = self.core.dispatch(c.DeliveryCommit(effect.job,transaction,current()))
                 return any(isinstance(item,c.DeliverText) and item.transaction == transaction for item in committed)
             result = self.clipboard.deliver(effect.text,effect.target,current,authorize=authorize)
-            error = None if result.submitted and result.restored else HuginError('target_changed','delivery')
+            code = result.status if result.status in (
+                'target_changed','target_unverifiable','target_unverified') else 'clipboard_failed'
+            error = None if result.submitted and result.restored else HuginError(code,'delivery')
             self.handle(c.DeliveryFinished(effect.job,error))
         elif isinstance(effect,c.CopyText):
             if self.clipboard.copy(effect.text).status != 'copied':
@@ -528,6 +530,7 @@ class Controller:
     def view(self):
         snap = self.core.snapshot()
         retiring={(op.engine,op.engine_instance) for op in snap.retired_operations}
+        loading = snap.gpu_slot if snap.gpu_slot and snap.gpu_slot.action == c.Action.INITIALIZE else None
         labels = {c.State.IDLE:'Bereit',c.State.STARTING:'Mikrofon wird geöffnet',c.State.RECORDING:'Aufnahme läuft',
             c.State.TRANSCRIBING:'Diktat wird verarbeitet',c.State.DELIVERING:'Text wird übergeben',
             c.State.TTS_PREPARING:'Vorlesen wird vorbereitet',c.State.TTS_PLAYING:'Vorlesen läuft',
@@ -537,10 +540,13 @@ class Controller:
             ('wird beendet' if (item.engine,item.engine_instance) in self._closing else
              'Bereinigung offen' if (item.engine,item.engine_instance) in self._cleanup_failed else
              'wird gestoppt' if (item.engine,item.engine_instance) in retiring else
-             'gestört' if item.blocked else 'bereit' if item.ready else 'bei Bedarf') for item in snap.components)
+             'gestört' if item.blocked else 'wird geladen' if loading and item.engine == loading.engine
+             else 'bereit' if item.ready else 'bei Bedarf') for item in snap.components)
         pilot = getattr(self.inputs,'pilot',False)
         activity = 'error' if error else {c.State.IDLE:'idle',c.State.RECORDING:'recording',c.State.TTS_PLAYING:'playing'}.get(snap.state,'preparing')
         status=labels[snap.state]
+        if loading and loading.job == snap.job and snap.job:
+            status=('Whisper' if loading.engine == c.Engine.STT else 'Qwen')+' wird geladen'
         if snap.state == c.State.IDLE and retiring:
             status='Vorherige Verarbeitung wird beendet'
             if not error: activity='preparing'
