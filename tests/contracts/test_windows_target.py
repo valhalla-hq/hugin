@@ -422,6 +422,41 @@ class LeaseProcess(FakeProcess):
 
 class DeliveryLeaseContracts(unittest.TestCase):
     ID=UiaTargetIdentity((1,),(2,),(1,),9,7)
+    def test_confirm_waits_for_writer_close_and_response_within_same_deadline(self):
+        for kind in ('success','close_failure','timeout'):
+            process=LeaseProcess(self.ID);eof=threading.Event();close_return=threading.Event()
+            done=threading.Event();results=[]
+            def close():
+                eof.set()
+                if not close_return.wait(1):raise OSError('synthetic blocked close')
+                if kind=='close_failure':raise OSError('synthetic close failure')
+            process.stdin.close=close
+            output=process.stdout
+            class Output:
+                def read(self,count):
+                    data=output.read(count)
+                    if process.responded.is_set() and not eof.wait(1):raise OSError('missing EOF')
+                    return data
+            process.stdout=Output();probe=SelectionProbe(spawn=lambda *_,**__:process)
+            lease=probe.begin_delivery(BASE,lambda:False)
+            def confirm():
+                results.append(lease.confirm());done.set()
+            caller=threading.Thread(target=confirm);caller.start()
+            try:
+                self.assertTrue(eof.wait(.1));self.assertTrue(lease._confirmed.wait(.1))
+                if kind!='timeout':
+                    self.assertFalse(done.wait(.002),'response alone cannot finish confirmation')
+                    close_return.set()
+                self.assertTrue(done.wait(.1))
+                self.assertEqual(results[0].status,{'success':'target_captured',
+                    'close_failure':'target_probe_failed','timeout':'target_probe_timeout'}[kind])
+            finally:
+                close_return.set();caller.join(1)
+                try:lease.close()
+                except ClipboardFailure:
+                    if kind!='close_failure':raise
+            self.assertTrue(process.closed);self.assertIsNone(probe._process)
+
     def test_cleanup_failure_keeps_target_status_and_owned_retry(self):
         process=LeaseProcess(self.ID);close=process.close
         process.close=lambda:(_ for _ in ()).throw(ClipboardFailure('selection_cleanup_failed'))

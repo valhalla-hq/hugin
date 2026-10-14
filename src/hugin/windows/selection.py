@@ -269,13 +269,15 @@ class DeliveryLease:
             deadline=min(time.monotonic()+.05,self._expires)
             if time.monotonic()>=deadline:return TargetResult('target_probe_timeout')
             self._request.set()
-            while not self._confirmed.is_set():
+            while not (self._confirmed.is_set() and self._sent.is_set()):
+                if self._fault:return TargetResult('target_probe_failed')
                 if self._cancelled():return TargetResult('cancelled')
                 remaining=deadline-time.monotonic()
                 if remaining<=0:return TargetResult('target_probe_timeout')
-                self._confirmed.wait(min(.002,remaining))
+                pending=self._sent if self._confirmed.is_set() else self._confirmed
+                pending.wait(min(.002,remaining))
             if time.monotonic()>deadline:return TargetResult('target_probe_timeout')
-            if self._fault or not self._sent.is_set():return TargetResult('target_probe_failed')
+            if self._fault:return TargetResult('target_probe_failed')
             if self._cancelled():return TargetResult('cancelled')
             result=self._confirmation
             if result.status=='target_captured' and result.identity!=self.result.identity:
