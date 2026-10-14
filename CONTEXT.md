@@ -16,20 +16,32 @@ Clipboardmutation, Audio-/GPU-/Altstack-Aktion durch diesen Helper.
 - Worktree `C:/Users/brian/brian-projects/worktrees/hugin/hugin-codex-target-mjolnir`.
 - Base main `8c64029c8068a6fe3c58d177a1ed7b0c353ca773`; control
   `e3deecae6673a024aa9015a4387737fbec04c795`.
-- Source commit `59dce8ff4cd3d87c3f586d73551063576d29de96`; Parent nimmt nur
-  diesen Source-/Testcommit, keine Helfermetadaten.
-- Schnelle native Basis und vollständige UIA-Ergänzung getrennt; endgültige
-  UIA-Prüfung genau einmal im Delivery-Worker, widerrufbarer single-use
-  fast_commit ausschließlich auf dem Eingabe-Owner.
+- Initialer Sourcecommit `59dce8ff4cd3d87c3f586d73551063576d29de96` bereits
+  beim Parent integriert. Reviewfixes separat:
+  `2d7976cc5c410954cca9de3922506ba1b556a7de`,
+  `3dd42559d29cb182ab20cebd5b6a79b7bda6a458` und
+  `fc61601929420d879b1fc0371d08869f65649fef`; Parent nimmt nur
+  Source-/Testcommits, keine Helfermetadaten.
+- Schnelle native Basis und vollständige UIA-Ergänzung getrennt. Delivery
+  hält genau eine transiente Zwei-Stufen-Probe mit initialisierten COMfacts;
+  single-use fast_commit auf dem Eingabe-Owner fordert die frische lokale
+  Position/Focus/Edit/Root-Identität an, maximal 50ms private IPC inklusive
+  EOF/stderr/clean family exit, danach held-Token/native/Modifier/current/
+  authorize/SendInput. Kein COM/Provideraufruf auf dem Owner.
+- Cleanupfehler behalten Probe/Lease/Threads für Retry; widerrufene Closures
+  leeren Callback-/Transaction-/Lease-Referenzen. Legacy-Fakefallback entfernt.
 - Strenges fokussiertes enabled/nonPassword/Edit + Value.IsReadOnly=False
   + TextPattern; kollabierte Auswahl, exakte begrenzte Roundtrips, lokale
   Position relativ zum Edit-Provider statt beweglicher globaler Chatposition.
 - Echte readonly Codex-Capabilities und zwei verifizierbare Zielproben grün;
   Paketfamilie am gehaltenen Codex-Rootprozesshandle separat bestätigt:
   `OpenAI.Codex_2p2nqsd0c76g0`. Keine globale Chrome-Freigabe.
-- 255 Contracts mit Python -S, 16 gemockte Windows-ABI-Guards, ein echter
+- 265 Contracts mit Python -S, 16 gemockte Windows-ABI-Guards, ein echter
   HiddenRichEdit-UIA-Test, docs und diff grün. Vollständige Probe ca. 1,23s;
-  Stop+Final sind zwei One-shots, grob 2,5s Probeanteil (kein GPU-/End-to-Endclaim).
+  Stop+Final initialisieren je eine Probe, grob 2,5s Probeanteil plus Warmconfirm
+  (kein GPU-/End-to-Endclaim). Aktuelles Codex-Warmtiming offen: Windows lehnte
+  die erlaubte gebundene Foregroundaktivierung ab. UI-Slot an Parent zurück,
+  keine weiteren GUIproben ohne neue Freigabe; echtes Paste bleibt Parentaufgabe.
 - Parent besitzt Application/Approvalconfig/Diagnose/Pasteabnahme; Ownership
   dieses Helpers bleibt aktiv bis explizite Release-Anweisung.
 

@@ -14,8 +14,12 @@ und direkte Vertrags-/ABI-Tests, keine Pakete/Locks/Modelle oder Root-Dokumente.
 - Worktree `C:/Users/brian/brian-projects/worktrees/hugin/hugin-codex-target-mjolnir`.
 - Base main `8c64029c8068a6fe3c58d177a1ed7b0c353ca773`.
 - Control preflight `e3deecae6673a024aa9015a4387737fbec04c795`.
-- Source commit **`59dce8ff4cd3d87c3f586d73551063576d29de96`**.
-  Cherry-pick nur diesen Source-/Testcommit; anschließende Metadaten auslassen.
+- Initialer Sourcecommit **`59dce8ff4cd3d87c3f586d73551063576d29de96`**
+  bereits beim Parent integriert. Reviewfixes chronologisch separat:
+  **`2d7976cc5c410954cca9de3922506ba1b556a7de`**,
+  **`3dd42559d29cb182ab20cebd5b6a79b7bda6a458`** und
+  **`fc61601929420d879b1fc0371d08869f65649fef`**.
+  Nur diese Source-/Testcommits cherry-picken; Helfermetadaten auslassen.
 - Kein Helper-PR/Merge. Ownership aktiv bis expliziter Parent-Release.
 
 ## Diagnosis And Producer Rule
@@ -50,21 +54,45 @@ DocumentRange.GetText, Value, Select, SetFocus oder Providerfehlertext.
   Explizite alte unscoped Edit-Aufrufer bleiben möglich. Keine Freigabe gesetzt.
 - `deliver(...,authorize=...,commit=None)`/`commit_paste(...,commit=None)`:
   vor Staging nur native Basis/Approval; Worker prüft unter Clipboardlock
-  Token und vollständige UIA genau einmal, ruft `commit(transaction,fast_commit)`
-  synchron auf. Parent marshalt nur fast_commit zum Eingabe-Owner. Dieser macht
-  native Basis/Modifier/current/authorize/SendInput, keine UIA/Wait/OpenClipboard.
-  Closure ist single-use und vor Clipboard-Release widerrufen; späte Aufrufe
-  bleiben gesperrt. Ohne commit bleibt der direkte synchrone Aufruf möglich.
+  Token und startet eine transiente `SelectionProbe.begin_delivery(base,cancelled)`
+  Lease. Initiale vollständige UIA-Identität muss zum ursprünglichen Ziel passen.
+  Danach synchroner `commit(transaction,fast_commit)` wie bisher; Parent marshalt
+  nur fast_commit zum Eingabe-Owner. Dieser fordert genau eine frische warme
+  Metadatenbestätigung an: neue Focus/Root/Edit RuntimeIDs und neu berechnete
+  lokale Position gegen den eingefrorenen Integer, keine mitwandernde Range
+  als alleiniger Beweis. Nach erster Messung frisches Editpattern und zweite
+  lokale Integerposition/Auswahl prüfen, damit ein Wechsel innerhalb der
+  Providermessung ebenfalls schließt. Kein erneuter Ancestorwalk, COMimport,
+  Text-/Valuezugriff.
+- `DeliveryLease.confirm()` signalisiert gehaltene private IO-Threads und wartet
+  maximal 50ms insgesamt einschließlich Antwort, EOF, stderr-Barriere und sauberem
+  Familienexit. Keine Pipe-Reads/Writes oder COMcalls direkt auf dem Owner;
+  Timeout/Cancel/Unbekannt bleiben geschlossen, kein Nativefallback. Danach
+  Owner-Nachchecks von sequence/Clipboardowner/Größe/Inhalt am gehaltenen
+  Token-HGLOBAL, native Basis/Modifier/current/authorize/SendInput ohne Ownerqueue.
+  Kein OpenClipboard/GetClipboardData auf dem Eingabe-Owner.
+- Worker hält Clipboardlock bis OwnerACK, Widerruf und `lease.close()`/bestätigtem
+  Probeabschluss. Fehlgeschlagener Abschluss behält Probe/Lease/Threads und meldet
+  `target_cleanup_failed`; Probe.close kann denselben Owner später erneut schließen.
+  Closures sind single-use, vor Clipboard-Release widerrufen und leeren dabei
+  current/authorize/transaction/Lease-Referenzen. Gespeicherte LateClosures halten
+  keine Inhaltscallbacks. Ohne commit bleibt direkter synchroner Aufruf möglich.
+- Produktions-Fallbacks nur für alte Fakeadapter entfernt; Fakes erfüllen dieselbe
+  native/full API. Kein Test-Kompatibilitätszweig im Produkt.
 - Neue Ergebnisse: target_probe_failed/timeout/busy, target_cleanup_failed/pending,
   target_unverifiable/changed, dependency_unavailable, cancelled.
 
 ## Verification
 
-- Neue Guard-Datei zuerst rot; 16 Target/Owner/IPC/Family-Guards grün, darunter
+- Ursprüngliche Guard-Datei zuerst rot; nun 26 Target/Owner/IPC/Family-Guards,
+  P1 staleCaret/staleEdit und P2 Callback-Inhaltsretention zuerst rot/grün. Dazu
+  warme neue lokale Position trotz mitwandernder Range, kein Ancestorwalk,
+  Deadline/Cancel/Single-use, nonzero/trailing/stderr, failed cleanup mit Retention
+  und Retry, Tokenwechsel nach Confirm und genaue Cleanupstatusableitung. Weiterhin
   globale Chatausgabe versus lokaler Caret, Auswahl/Fokus/Processwechsel,
   Passwort/Readonly/disabled, degraded units, bounds/malformed frames,
   Cleanupretention, Ownerthread, Single-use/LateCommit und Restore bei Ablehnung.
-- `python -S tools/dev.py check --group contracts`: **255 pass**.
+- `python -S tools/dev.py check --group contracts`: **265 pass**.
 - Windows ABI-Produzententests: **16 pass**, ausschließlich gemockte OS-Calls.
 - Eigener HiddenRichEdit-UIA-Test: **1 pass**, echte COM/held-job-Kette ohne
   fremde Auswahl, Fokuswechsel oder Clipboardmutation.
@@ -76,6 +104,13 @@ DocumentRange.GetText, Value, Select, SetFocus oder Providerfehlertext.
 - Echte Family separat am gehaltenen bekannten Codex-Prozesshandle bestätigt:
   GetPackageFamilyName -> `OpenAI.Codex_2p2nqsd0c76g0` (27 WCHARs inkl. NUL).
   Produktcode nutzt AppModel-Fakten am Rootprozesshandle, keine Pfadheuristik.
+- Native Warmconfirm noch nicht bestätigt: bekannte Codex-Paketidentität gültig,
+  genau ein enabled/nonPassword Edit mit CSS-Token ProseMirror gefunden (CurrentClassName
+  enthält weitere CSS-Klassen, deshalb kein exakter Stringvergleich fürs native QA).
+  Fremdes Foregroundfenster und UIA SetFocus ergaben keinen stabilen aktiven
+  Codex-Fokus; die ausdrücklich erlaubte gebundene SetForegroundWindow-Anfrage
+  wurde von Windows abgelehnt. Kein positiver Timingclaim; keine Texte gelesen.
+  UI-Slot an Parent zurückgegeben, weitere GUIproben nur nach neuer Freigabe.
 
 ## Primary References
 
@@ -87,9 +122,12 @@ DocumentRange.GetText, Value, Select, SetFocus oder Providerfehlertext.
 
 ## Boundaries And Running State
 
-Keine echte Clipboard-/Paste-/Input-/Audio-/GPU-/Altstack-Aktion des Helpers.
+Keine echte Clipboard-/Paste-/Tastatur-/Mausinjektion/Audio-/GPU-/Altstack-Aktion
+des Helpers. Ausdrücklich erlaubte UIA-/Window-Fokusanfragen siehe Nachweis oben.
 Keine fremden Inhalte, Titel oder rohen Providerfehler gelesen/gespeichert.
-Einmalige Parent-Erlaubnis für UIA SetFocus wurde nicht benötigt/verwendet.
+Die einmalige Parent-Erlaubnis für UIA SetFocus wurde bei der Warmmessung versucht;
+stabiler eigener UIA-Fokus war nicht nachweisbar, entsprechend kein blinder Restore.
+Weitere GUI-/Fokus-/Timingaktionen nach Slotrückgabe gesperrt bis Parentfreigabe.
 Nur technische readonly Metadaten und eigene synthetische Fixturetexte.
 Ignored Diagnose-Skripte unter `.runtime/target-qa/` bleiben erhalten; keine
 Probes laufen weiter. Ownership bleibt aktiv, kein Cache-/Worktree-Löschen.
@@ -102,7 +140,8 @@ fehlende/unsichere Patterns bleiben fail-closed.
 ## Starter Prompt
 
 Read AGENTS.md, CONTEXT.md und diesen exakten Handoff. Parent integriert nur
-Sourcecommit 59dce8ff4cd3d87c3f586d73551063576d29de96 in seinem exklusiven
-Worktree, führt Review und koordinierte Codex-Pasteabnahme durch. Helper hat
+die drei getrennten Reviewfix-Sourcecommits nach dem bereits integrierten 59dce8f
+in seinem exklusiven Worktree, führt Review und koordinierte Codex-Pasteabnahme
+durch. Helper hat
 keine Root-App-/Config-/Audio-/Deploymentautorität. Aktuelle Ownership bis
 expliziter Freigabe behalten, Runtimeartefakte erhalten.
