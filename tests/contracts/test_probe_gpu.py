@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+import threading
 from types import SimpleNamespace as NS
 import unittest
 from unittest.mock import patch
@@ -179,6 +180,43 @@ class GPUProbeContracts(unittest.TestCase):
         self.assertEqual(result['error']['phase'], 'tts_terminal')
         self.assertTrue(result['cleanup_confirmed'])
 
+    def test_cancel_terminal_cannot_overtake_delayed_first_audio_callback(self):
+        terminal_seen, cancel_return, finished = (threading.Event() for _ in range(3))
+        callbacks, results, calls = [], [], []
+        synthesize = SimulatedWorker.synthesize
+        def terminal_first(worker, text, voice, request, generation, language):
+            calls.append(voice)
+            if len(calls) < 3: return synthesize(worker, text, voice, request, generation, language)
+            future = Future()
+            def cancel(*args):
+                worker.cancelled = True
+                future.set_result(dict(code=None, cancelled=True, audio_bytes=6000))
+                terminal_seen.set()
+                cancel_return.wait(2)
+                return True
+            worker.cancel = cancel
+            callback = threading.Thread(target=lambda: worker.event('audio', request, generation,
+                pcm=b'\1\0' * 3000, sample_rate=24000, offset=0))
+            callbacks.append(callback); callback.start()
+            return future
+        def run():
+            try: results.append(self.run_probe())
+            finally: finished.set()
+        runner = threading.Thread(target=run)
+        with patch.object(SimulatedWorker, 'synthesize', terminal_first):
+            runner.start()
+            try:
+                self.assertTrue(terminal_seen.wait(1))
+                self.assertFalse(finished.wait(.05), 'terminal must not retire unfinished cancel facts')
+            finally:
+                cancel_return.set(); runner.join(2)
+                for callback in callbacks: callback.join(2)
+        self.assertFalse(runner.is_alive())
+        self.assertTrue(all(not callback.is_alive() for callback in callbacks))
+        self.assertEqual(results[0]['status'], 'passed')
+        self.assertTrue(results[0]['operations'][-1]['cancel_accepted'])
+        self.assertEqual(results[0]['operations'][-1]['pcm_bytes'], 6000)
+
     def test_raw_exception_payload_is_not_reported(self):
         with patch.object(probe, '_reference', side_effect=RuntimeError('PRIVATE_RAW_PAYLOAD')):
             result = self.run_probe()
@@ -204,7 +242,9 @@ class GPUProbeContracts(unittest.TestCase):
         with patch.object(SimulatedWorker, 'synthesize', incomplete_cancel):
             result = self.run_probe()
         self.assertEqual(result['error'], dict(code='worker_timeout', phase='tts_cancel'))
-        self.assertEqual(observed, [2])
+        self.assertEqual(len(observed), 1)
+        self.assertGreater(observed[0], 0)
+        self.assertLessEqual(observed[0], 2)
         self.assertNotIn('PRIVATE_TIMEOUT_PAYLOAD', json.dumps(result))
 
     def test_initialization_fault_phase_survives_later_generic_worker_exit(self):

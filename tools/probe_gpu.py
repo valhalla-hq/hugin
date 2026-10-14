@@ -104,6 +104,7 @@ class _Events:
                 ('engine_instance', self.worker.engine_instance),
                 ('request_id', operation['request_id']), ('generation', operation['generation']))):
             return
+        cancel_callback = False
         try:
             if event['type'] == 'fault':
                 operation['error'] = self.failure
@@ -127,15 +128,19 @@ class _Events:
                 if self.samples and not operation['cancel']:
                     operation['pcm'].extend(pcm)
                 if operation['cancel'] and operation['audio_chunks'] == 1:
+                    cancel_callback = True
                     operation['cancel_started'] = time.perf_counter()
+                    operation['wake'].set()
                     operation['cancel_accepted'] = self.worker.cancel(
                         operation['request_id'], operation['generation'])
-                    operation['first_done'].set()
-                    operation['wake'].set()
         except Exception as error:
             operation['error'] = error if isinstance(error, HuginError) else HuginError('worker_failed', 'pilot_callback')
             self.worker.cancel_active()
             operation['wake'].set()
+        finally:
+            if cancel_callback:
+                operation['first_done'].set()
+                operation['wake'].set()
 
 
 def probe(root, *, run=False, samples=False, client_factory=None):
@@ -203,16 +208,26 @@ def probe(root, *, run=False, samples=False, client_factory=None):
                 future = worker.transcribe(pcm, active['request_id'], active['generation'])
             else:
                 future = worker.synthesize(SYNTHETIC_TEXT, voice, active['request_id'], active['generation'], 'German')
+            terminal_seconds = settings.limits['ready_seconds']
             if cancel:
                 future.add_done_callback(lambda _: active['wake'].set())
                 if not active['wake'].wait(settings.limits['ready_seconds']):
                     raise HuginError('worker_timeout', 'tts_first_chunk')
-                if active['error']: raise active['error']
-                if not active['first_done'].is_set():
+                if not active['audio_chunks']:
+                    if active['error']: raise active['error']
                     wait(future, 0, 'tts_cancel')
                     raise HuginError('worker_failed', 'tts_cancel_no_audio')
+                # A cancelled Future may finish while the first audio callback
+                # is still returning from cancel(). Observe its facts within
+                # the same cancel deadline before interpreting that Future.
+                deadline = active['cancel_started'] + settings.limits['cancel_seconds']
+                if not active['first_done'].wait(max(0, deadline - time.perf_counter())):
+                    raise HuginError('worker_timeout', 'tts_cancel_callback')
+                if active['error']: raise active['error']
+                if not active['cancel_accepted']: raise HuginError('worker_failed', 'tts_cancel')
+                terminal_seconds = max(0, deadline - time.perf_counter())
             try:
-                terminal = wait(future, settings.limits['cancel_seconds'] if cancel else settings.limits['ready_seconds'], name)
+                terminal = wait(future, terminal_seconds, name)
             except HuginError:
                 if active['error']: raise active['error']
                 raise
@@ -234,7 +249,6 @@ def probe(root, *, run=False, samples=False, client_factory=None):
                 if cancel:
                     facts.update(cancel_accepted=active['cancel_accepted'],
                         cancel_to_terminal_seconds=round(time.perf_counter()-active['cancel_started'], 6))
-                    if not active['cancel_accepted']: raise HuginError('worker_failed', 'tts_cancel')
                 elif terminal['audio_bytes'] != active['audio_bytes']:
                     raise HuginError('protocol_invalid', 'pilot_audio')
                 elif samples:
