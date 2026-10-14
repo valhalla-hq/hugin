@@ -162,3 +162,43 @@ fake I/O only and delivered to the parent for correction:
 
 Those root findings are not fixed in this helper. The accountable parent owns
 their integration, re-review and native verification. Ownership remains active.
+
+## Bounded T009 Signals Checkpoint
+
+At the parent's request, merged fixed root 1a189d7b706afff3ba58705b0222f411290f1740
+into the helper as 9c2cd05. Only CONTEXT conflicted; the helper's own checkpoint
+context was retained. The subsequent source commit is the signal-only change
+for the parent to cherry-pick, not the merge commit.
+
+- New src/hugin/windows/signals.py: WindowsSignals(callback).start() creates
+  an owned invisible top-level broadcast window on its own message thread.
+  Parent HWND is None, not HWND_MESSAGE. Fresh UUID class name and retained
+  module/window/class/callback ownership; no foreign WNDPROC replacement.
+- A separate bounded dispatch thread emits only system_pause, system_resume
+  and devices_changed. Native callback parses message kinds once, never reads
+  lParam, and does no engine/mic/audio/clipboard/UI/input operation.
+- ready/closed/error are distinct facts. close(timeout=2) bounds the combined
+  cleanup/thread wait; cleanup runs on the original native owner thread. Failed
+  DestroyWindow/UnregisterClass retains resources/callback for explicit retry.
+  A healthy retained owner keeps pumping broadcasts; a failed native loop
+  waits for recovery requests. No force-kill, owner search or hidden restart.
+- Guards were added before source and first failed for missing module.
+  Additional thread-start, dishonest-cleanup-return and native-callback exception
+  guards failed before their fixes, then passed. Ten signal contracts and seven
+  pure Win32 ABI/producer mocks passed. Full contracts+integration: 133 passed;
+  docs, Ruff F and diff whitespace checks green. ABI mocks alone ran separately;
+  the native/interactive Windows suite was not started.
+- pystray 0.19.5 inspection found TaskbarCreated handling already built in:
+  _win32.py mapping near46, _on_taskbarcreated near226 calls _show when visible,
+  top-level window rationale near242; _util/win32.py registers near338. SHA256
+  values are frozen in docs/system-signals.md. No extra Explorer code added.
+- No actual native window, sleep/resume, device change, Explorer termination,
+  microphone, playback or GPU model load. Old stack remains untouched.
+- Application/UI wiring belongs to the parent. Actual broadcast delivery,
+  controller invalidation/reopening, Modern Standby and Explorer restart need
+  a controlled pilot. WM_DEVICECHANGE does not cover every default audio endpoint
+  role change; the IMMNotificationClient contract is explicitly outside this
+  bounded WM slice. Do not mark AC016 or all of T009 complete from these mocks.
+
+Resume this helper using the same active ownership. Parent must cherry-pick the
+last signal source commit, not merge the helper branch into the overall task.
