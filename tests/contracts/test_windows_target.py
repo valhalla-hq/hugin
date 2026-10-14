@@ -410,6 +410,18 @@ class LeaseProcess(FakeProcess):
 
 class DeliveryLeaseContracts(unittest.TestCase):
     ID=UiaTargetIdentity((1,),(2,),(1,),9,7)
+    def test_cleanup_failure_keeps_target_status_and_owned_retry(self):
+        process=LeaseProcess(self.ID);close=process.close
+        process.close=lambda:(_ for _ in ()).throw(ClipboardFailure('selection_cleanup_failed'))
+        probe=SelectionProbe(spawn=lambda *_,**__:process)
+        lease=probe.begin_delivery(BASE,lambda:False)
+        self.assertEqual(lease.confirm().status,'target_captured')
+        with self.assertRaises(ClipboardFailure) as failure:lease.close()
+        self.assertEqual(failure.exception.status,'target_cleanup_failed')
+        self.assertIs(probe._process,process);self.assertIs(probe._delivery,lease)
+        process.close=close;probe.close()
+        self.assertTrue(process.closed);self.assertIsNone(probe._process)
+
     def test_confirmation_never_succeeds_before_clean_family_exit(self):
         for kind in ('nonzero','trailing','stderr'):
             process=LeaseProcess(self.ID)
