@@ -199,6 +199,9 @@ class PCMOutput:
             raise HuginError('config_invalid','playback')
         self.rate = rate
         self.capacity = (rate*2*buffer_ms//1000)//2*2
+        # Keep a second native header queued while reclaiming/refilling the
+        # first. One full-capacity header forces every refill past queue empty.
+        self._block_bytes = max(2, (self.capacity//2)//2*2)
         self._factory = factory or _WaveOut
         self._player = None
         self._job = None
@@ -225,7 +228,7 @@ class PCMOutput:
                     return False
                 self._player.collect()
                 available = self.capacity-self._player.queued_bytes
-                count = min(len(pcm)-offset,max(0,available))//2*2
+                count = min(len(pcm)-offset,self._block_bytes,max(0,available))//2*2
                 if count:
                     self._player.submit(pcm[offset:offset+count])
                     offset += count
