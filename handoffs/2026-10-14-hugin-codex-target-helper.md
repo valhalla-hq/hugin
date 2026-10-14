@@ -18,9 +18,11 @@ und direkte Vertrags-/ABI-Tests, keine Pakete/Locks/Modelle oder Root-Dokumente.
   bereits beim Parent integriert. Reviewfixes chronologisch separat:
   **`2d7976cc5c410954cca9de3922506ba1b556a7de`**,
   **`3dd42559d29cb182ab20cebd5b6a79b7bda6a458`** und
-  **`fc61601929420d879b1fc0371d08869f65649fef`**.
+  **`fc61601929420d879b1fc0371d08869f65649fef`** und final
+  **`add0ed2dd9c403be717962f921a6a798c738b7a6`**.
   Nur diese Source-/Testcommits cherry-picken; Helfermetadaten auslassen.
-- Kein Helper-PR/Merge. Ownership aktiv bis expliziter Parent-Release.
+- Kein Helper-PR/Merge. Helperarbeit abgeschlossen; Parent hat Release nach
+  clean/remote/Handoff-Proof beauftragt. Workspace-Record besitzt Ownershipstatus.
 
 ## Diagnosis And Producer Rule
 
@@ -71,6 +73,10 @@ DocumentRange.GetText, Value, Select, SetFocus oder Providerfehlertext.
   Owner-Nachchecks von sequence/Clipboardowner/Größe/Inhalt am gehaltenen
   Token-HGLOBAL, native Basis/Modifier/current/authorize/SendInput ohne Ownerqueue.
   Kein OpenClipboard/GetClipboardData auf dem Eingabe-Owner.
+- Writer-close-Erfolg und Response/EOF/stderr/Familienexit sind unabhängige
+  Completionfacts. Confirm wartet auf beide innerhalb derselben 50ms, sodass
+  eine schnelle Childantwort vor stdin.close-Rückkehr keine falsche Ablehnung
+  erzeugt. _sent bleibt nach erfolgreichem close; Closefehler wird nicht grün.
 - Worker hält Clipboardlock bis OwnerACK, Widerruf und `lease.close()`/bestätigtem
   Probeabschluss. Fehlgeschlagener Abschluss behält Probe/Lease/Threads und meldet
   `target_cleanup_failed`; Probe.close kann denselben Owner später erneut schließen.
@@ -84,7 +90,7 @@ DocumentRange.GetText, Value, Select, SetFocus oder Providerfehlertext.
 
 ## Verification
 
-- Ursprüngliche Guard-Datei zuerst rot; nun 26 Target/Owner/IPC/Family-Guards,
+- Ursprüngliche Guard-Datei zuerst rot; nun 27 Target/Owner/IPC/Family-Guards,
   P1 staleCaret/staleEdit und P2 Callback-Inhaltsretention zuerst rot/grün. Dazu
   warme neue lokale Position trotz mitwandernder Range, kein Ancestorwalk,
   Deadline/Cancel/Single-use, nonzero/trailing/stderr, failed cleanup mit Retention
@@ -92,7 +98,10 @@ DocumentRange.GetText, Value, Select, SetFocus oder Providerfehlertext.
   globale Chatausgabe versus lokaler Caret, Auswahl/Fokus/Processwechsel,
   Passwort/Readonly/disabled, degraded units, bounds/malformed frames,
   Cleanupretention, Ownerthread, Single-use/LateCommit und Restore bei Ablehnung.
-- `python -S tools/dev.py check --group contracts`: **265 pass**.
+- Ordering-P2 am öffentlichen Probe/Lease-Seam zuerst rot/grün: EOF/valide
+  Antwort vor Writer.close-Rückkehr, Freigabe innerhalb Deadline -> captured,
+  Closefehler -> failed, keine Freigabe -> timeout. Keine native Runtimeaktion.
+- `python -S tools/dev.py check --group contracts`: **266 pass**.
 - Windows ABI-Produzententests: **16 pass**, ausschließlich gemockte OS-Calls.
 - Eigener HiddenRichEdit-UIA-Test: **1 pass**, echte COM/held-job-Kette ohne
   fremde Auswahl, Fokuswechsel oder Clipboardmutation.
@@ -130,7 +139,8 @@ stabiler eigener UIA-Fokus war nicht nachweisbar, entsprechend kein blinder Rest
 Weitere GUI-/Fokus-/Timingaktionen nach Slotrückgabe gesperrt bis Parentfreigabe.
 Nur technische readonly Metadaten und eigene synthetische Fixturetexte.
 Ignored Diagnose-Skripte unter `.runtime/target-qa/` bleiben erhalten; keine
-Probes laufen weiter. Ownership bleibt aktiv, kein Cache-/Worktree-Löschen.
+Probes laufen weiter. Parent autorisiert abschließenden regulären Release nach
+remote-proven clean checkpoint; kein Cache-/Worktree-/Runtime-Löschen.
 
 Offen: unabhängiger Parent-Review/Hostedchecks, App-Future-/Owner-Integration,
 Family-Approval und tatsächliche synthetische Codex-Pasteprobe. Große globale
@@ -140,8 +150,9 @@ fehlende/unsichere Patterns bleiben fail-closed.
 ## Starter Prompt
 
 Read AGENTS.md, CONTEXT.md und diesen exakten Handoff. Parent integriert nur
-die drei getrennten Reviewfix-Sourcecommits nach dem bereits integrierten 59dce8f
+die vier getrennten Reviewfix-Sourcecommits nach dem bereits integrierten 59dce8f
 in seinem exklusiven Worktree, führt Review und koordinierte Codex-Pasteabnahme
 durch. Helper hat
-keine Root-App-/Config-/Audio-/Deploymentautorität. Aktuelle Ownership bis
-expliziter Freigabe behalten, Runtimeartefakte erhalten.
+keine Root-App-/Config-/Audio-/Deploymentautorität. Nach freigegebenem Workspace-
+Record nicht weiter schreiben; Runtimeartefakte erhalten. Root besitzt finale
+native Warm-/Pasteprobe nach Nutzerbereitschaft des leeren aktiven Composers.

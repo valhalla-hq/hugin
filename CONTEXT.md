@@ -20,7 +20,8 @@ Clipboardmutation, Audio-/GPU-/Altstack-Aktion durch diesen Helper.
   beim Parent integriert. Reviewfixes separat:
   `2d7976cc5c410954cca9de3922506ba1b556a7de`,
   `3dd42559d29cb182ab20cebd5b6a79b7bda6a458` und
-  `fc61601929420d879b1fc0371d08869f65649fef`; Parent nimmt nur
+  `fc61601929420d879b1fc0371d08869f65649fef` und
+  `add0ed2dd9c403be717962f921a6a798c738b7a6`; Parent nimmt nur
   Source-/Testcommits, keine Helfermetadaten.
 - Schnelle native Basis und vollständige UIA-Ergänzung getrennt. Delivery
   hält genau eine transiente Zwei-Stufen-Probe mit initialisierten COMfacts;
@@ -28,6 +29,9 @@ Clipboardmutation, Audio-/GPU-/Altstack-Aktion durch diesen Helper.
   Position/Focus/Edit/Root-Identität an, maximal 50ms private IPC inklusive
   EOF/stderr/clean family exit, danach held-Token/native/Modifier/current/
   authorize/SendInput. Kein COM/Provideraufruf auf dem Owner.
+- Writer-close-Erfolg und bestätigte Antwort sind getrennte Completionfacts;
+  Confirm wartet auf beide innerhalb derselben 50ms, auch wenn Child/EOF
+  schneller als die Rückkehr von stdin.close sind. Fehler/Timeout schließen.
 - Cleanupfehler behalten Probe/Lease/Threads für Retry; widerrufene Closures
   leeren Callback-/Transaction-/Lease-Referenzen. Legacy-Fakefallback entfernt.
 - Strenges fokussiertes enabled/nonPassword/Edit + Value.IsReadOnly=False
@@ -36,14 +40,16 @@ Clipboardmutation, Audio-/GPU-/Altstack-Aktion durch diesen Helper.
 - Echte readonly Codex-Capabilities und zwei verifizierbare Zielproben grün;
   Paketfamilie am gehaltenen Codex-Rootprozesshandle separat bestätigt:
   `OpenAI.Codex_2p2nqsd0c76g0`. Keine globale Chrome-Freigabe.
-- 265 Contracts mit Python -S, 16 gemockte Windows-ABI-Guards, ein echter
+- 266 Contracts mit Python -S, 27 scoped Targetguards; 16 gemockte ABI-Guards
+  und ein echter
   HiddenRichEdit-UIA-Test, docs und diff grün. Vollständige Probe ca. 1,23s;
   Stop+Final initialisieren je eine Probe, grob 2,5s Probeanteil plus Warmconfirm
   (kein GPU-/End-to-Endclaim). Aktuelles Codex-Warmtiming offen: Windows lehnte
   die erlaubte gebundene Foregroundaktivierung ab. UI-Slot an Parent zurück,
   keine weiteren GUIproben ohne neue Freigabe; echtes Paste bleibt Parentaufgabe.
-- Parent besitzt Application/Approvalconfig/Diagnose/Pasteabnahme; Ownership
-  dieses Helpers bleibt aktiv bis explizite Release-Anweisung.
+- Parent besitzt Application/Approvalconfig/Diagnose/Pasteabnahme. Helperarbeit
+  abgeschlossen; Parent hat regulären Release nach clean/remote/Handoff-Proof
+  beauftragt. Verbindlicher Ownershipstatus steht im zentralen Workspace-Record.
 
 ## Active Handoff
 
