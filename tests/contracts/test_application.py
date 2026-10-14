@@ -148,6 +148,9 @@ class ApplicationContracts(unittest.TestCase):
     def test_unverifiable_delivery_does_not_claim_target_changed(self):
         self.assert_delivery_rejection('target_unverifiable','target_unverifiable')
 
+    def test_timed_out_target_proof_does_not_claim_clipboard_unavailable(self):
+        self.assert_delivery_rejection('target_probe_timeout','target_unverifiable')
+
     def test_clipboard_rejection_does_not_claim_target_changed(self):
         self.assert_delivery_rejection('format_unsupported','clipboard_failed')
 

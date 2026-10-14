@@ -443,6 +443,9 @@ class Controller:
                         authorize=authorize,commit=commit)
                     code=result.status if result.status in (
                         'target_changed','target_unverifiable','target_unverified') else 'clipboard_failed'
+                    if result.status in ('target_probe_timeout','target_probe_failed','target_probe_busy',
+                            'target_cleanup_pending'):
+                        code='target_unverifiable'
                     error=None if result.submitted and result.restored else HuginError(code,'delivery')
                 except BaseException as cause:error=_safe_error(cause,'delivery')
                 self._post(c.DeliveryFinished(effect.job,error))
