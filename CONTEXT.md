@@ -39,3 +39,11 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 - 11 contract tests and 5 simulated worker integration tests passed. Real CPU Whisper completed silent-input cold/warm/offload/reload probes; real private IPC plus native Windows Job Object completed with observed family exit. No GPU model loaded, no microphone or playback.
 - Native initialization must finish synchronously before starting the command reader: earlier reader placement reproduced a 60-second CPU initialization hang. Initialization cancellation therefore uses parent-held job watchdog/exit rather than an in-process acknowledgement.
 - GPU inference/cancellation, both-voice hearing, combined residency, complete offline wheelhouse restore, speech accuracy and full hardware AC remain unverified. No T005/T006 completion or total Hugin acceptance claimed.
+
+## Bounded Restore Follow-Up
+
+- tools/restore.py now plans without writes and applies only to the selected Hugin checkout's owned .runtime. All source/target lock identities, hashes, destination conflicts and environment ownership are checked before writes. File-lock parsing is shared with workers; no old-stack paths or model downloads are built in.
+- Parent runtime materialized at C:/Users/brian/brian-projects/worktrees/hugin/hugin-v1-mjolnir/.runtime: 6 STT, 11 Qwen and 12 CUDA files copied from this helper's verified runtime; new STT/TTS venvs created in place with 21/94 pinned packages and passing pip checks. Existing controller and tracked parent files were untouched.
+- Effective free disk before materialization was 543,585,005,568 bytes. New environments have path/engine/pin ownership markers; repeat apply verifies versions and does not reinstall matching packages.
+- 23 source tests pass, including 7 restore guards. Parent CPU speech probe used the approved synthetic Tyr reference (6.48625 seconds), resampled only in RAM from 22050 to 16000 Hz. Normalized comparison: 104 characters, 17 words, Hamming/character-edit/word-edit distances all 0. Worker family exit confirmed; separate sentinel preserved. No payload or recording written, no GPU model loaded.
+- Controller restore, cryptographic wheel locks, offline wheelhouse/restore and native GPU/voice/pilot coverage remain open. Package-cache hits do not establish offline reproducibility.

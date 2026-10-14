@@ -79,3 +79,45 @@ CONTEXT and docs/workers-api.md, verify branch/ownership/remote checkpoint, then
 coordinate with the parent executor. Do not start a GPU model without the parent
 scheduler's VRAM decision. Do not touch old processes, hooks, audio devices or
 autostarts. Return helper changes to the parent; do not merge or release ownership.
+
+## Restore Follow-Up Checkpoint
+
+The parent explicitly requested a usable restore tool and preparation of its
+runtime, then reviewed the diff before materialization. Changes are limited to
+tools/restore.py, shared prepare_engines.py, file-lock owner assets.py, API docs,
+restore guards and this helper's context/handoff. No tracked parent files written.
+
+- Restore defaults to a write-free plan and requires initialized Hugin source
+  and target checkouts. Source/target complete lock metadata and files must match;
+  extra/different destination files fail before the first copy. Atomic new-file
+  creation never replaces a concurrent destination. Expected failure codes are
+  sanitized; raw exceptions are not printed.
+- Engine environments are created in place with path/engine/pin ownership
+  markers. Foreign/unmarked environments and changed installed versions fail
+  closed. Repeated apply checks versions and pip consistency without reinstall.
+  Model-lock parsing is owned by workers/assets.py and reused by both tools.
+- Parent target: C:/Users/brian/brian-projects/worktrees/hugin/hugin-v1-mjolnir.
+  Before apply effective free C: space: 543,585,005,568 bytes. Locked model/DLL
+  copies total 5,934,025,392 bytes; environment reserve of 12 GiB was an explicit
+  conservative estimate, not measured package cost.
+- New parent .runtime/stt and .runtime/tts contain 21/94 exact pinned entries;
+  both pip checks passed. Six STT, eleven Qwen and twelve CUDA files verified.
+  Existing parent .runtime/controller and all old-stack files/processes untouched.
+- 23 tests passed (11 contracts, 5 worker simulations, 7 restore guards), with
+  doc check, Ruff F and whitespace checks. Restore guards were added before code
+  and initially failed for missing implementation. Simulated environment tests
+  cover single install, repeated verification, ownership refusal and model identity.
+- Parent real CPU WorkerClient/private pipes/native Windows Job Object probe:
+  approved Tyr reference, 6.48625s, mono PCM16, 22050 Hz converted to 16000 Hz only
+  in test RAM. Ready 7.429s, inference 9.520s. Normalized reference/transcript:
+  104 characters, 17 words, exact match, padded Hamming=0, character edit=0,
+  word edit=0. No reference or transcript contents printed/stored. Worker family
+  exit confirmed; independent sentinel remained alive and was then closed via
+  its own held job. Single probe; CPU/family memory/token costs unmeasured.
+- No GPU model load, microphone, playback, hotkey, autostart or old-stack change.
+  Controller restore, cryptographic package hashes, complete offline wheelhouse
+  and offline AC014 remain open. Online cache hits are not an offline proof.
+
+After pushing this checkpoint, the parent requested a separate read-only
+Standards review of its fixed head 8d604bb628898e96c2de5ecefee214356cdd040c.
+Do not edit parent application/audio/UI/Windows files during that review.
