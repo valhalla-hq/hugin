@@ -61,7 +61,7 @@ class WorkerClient:
             future = Future()
             self.active = dict(identity=identity, kind=kind, future=future,
                 cancelled=False, receiver=None, received=0, ready_event=None,
-                result_ended=False)
+                accepted_audio=0, result_ended=False)
             return identity, future
 
     def start(self, *, device=None):
@@ -260,14 +260,24 @@ class WorkerClient:
                                 or event['elapsed_seconds'] < 0
                                 or event['code'] not in (None,'worker_failed','resource_limit','protocol_invalid','unsupported','asset_integrity')):
                             raise invalid()
-                        if not event['cancelled'] and not active['cancelled'] and event['code'] is None:
-                            if active['kind'] == 'transcribe' and not active['result_ended']:
+                        if active['kind'] == 'synthesize':
+                            # Even cancellation must drain the declared framed
+                            # bytes before this request's identity is retired.
+                            # Receipt advances before callbacks, so this never
+                            # waits behind the current blocked audio callback.
+                            self.condition.wait_for(lambda: self.failed or
+                                active['received'] == event['audio_bytes'],
+                                timeout=self.settings.limits['ready_seconds'])
+                            if self.failed or active['received'] != event['audio_bytes']:
+                                raise invalid()
+                        if not event['cancelled'] and not active['cancelled']:
+                            if active['kind'] == 'transcribe' and event['code'] is None and not active['result_ended']:
                                 raise invalid()
                             if active['kind'] == 'synthesize':
                                 self.condition.wait_for(lambda: self.failed or active['cancelled'] or
-                                    active['received'] == event['audio_bytes'],
+                                    active['accepted_audio'] == event['audio_bytes'],
                                     timeout=self.settings.limits['ready_seconds'])
-                                if self.failed or (not active['cancelled'] and active['received'] != event['audio_bytes']):
+                                if self.failed or (not active['cancelled'] and active['accepted_audio'] != event['audio_bytes']):
                                     raise invalid()
                         if active['receiver'] is not None:
                             active['receiver'].cancel()
@@ -324,6 +334,12 @@ class WorkerClient:
                                     pcm=frame.data,sample_rate=24000,offset=frame.offset))
                     with self.condition:
                         still_current = self.active is active and not active['cancelled']
+                        if still_current:
+                            # Receipt proves framing, not publication. A normal
+                            # terminal must not overtake this callback (and let
+                            # the coordinator retire its last PCM as stale).
+                            active['accepted_audio'] += len(frame.data)
+                            self.condition.notify_all()
                     if still_current:
                         self._send('credit', frame.identity)
         except EOFError:

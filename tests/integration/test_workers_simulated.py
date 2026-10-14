@@ -30,9 +30,11 @@ class SimulatedEngine:
         return 'Grüße. ' * 20000
     def synthesize(self, text, voice, language, cancelled):
         try:
-            for _ in range(100):
+            count = 1 if text in ('Terminal race','Next chunk') else 100
+            frames = 3000 if count == 1 else 6000
+            for _ in range(count):
                 if cancelled(): break
-                yield b'\x00\x00' * 6000
+                yield b'\x00\x00' * frames
         finally:
             time.sleep(.03)  # Simulated generator close barrier.
     def synchronize(self): time.sleep(.01)
@@ -129,6 +131,72 @@ class SimulatedWorkerTests(unittest.TestCase):
         future=client.transcribe(b'\x01\x00'*16000,request,3)
         self.assertFalse(client.cancel(str(uuid.uuid4()),3))
         self.assertFalse(future.result(timeout=5)['cancelled'])
+
+    def test_success_terminal_waits_for_last_audio_callback_to_return(self):
+        entered,release,finished=threading.Event(),threading.Event(),threading.Event()
+        def callback(event):
+            self.events.append(event)
+            if event['type']=='audio':
+                entered.set()
+                release.wait(timeout=5)
+                finished.set()
+        client=self.client('tts',callback)
+        future=client.synthesize('Terminal race','freya',str(uuid.uuid4()),1)
+        try:
+            self.assertTrue(entered.wait(timeout=5))
+            with self.assertRaises(TimeoutError):
+                future.result(timeout=.2)
+            self.assertFalse(finished.is_set())
+        finally:
+            release.set()
+        self.assertFalse(future.result(timeout=5)['cancelled'])
+        self.assertTrue(finished.is_set())
+
+    def test_next_chunk_cannot_start_until_previous_callback_completed(self):
+        entered,release=threading.Event(),threading.Event()
+        first,second=str(uuid.uuid4()),str(uuid.uuid4())
+        next_futures=[]
+        completed=[]
+        def callback(event):
+            self.events.append(event)
+            if event['type']=='audio':
+                if event['request_id']==first:
+                    entered.set();release.wait(timeout=5)
+                completed.append(event['request_id'])
+        client=self.client('tts',callback)
+        future=client.synthesize('Terminal race','freya',first,4)
+        def next_chunk(done):
+            next_futures.append(client.synthesize('Next chunk','freya',second,4))
+        future.add_done_callback(next_chunk)
+        try:
+            self.assertTrue(entered.wait(timeout=5))
+            with self.assertRaises(TimeoutError):future.result(timeout=.2)
+            self.assertEqual(next_futures,[])
+        finally:release.set()
+        future.result(timeout=5)
+        deadline=time.monotonic()+5
+        while not next_futures and time.monotonic()<deadline:time.sleep(.005)
+        self.assertEqual(len(next_futures),1)
+        self.assertFalse(next_futures[0].result(timeout=5)['cancelled'])
+        self.assertEqual(completed,[first,second])
+
+    def test_cancelled_callback_does_not_acknowledge_following_request(self):
+        entered,release=threading.Event(),threading.Event()
+        first,second=str(uuid.uuid4()),str(uuid.uuid4())
+        def callback(event):
+            self.events.append(event)
+            if event['type']=='audio' and event['request_id']==first:
+                entered.set();release.wait(timeout=5)
+        client=self.client('tts',callback)
+        future=client.synthesize('Terminal race','freya',first,2)
+        try:
+            self.assertTrue(entered.wait(timeout=5))
+            client.cancel(first,2)
+            self.assertTrue(future.result(timeout=2)['cancelled'])
+            following=client.synthesize('Next chunk','tyr',second,3)
+        finally:release.set()
+        self.assertFalse(following.result(timeout=5)['cancelled'])
+        self.assertEqual([e['request_id'] for e in self.events if e['type']=='audio'],[first,second])
 
     def test_failed_creation_retains_cleanup_owner_and_retryable_close(self):
         class UnfinishedOwner:
