@@ -38,10 +38,11 @@ class WindowTarget:
     control_class: str
     caret: tuple[int, int, int, int, int] | None
     selection: tuple[int, int] | None
+    editable: bool = True
 
     @property
     def verifiable(self):
-        return bool(self.hwnd and self.focus and self.process_created and
+        return bool(self.editable and self.hwnd and self.focus and self.process_created and
                     self.caret is not None and self.selection is not None)
 
 
@@ -126,7 +127,7 @@ class ClipboardService:
         if not isinstance(text, str) or '\0' in text:
             raise ClipboardFailure('text_invalid')
         try:
-            if len(text.encode('utf-8')) > MAX_TEXT_BYTES:
+            if len(text) > MAX_TEXT_BYTES or len(text.encode('utf-8')) > MAX_TEXT_BYTES:
                 raise ClipboardFailure('text_limit')
             return ((CF_UNICODETEXT, (text + '\0').encode('utf-16-le')),)
         except UnicodeError:
@@ -164,6 +165,22 @@ class ClipboardService:
             backend = self._native()
             self._check_recovery(backend)
             target = backend.capture_target()
+            if hasattr(backend, 'read_direct_selection'):
+                text = backend.read_direct_selection(target, MAX_TEXT_BYTES, cancelled)
+                if cancelled():
+                    return ClipboardResult('cancelled')
+                if backend.capture_target() != target:
+                    return ClipboardResult('target_changed')
+                if text is not None:
+                    if not isinstance(text, str) or '\0' in text:
+                        return ClipboardResult('text_invalid')
+                    try:
+                        if len(text) > MAX_TEXT_BYTES or len(text.encode('utf-8')) > MAX_TEXT_BYTES:
+                            return ClipboardResult('text_limit')
+                    except UnicodeError:
+                        return ClipboardResult('text_invalid')
+                    return ClipboardResult('captured' if text else 'selection_empty',
+                                           text=text or None, target=target)
             if target.control_class not in self._capture_approved:
                 return ClipboardResult('target_unverified')
             if backend.modifiers_down():
@@ -581,6 +598,7 @@ class NativeClipboard:
             raise ClipboardFailure('target_unverifiable')
         caret = None
         selection = None
+        editable = True
         if info.hwndCaret:
             rect = info.rcCaret
             caret = (int(info.hwndCaret), rect.left, rect.top, rect.right, rect.bottom)
@@ -589,15 +607,59 @@ class NativeClipboard:
             style = self.user.GetWindowLongPtrW(info.hwndFocus, -16)
             if not style and ctypes.get_last_error():
                 raise ClipboardFailure('target_unverifiable')
-            if style & (0x20 | 0x800):  # password / readonly
+            if style & 0x20:  # never read password controls
                 raise ClipboardFailure('target_unverifiable')
+            editable = not bool(style & 0x800)
             start, end, result = W.DWORD(), W.DWORD(), ctypes.c_size_t()
             ok = self.user.SendMessageTimeoutW(info.hwndFocus, 0xB0, ctypes.addressof(start),
-                                               ctypes.addressof(end), 3, 50, ctypes.byref(result))
+                                               ctypes.addressof(end), 0x23, 50, ctypes.byref(result))
             if ok:
                 selection = (start.value, end.value)
         return WindowTarget(int(hwnd), int(info.hwndFocus), pid.value, thread, creation,
-                            name.value, caret, selection)
+                            name.value, caret, selection, editable)
+
+    def read_direct_selection(self, target, limit, cancelled):
+        """Standard Edit uses system-marshaled WM messages, without clipboard.
+
+        Custom/RichEdit/Browser providers need their own proven read boundary.
+        Whole-control UTF-16 is bounded before allocation; only the selected
+        range survives this call. EM_GETSEL offsets are UTF-16 code units.
+        """
+        if target.control_class.lower() != 'edit' or target.selection is None:
+            return None
+        if cancelled():
+            raise ClipboardFailure('cancelled')
+        if self.capture_target() != target:
+            raise ClipboardFailure('target_changed')
+        start, end = target.selection
+        if start == end:
+            return ''
+        result = ctypes.c_size_t()
+        if not self.user.SendMessageTimeoutW(target.focus, 0xE, 0, 0, 0x23, 50, ctypes.byref(result)):
+            raise ClipboardFailure('target_unverifiable')
+        length = result.value
+        if length > limit or start < 0 or end < start or end > length:
+            raise ClipboardFailure('text_limit')
+        buffer = ctypes.create_unicode_buffer(length + 1)
+        if cancelled():
+            raise ClipboardFailure('cancelled')
+        if not self.user.SendMessageTimeoutW(target.focus, 0xD, length + 1, ctypes.addressof(buffer),
+                                             0x23, 50, ctypes.byref(result)):
+            raise ClipboardFailure('target_unverifiable')
+        if result.value > length or end > result.value:
+            raise ClipboardFailure('target_changed')
+        if cancelled():
+            raise ClipboardFailure('cancelled')
+        if self.capture_target() != target:
+            raise ClipboardFailure('target_changed')
+        data = ctypes.string_at(ctypes.addressof(buffer) + start * 2, (end - start) * 2)
+        try:
+            text = data.decode('utf-16-le')
+            if len(text.encode('utf-8')) > limit:
+                raise ClipboardFailure('text_limit')
+            return text
+        except UnicodeError:
+            raise ClipboardFailure('text_invalid') from None
 
     def modifiers_down(self):
         return any(self.user.GetAsyncKeyState(key) & 0x8000 for key in (0x10, 0x11, 0x12, 0x5B, 0x5C))

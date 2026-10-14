@@ -35,15 +35,24 @@ of those hardware properties.
 `capture_target()` returns `ClipboardResult(status, target=WindowTarget(...))`.
 The immutable target stores foreground/focus handles, PID/thread, process
 creation time, control class, available caret rectangle and edit selection.
+Read-only controls are tracked separately from editable delivery targets.
 No window title or document content is retained as identity. Unknown custom
 controls lack a verifiable selection and receive the manual copy path.
 
 `capture_selection(cancelled)` returns `captured` with fresh text, or a reason
 such as `selection_empty`, `cancelled`, `target_changed`, `clipboard_changed`,
 `format_unsupported`, `format_delayed`, `snapshot_limit`, `clipboard_busy` or
-`modifiers_active`. A private probe and new sequence are required; old
-clipboard text is never substituted for a missing selection.
-Capture also starts disabled per target class: a pilot must explicitly call
+`modifiers_active`. Standard Edit selections are read directly with bounded
+EM_GETSEL/WM_GETTEXT messages, preserving UTF-16 selection offsets and checking
+the bound target before and after reading. They never touch the clipboard;
+read-only Edit controls can be read, password controls cannot. The whole
+control buffer is bounded before allocation; large controls fail explicitly
+even when their selection is short. This is simulated-boundary coverage until
+the native target pilot, not a Browser/Word/UIA claim.
+
+For other controls, a private clipboard probe and new sequence are required;
+old clipboard text is never substituted for a missing selection. Clipboard
+capture starts disabled per target class: a pilot must explicitly call
 `approve_capture_target_class(control_class)` after checking copy-response
 attribution and concurrency for that target. No class is approved by default.
 This is distinct from approval of delivery/restore timing.
@@ -101,7 +110,8 @@ Important native limits remain open:
 - Clipboard locking protects the final sequence check and SendInput handoff;
   it cannot make a foreign app's later clipboard read atomic. Unproved restore
   timing or target identity keeps automatic delivery disabled.
-- Caret/selection APIs do not establish native Word/browser/Codex/PDF coverage.
+- Standard Edit reads and caret/selection APIs do not establish native
+  Word/browser/Codex/PDF coverage. UIA TextPattern remains an explicit follow-up.
   No target matrix is approved by this implementation slice.
 
 ## Instance and worker ownership
@@ -142,6 +152,9 @@ verifies x64 structure sizes, exact ctypes signatures and mocked producer
 behavior without native effects. It is not the interactive hardware suite.
 
 Relevant primary contracts:
+[WM_GETTEXT](https://learn.microsoft.com/en-us/windows/win32/winmsg/wm-gettext),
+[EM_GETSEL](https://learn.microsoft.com/en-us/windows/win32/controls/em-getsel),
+[SendMessageTimeoutW](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendmessagetimeoutw),
 [RegisterHotKey](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerhotkey),
 [clipboard operations](https://learn.microsoft.com/en-us/windows/win32/dataxchg/clipboard-operations),
 [EnumClipboardFormats](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-enumclipboardformats),

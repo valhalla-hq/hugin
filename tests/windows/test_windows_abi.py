@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import patch
 
 from hugin.windows.clipboard import (NativeClipboard, ClipboardFailure, _Input,
-                                     _GuiThreadInfo, _KeyInput, _MouseInput)
+                                     _GuiThreadInfo, _KeyInput, _MouseInput, WindowTarget)
 from hugin.windows.process import (NativeProcess, _StartupInfo, _StartupInfoEx,
                                    _ProcessInformation, _ExtendedLimits)
 from hugin.windows.input import NativeInputs
@@ -241,3 +241,36 @@ class WindowsAbiContracts(unittest.TestCase):
         with self.assertRaises(ClipboardFailure) as failure:
             backend.replace(((13, b'text'),), 1)
         self.assertEqual(failure.exception.owned_sequence, 3)
+
+    def test_direct_edit_selection_uses_utf16_offsets_without_clipboard(self):
+        backend = object.__new__(NativeClipboard)
+        target = WindowTarget(100, 200, 3, 4, 500, 'Edit', None, (1, 3), editable=False)
+        data = 'A😀Z'.encode('utf-16-le')
+        class ReadOS:
+            def SendMessageTimeoutW(self, hwnd, message, capacity, pointer, flags, timeout, result):
+                if message == 0xE:
+                    ctypes.cast(result, ctypes.POINTER(ctypes.c_size_t))[0] = len(data) // 2
+                elif message == 0xD:
+                    ctypes.memmove(pointer, data + b'\0\0', len(data) + 2)
+                    ctypes.cast(result, ctypes.POINTER(ctypes.c_size_t))[0] = len(data) // 2
+                else:
+                    raise AssertionError('unexpected message')
+                return 1
+            def OpenClipboard(self, *_):
+                raise AssertionError('direct reads must not access clipboard')
+        backend.user = ReadOS()
+        backend.capture_target = lambda: target
+        self.assertEqual(backend.read_direct_selection(target, 1024, lambda: False), '😀')
+
+    def test_direct_read_bounds_whole_control_before_buffer_allocation(self):
+        backend = object.__new__(NativeClipboard)
+        target = WindowTarget(100, 200, 3, 4, 500, 'Edit', None, (1, 2))
+        class ReadOS:
+            def SendMessageTimeoutW(self, hwnd, message, capacity, pointer, flags, timeout, result):
+                ctypes.cast(result, ctypes.POINTER(ctypes.c_size_t))[0] = 1025
+                return 1
+        backend.user, backend.capture_target = ReadOS(), lambda: target
+        with patch.object(ctypes, 'create_unicode_buffer', side_effect=AssertionError('allocation before limit')):
+            with self.assertRaises(ClipboardFailure) as failure:
+                backend.read_direct_selection(target, 1024, lambda: False)
+        self.assertEqual(failure.exception.status, 'text_limit')
