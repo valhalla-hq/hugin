@@ -115,6 +115,16 @@ Fixtures: ein vollständiger Restore echter Modelldateien und anschließende
 GPU-Inferenz sind gesondert nachzuweisen. Beide Source-Wheels wurden erneut
 bitidentisch gebaut. [Vertrag und Grenzen](../../docs/offline-restore.md).
 
+Danach wurde Merge `cf1c70570b790211b54ce27e8a93b8e641703d69` vollständig
+mit echten Dateien in den sauberen Main-Deploymentclone wiederhergestellt:
+29 Modell-/CUDA-Dateien, 122 Wheels, drei frische eigene Umgebungen,
+exakte Versionen und `pip check` grün. Apply 279,716 s, Wiederholung ohne
+Paketneuinstallation 63,824 s. 44 native Windows-Prüfungen ohne Skips und
+CPU-Whisper (17 Wörter exakt, eine RAM-Übergabe, null eigene Worker danach)
+aus dieser Installation erfolgreich. Keine externe Netzsperre bei diesem
+Restore und kein GPU-/Hörnachweis. C:/Users/brian/Hugin zeigt als Junction
+auf diesen Mainclone; sechs Original-Planungsdateien hashidentisch gesichert.
+
 Windows-Leistungs-/Geräteereignisse werden über ein eigenes unsichtbares
 Fenster und gehaltene COM-Lebenszeiten verarbeitet. Resume/Gerätewechsel
 entwerten alte Aufträge und schließen eigene Modellworker. Reale Suspend-,
@@ -131,7 +141,7 @@ Geräte- und Explorer-Neustarts bleiben offen.
 | AC-005/008 | Reale Priorität/Abbruch während nativer GPU-Arbeit |
 | AC-007/009/010 | Native UI-Pilot; RAM-/Diagnoseverträge sind separat geprüft |
 | AC-013 | Vergleichsmessung kalt/warm mit Altstack, CPU/Familien-RAM und Latenzen |
-| AC-014/016 | Vollständig unabhängiger Offline-Restore, Resume/Geräte/Explorer |
+| AC-014/016 | Echte Dateien und eigene Umgebungen wiederhergestellt; Offline-Inferenz/GPU sowie Resume/Geräte/Explorer offen |
 | AC-017 | Geprüfte produktive Migration mit Rückweg |
 
 ## Präzisierungen aus der Umsetzung

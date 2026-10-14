@@ -4,6 +4,8 @@ Lokale Windows-App für Diktieren und Vorlesen mit den bestätigten Stimmen **Fr
 
 Status am **14.10.2026**: Controller, native Oberfläche, Eingaben, Audio und lokale Worker sind verbunden. Echtes Whisper funktioniert in der eigenen CPU-Umgebung; GPU-/Hör-/Zielmatrix-Abnahme stehen noch aus. Whispering/PipPal und Autostarts bleiben unverändert. Quelle ist das private Repository valhalla-hq/hugin; Entwicklung folgt AGENTS.md und dem zentralen Brian-Projekt-Workflow.
 
+Der lokale Einstieg `C:\Users\brian\Hugin` zeigt auf den sauberen Main-Deploymentclone. Alle drei eigenen Umgebungen und echten Modell-/CUDA-Dateien sind dort aus geprüften lokalen Dateien wiederhergestellt. Die sechs ursprünglichen Planungsdateien bleiben mit identischen SHA256-Hashes unter `C:\Users\brian\Hugin-Planung-2026-10-14` erhalten. Dies aktiviert noch keine produktiven Bindungen.
+
 ## Verbindlicher Funktionsumfang
 
 - Vordere Daumentaste oder Alt+Y: Diktat starten/stoppen und Text einfügen.
