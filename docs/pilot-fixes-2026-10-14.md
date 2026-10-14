@@ -56,7 +56,39 @@ Entwurf wurde erkannt und blieb unangetastet. Delivery-Konfiguration bleibt bis
 zum erfolgreichen Nachweis leer. Kein Test darf eine Nachricht absenden.
 
 Review fand zusätzlich eine Lücke zwischen UIA-Prüfung und gemarshalltem Commit
-sowie gehaltene Callback-Inhaltsreferenzen nach Widerruf. Diese Befunde müssen
-vor Integration geschlossen sein. Der endgültige Commit und native SendInput
-bleiben auf demselben seriellen Owner. Lange Provider-/Restore-Arbeit läuft
-außerhalb dieses Owners; eigene Deliverytickets sichern Submit-/Shutdownfälle.
+sowie gehaltene Callback-Inhaltsreferenzen nach Widerruf. Ein transienter,
+prozessisolierter Nachweis prüft deshalb unmittelbar auf dem Eingabe-Owner
+erneut Element, Editierbarkeit und lokale Auswahlposition gegen eingefrorene
+Identitäten. Die einzelne Bestätigung inklusive privater IPC-/EOF-Barriere ist
+auf 50 ms begrenzt; Timeout/Unklarheit verhindern Paste. Es gibt keinen Cache
+und keinen nativen Ersatznachweis bei gescheiterter UIA-Prüfung. Widerruf
+entfernt Callback-/Transaktionsreferenzen; Cleanupfehler behalten denselben
+Probe-Owner für erneutes geordnetes Schließen. Entsprechende Guards waren
+zuerst rot und sind nach der Korrektur grün.
+
+Der endgültige Commit und native SendInput bleiben auf demselben seriellen
+Owner. Lange Provider-/Restore-Arbeit läuft außerhalb dieses Owners; eigene
+Deliverytickets sichern Submit-/Shutdownfälle. Ein UIA-Timeout wird als nicht
+prüfbares Eingabefeld angezeigt. Der begrenzte Metadatenparser unterstützt
+höchstens 262144 globale UIA-Character-Schritte; größere Providerdokumente bleiben
+unprüfbar, auch wenn das einzelne Eingabefeld klein ist.
+
+Der reale warme Codex-Nachweis innerhalb dieser 50 ms ist noch offen:
+Windows lehnte die programmgesteuerte Vordergrundaktivierung ab. Die sichere
+Testbedingung ist ein manuell aktiviertes, leeres Codex-Nachrichtenfeld.
+Bis zum vollständigen Einfüge-/Restore-/Gegenfallnachweis bleibt die
+ausgelieferte Delivery-Konfiguration leer.
+
+## Source- und Windows-Verifikation
+
+- Finaler Sourcehead 1a401104a67abb528cfdfadb6dc277aef7931c54:
+  310 Vertrags-/Integrationsprüfungen grün, 19,314s; 32 Controllerguards darin.
+- 48 Windows-Prüfungen ohne Skips grün (4,171s), einschließlich eigenem
+  UIA-Edit, nativen Clipboard-ABI-, Tray-, Eingabe-, Audio-/Shutdownverträgen.
+  Nachfolgende Sourceänderung betrifft nur warme Selection-/Writer-Guards;
+  echte Codex-UIA-Laufzeit und Paste werden dadurch nicht als bewiesen gewertet.
+- Unabhängige Core-/Windows- und Spec-/Reviewgegenprüfung: konkrete P1/P2
+  guard-first geschlossen; 70 passende Windows-Contracts zusätzlich grün.
+  Produktabnahme PF-001 und menschlicher Hörvergleich bleiben ausdrücklich offen.
+- Dokumentprüfung: 19 Anforderungen/17 Abnahmekriterien, keine Probleme.
+  Native Audiovergleichs-/Sitzungsdaten bleiben ignoriert unter .runtime.

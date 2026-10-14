@@ -42,13 +42,19 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 - Aktiver Task codex/hugin-pilot-fixes-mjolnir: Brian meldet fehlende Codex-
   Übergabe bei unverändertem Ziel und abgehacktes Audio bei beiden Stimmen.
   Vertrag/Plan: specs/2026-10-14-hugin-v1/pilot-fixes.md.
-- Reproduziert: leere Delivery-Freigabe, fehlende native Chromium-Caretfakten,
-  irreführende Controller-Meldung; Audiohelper findet Queue-leer-Lücken durch
-  einen einzigen vollen WAVEHDR. Guard-first Korrekturen und native Codex-/
-  Wiedergabeprüfung laufen. Keine generelle Zielklassenfreigabe.
-- Laufende alte Testsitzung bleibt bis zur geprüften Aktualisierung verfügbar.
-  Einmaliger lokaler Rückweg hält die eigene Familie und startet nach Tray-
-  Beenden die unveränderten Startup-lnks. Normale Maus-/Alt+Y-Hooks gesperrt.
+- Audiofix für beide Stimmen nativ bestätigt: Freya48/Tyr47 leere Refills
+  vorher, beide0 nachher, PCM vollständig identisch, alle eigenen Header/
+  Handles geschlossen. Modellladen und Übergabeablehnungen werden präzise
+  angezeigt. Kuratierte Nachweise: docs/pilot-fixes-2026-10-14.md.
+- 310 Vertrags-/Integrationsprüfungen und 48 Windows-Prüfungen ohne Skips grün.
+  Unabhängiger Source-Review am 1a40110 abgeschlossen. Codex-UIA-Nachweis und
+  unmittelbare Bestätigung implementiert; tatsächlicher warmer Codex-Paste-/
+  Restore-Nachweis wartet auf ein aktives leeres Nachrichtenfeld. Vorhandener
+  Entwurf bleibt unangetastet; targets.json bleibt bis zur Prüfung leer.
+- Alte Testsitzung regulär beendet, Rückstart und erneute reguläre Pause der
+  Altapps bestätigt. Geprüfte Aktualisierung und einmaliger Neustart folgen
+  am exakten CI-geprüften Head. Der Rückweg startet nach Tray-Beenden die
+  unveränderten Startup-lnks. Normale Maus-/Alt+Y-Hooks bleiben gesperrt.
 
 ## Active Handoff
 

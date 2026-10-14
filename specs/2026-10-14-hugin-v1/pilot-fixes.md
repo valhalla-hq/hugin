@@ -40,3 +40,14 @@ Root besitzt Integration, Controller/Meldungen, Konfiguration und Abnahme.
 Begrenzte Helper besitzen getrennte UIA- und Audio-Worktrees. Keine parallelen
 GPU-/Audioaktionen; Tests mit tatsächlicher Ausgabe werden koordiniert.
 Normale Maus-/Alt+Y-Aktivierung und vollständige Migration bleiben offen.
+
+## Prüfstand
+
+- PF-003: deterministische Guards und echte Windows-Wiedergabe für beide
+  Stimmen grün; menschlicher Hörvergleich noch offen.
+- PF-002/004: Controller-Guards und bestehende Ladeanzeige grün.
+- PF-001: Source-Guards/Review grün, reale Codex-Paste-/Restore-Probe noch
+  offen. Leeres aktives Nachrichtenfeld nötig; kein Entwurf wird verändert.
+  targets.json bleibt bis zu diesem Nachweis leer. Audio-/Statuskorrekturen
+  können als geprüfter Pilot bereitgestellt werden; dies erfüllt PF-001 noch
+  nicht und ist keine vollständige Abnahme.
