@@ -193,7 +193,7 @@ class WindowsAbiContracts(unittest.TestCase):
             events.append('authorize')
             return True
         backend.commit_paste(10,target,lambda:events.append('current') or True,authorize,sentinel)
-        self.assertEqual(events,['lock','sequence','target','native','modifiers','current','authorize','send','unlock'])
+        self.assertEqual(events,['lock','sequence','sequence','native','modifiers','current','authorize','send','unlock'])
 
     def test_failed_close_after_send_keeps_possible_submission_fact(self):
         backend = object.__new__(NativeClipboard)

@@ -6,13 +6,14 @@ import json
 import queue
 import struct
 import threading
+import weakref
 from types import SimpleNamespace as NS
 import unittest
 
 from hugin.windows.clipboard import WindowTarget,UiaTargetIdentity,NativeClipboard,ClipboardFailure,ClipboardService
 from hugin.windows.selection import (SelectionProbe,TargetResult,encode_request,decode_operation,
     encode_target_response,decode_target_response)
-from hugin.windows.selection_probe import read_uia_target
+from hugin.windows.selection_probe import read_uia_target,_target_proof,confirm_uia_target
 from test_windows_selection import FakeProcess
 
 BASE=WindowTarget(100,100,3,4,500,'Chrome_WidgetWin_1',None,None)
@@ -85,6 +86,18 @@ class Uia:
 
 
 class TargetContracts(unittest.TestCase):
+    def test_warm_proof_checks_current_edit_and_local_point_without_ancestor_walk(self):
+        for kind in ('same','chat_shift','caret','edit','readonly'):
+            automation=Automation()
+            proof=_target_proof(automation,Uia,BASE,lambda:BASE,lambda:False)
+            if kind=='chat_shift':automation.focus.pattern.origin+=4000
+            if kind=='caret':automation.focus.pattern.position+=1
+            if kind=='edit':automation.focus=Element(99,automation.root)
+            if kind=='readonly':automation.focus.CurrentIsReadOnly=True
+            automation.RawViewWalker=NS(GetParentElement=lambda element:(_ for _ in ()).throw(AssertionError('warm ancestor walk')))
+            result=confirm_uia_target(automation,Uia,BASE,lambda:BASE,proof)
+            expected='target_captured' if kind in ('same','chat_shift') else 'target_unverifiable' if kind=='readonly' else 'target_changed'
+            self.assertEqual(result.status,expected,kind)
     def test_package_scoped_approval_never_grants_other_chrome_targets(self):
         from test_windows_clipboard import FakeClipboard
         family='OpenAI.Codex_2p2nqsd0c76g0'
@@ -232,6 +245,55 @@ class TargetContracts(unittest.TestCase):
 
 
 class OwnerCommitContracts(unittest.TestCase):
+    def test_owner_rechecks_held_clipboard_token_after_warm_confirmation(self):
+        for changed in ('sequence','owner','size','token'):
+            native,target,events,state=self.backend()
+            original=native._selection_probe.begin_delivery
+            def begin(basis,cancelled):
+                lease=original(basis,cancelled);confirm=lease.confirm
+                def changed_confirm():
+                    result=confirm()
+                    if changed=='sequence':native.sequence=lambda:8
+                    if changed=='owner':native.user.GetClipboardOwner=lambda:11
+                    if changed=='size':native.kernel.GlobalSize=lambda _:6
+                    if changed=='token':native._read_handle=lambda *_:b'other'
+                    return result
+                lease.confirm=changed_confirm;return lease
+            native._selection_probe.begin_delivery=begin
+            with self.assertRaises(ClipboardFailure) as failure:
+                native.commit_paste(7,target,lambda:True,lambda transaction:events.append(('authorize',0)) or True)
+            self.assertEqual(failure.exception.status,'clipboard_changed')
+            self.assertFalse(any(kind in ('input','authorize') for kind,_ in events))
+
+    def test_same_native_window_cannot_hide_caret_or_edit_change_before_owner_commit(self):
+        for kind in ('position','edit'):
+            native,target,events,state=self.backend();state['uia']=target
+            native.capture_target=lambda **kwargs:state['uia']
+            def commit(transaction,fast):
+                changed=replace(target.uia,position=target.uia.position+1) if kind=='position' else replace(target.uia,focus_id=(99,),element_id=(99,))
+                state['uia']=replace(target,uia=changed)
+                fast()
+            with self.assertRaises(ClipboardFailure) as failure:
+                native.commit_paste(7,target,lambda:True,lambda transaction:True,object(),commit=commit)
+            self.assertEqual(failure.exception.status,'target_changed')
+            self.assertFalse(any(kind=='input' for kind,identity in events))
+
+    def test_revoked_commit_releases_transient_callback_contents(self):
+        class Marker(str):pass
+        for outcome in ('submit','decline','late'):
+            native,target,events,state=self.backend();saved=[]
+            marker=Marker('synthetic transient callback contents');reference=weakref.ref(marker)
+            current=lambda held=marker:bool(held)
+            authorize=lambda transaction,held=marker:outcome!='decline' and bool(held)
+            def commit(transaction,fast):
+                saved.append(fast)
+                if outcome!='late':fast()
+            try:native.commit_paste(7,target,current,authorize,object(),commit=commit)
+            except ClipboardFailure:pass
+            del current,authorize,marker
+            self.assertIsNone(reference(),outcome)
+            with self.assertRaises(ClipboardFailure):saved[0]()
+
     def test_service_restores_own_transaction_when_commit_is_declined(self):
         from test_windows_clipboard import FakeClipboard
         backend=FakeClipboard();service=ClipboardService(backend=backend)
@@ -264,7 +326,17 @@ class OwnerCommitContracts(unittest.TestCase):
             try:yield
             finally:state['held']=False;events.append(('close',threading.get_ident()))
         native._opened=opened
-        native.capture_target=lambda **kwargs:events.append(('uia',threading.get_ident())) or target
+        state['uia']=target
+        native.capture_target=lambda **kwargs:state['uia']
+        class Lease:
+            def __init__(self):
+                events.append(('uia',threading.get_ident()))
+                self.result=TargetResult('target_captured',native.capture_target().uia)
+            def confirm(self):
+                events.append(('confirm',threading.get_ident()))
+                return TargetResult('target_captured',native.capture_target().uia)
+            def close(self):events.append(('lease_close',threading.get_ident()))
+        native._selection_probe=NS(begin_delivery=lambda basis,cancelled:Lease())
         native.capture_native_target=lambda:state['native']
         native.modifiers_down=lambda:False
         def chord(key):
@@ -303,6 +375,95 @@ class OwnerCommitContracts(unittest.TestCase):
             with self.assertRaises(ClipboardFailure):saved[0]()
             self.assertFalse(state['held'])
             self.assertEqual(sum(kind=='input' for kind,identity in events),1 if kind=='duplicate' else 0)
+
+
+class LeaseProcess(FakeProcess):
+    def __init__(self,identity,*,blocked=False,kill_fails=False):
+        super().__init__(b'',kill_fails=kill_fails)
+        self.identity=identity;self.initial_identity=identity
+        self.command=threading.Event();self.confirm_release=threading.Event()
+        if not blocked:self.confirm_release.set()
+        self.responded=threading.Event();owner=self
+        class Input:
+            def write(self,data):
+                if bytes(data)==b'\x01':owner.command.set()
+                return len(data)
+            def close(self):pass
+        class Output:
+            def __init__(self):
+                self.stream=io.BytesIO(encode_target_response(TargetResult('target_captured',identity)));self.second=False
+            def read(self,count):
+                data=self.stream.read(count)
+                if data:return data
+                if self.second:return b''
+                owner.command.wait(2);owner.confirm_release.wait(2)
+                self.second=True
+                if owner.killed:return b''
+                self.stream=io.BytesIO(encode_target_response(TargetResult('target_captured',owner.identity)))
+                owner.responded.set();return self.stream.read(count)
+        self.stdin=Input();self.stdout=Output()
+    def poll(self):return 0 if self.killed or self.responded.is_set() else None
+    def kill(self):
+        if self.kill_fails:raise OSError('synthetic owned kill failure')
+        self.killed=True;self.command.set();self.confirm_release.set()
+
+
+class DeliveryLeaseContracts(unittest.TestCase):
+    ID=UiaTargetIdentity((1,),(2,),(1,),9,7)
+    def test_confirmation_never_succeeds_before_clean_family_exit(self):
+        for kind in ('nonzero','trailing','stderr'):
+            process=LeaseProcess(self.ID)
+            if kind=='nonzero':process.wait=lambda timeout:1
+            if kind=='stderr':process.stderr=io.BytesIO(b'synthetic provider error')
+            if kind=='trailing':
+                stream=process.stdout
+                class Trailing:
+                    def read(self,count):
+                        chunk=stream.read(count)
+                        return chunk or b'x'
+                process.stdout=Trailing()
+            probe=SelectionProbe(spawn=lambda *_,**__:process)
+            lease=probe.begin_delivery(BASE,lambda:False)
+            self.assertEqual(lease.confirm().status,'target_probe_failed')
+            with self.assertRaises(ClipboardFailure):lease.close()
+            self.assertTrue(process.closed);self.assertIsNone(probe._process)
+
+    def test_exactly_one_confirmation_must_match_initial_identity(self):
+        for change in ('same','position','edit'):
+            process=LeaseProcess(self.ID);probe=SelectionProbe(spawn=lambda *_,**__:process)
+            lease=probe.begin_delivery(BASE,lambda:False)
+            try:
+                self.assertEqual(lease.result.identity,self.ID)
+                if change=='position':process.identity=replace(self.ID,position=8)
+                if change=='edit':process.identity=replace(self.ID,focus_id=(99,),element_id=(99,))
+                self.assertEqual(lease.confirm().status,'target_captured' if change=='same' else 'target_changed')
+                self.assertEqual(lease.confirm().status,'commit_rejected')
+            finally:lease.close()
+            self.assertTrue(process.closed);self.assertIsNone(probe._process)
+
+    def test_owner_confirmation_timeout_is_short_and_worker_retains_failed_cleanup(self):
+        import time
+        process=LeaseProcess(self.ID,blocked=True,kill_fails=True)
+        probe=SelectionProbe(spawn=lambda *_,**__:process,cleanup_timeout=.02)
+        lease=probe.begin_delivery(BASE,lambda:False)
+        start=time.monotonic()
+        self.assertEqual(lease.confirm().status,'target_probe_timeout')
+        self.assertLess(time.monotonic()-start,.10)
+        with self.assertRaises(ClipboardFailure):lease.close()
+        self.assertIs(probe._process,process);self.assertFalse(process.closed)
+        self.assertEqual(probe.capture_target(BASE,lambda:False).status,'target_cleanup_pending')
+        process.kill_fails=False;probe.close()
+        self.assertTrue(process.closed);self.assertIsNone(probe._delivery)
+
+    def test_cancel_before_confirmation_and_revocation_emit_no_request(self):
+        process=LeaseProcess(self.ID);probe=SelectionProbe(spawn=lambda *_,**__:process)
+        state={'cancelled':False};lease=probe.begin_delivery(BASE,lambda:state['cancelled'])
+        state['cancelled']=True
+        self.assertEqual(lease.confirm().status,'cancelled')
+        self.assertFalse(process.command.is_set())
+        lease.close()
+        self.assertEqual(lease.confirm().status,'commit_rejected')
+        self.assertTrue(process.closed)
 
 
 if __name__=='__main__':unittest.main()

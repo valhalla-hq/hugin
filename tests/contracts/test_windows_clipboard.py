@@ -24,7 +24,13 @@ class FakeClipboard:
         self.direct_text = None
         self.after_direct = lambda: None
 
-    def capture_target(self):
+    def capture_native_target(self):
+        return self.target.without_uia
+
+    def capture_target(self,*,expected=None,cancelled=lambda:False):
+        if cancelled():raise ClipboardFailure('cancelled')
+        if expected is not None and self.target.without_uia!=expected.without_uia:
+            raise ClipboardFailure('target_changed')
         return self.target
 
     def modifiers_down(self):

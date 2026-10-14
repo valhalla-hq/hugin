@@ -53,6 +53,14 @@ def read_exact(stream, length):
     return bytes(data)
 
 
+def write_all(stream,data):
+    view=memoryview(data)
+    while view:
+        written=stream.write(view)
+        if not written or written>len(view):raise ValueError('invalid probe write')
+        view=view[written:]
+
+
 def decode_operation(data: bytes):
     if len(data) > REQUEST_LIMIT:
         raise ValueError('selection request limit')
@@ -68,6 +76,7 @@ def decode_operation(data: bytes):
         raise ValueError('selection request version')
     if value['version']==1 and set(value)=={'version','target'}:operation='selection'
     elif value['version']==2 and set(value)=={'version','operation','target'} and value['operation']=='target':operation='target'
+    elif value['version']==3 and set(value)=={'version','operation','target'} and value['operation']=='delivery':operation='delivery'
     else:raise ValueError('selection request version')
     target = value['target']
     keys = {'hwnd', 'focus', 'pid', 'thread', 'process_created', 'control_class', 'caret', 'selection', 'editable','package_family'}
@@ -103,7 +112,7 @@ def decode_request(data:bytes)->WindowTarget:
 def encode_request(target: WindowTarget,*,operation='selection') -> bytes:
     if not isinstance(target,WindowTarget):raise ValueError('invalid native target')
     fields=asdict(target.without_uia);fields.pop('uia')
-    envelope={'version':1,'target':fields} if operation=='selection' else {'version':2,'operation':operation,'target':fields}
+    envelope={'version':1,'target':fields} if operation=='selection' else {'version':3 if operation=='delivery' else 2,'operation':operation,'target':fields}
     data = json.dumps(envelope, ensure_ascii=True,
                       separators=(',', ':')).encode('utf-8')
     decode_request(data)
@@ -134,7 +143,7 @@ def encode_target_response(result:TargetResult)->bytes:
     return HEADER.pack(2,TARGET_CODES[result.status],len(data))+data
 
 
-def decode_target_response(stream)->TargetResult:
+def read_target_frame(stream)->TargetResult:
     version,code,length=HEADER.unpack(read_exact(stream,HEADER.size))
     codes={code:status for status,code in TARGET_CODES.items()}
     if version!=2 or code not in codes or length>REQUEST_LIMIT or (code==0)!=(length>0):
@@ -146,8 +155,13 @@ def decode_target_response(stream)->TargetResult:
             value[name]=item
         return value
     identity=_decode_identity(json.loads(read_exact(stream,length),object_pairs_hook=unique)) if length else None
-    if stream.read(1)!=b'':raise ValueError('trailing target metadata')
     return TargetResult(codes[code],identity)
+
+
+def decode_target_response(stream)->TargetResult:
+    result=read_target_frame(stream)
+    if stream.read(1)!=b'':raise ValueError('trailing target metadata')
+    return result
 
 
 def encode_response(status: str, text: str | None = None) -> bytes:
@@ -181,6 +195,110 @@ def decode_response(stream) -> SelectionResult:
     return SelectionResult(status, text)
 
 
+class DeliveryLease:
+    """One initialized proof plus one <=50ms confirmation, then owned cleanup.
+
+    The worker owns close(); confirmation only signals private pipe threads.
+    This is never reused across delivery transactions or retained as a cache.
+    """
+    def __init__(self,probe,cancelled):
+        self._probe=probe;self._cancelled=cancelled
+        self.result=TargetResult('target_probe_failed')
+        self._confirmation=TargetResult('target_probe_failed')
+        self._initial=threading.Event();self._confirmed=threading.Event()
+        self._request=threading.Event();self._sent=threading.Event();self._stderr=threading.Event()
+        self._stop=threading.Event();self._gate=threading.Lock()
+        self._fault=False;self._closed=False;self._used=False;self._lock_held=True
+        self._expires=0
+
+    def _failed(self):
+        if self._stop.is_set():
+            self._initial.set();self._confirmed.set();return
+        self._fault=True;self.result=TargetResult('target_probe_failed')
+        self._confirmation=TargetResult('target_probe_failed')
+        self._initial.set();self._confirmed.set()
+
+    def start(self,target):
+        probe=self._probe;deadline=time.monotonic()+probe.timeout
+        request=encode_request(target,operation='delivery')
+        try:probe._process=probe._spawn_process()
+        except Exception as error:
+            probe._process=getattr(error,'owner',None)
+            self.result=TargetResult('target_cleanup_failed' if probe._process is not None else 'target_probe_failed')
+            return
+        process=probe._process
+        def write():
+            try:
+                write_all(process.stdin,request)
+                self._request.wait()
+                if self._stop.is_set():return
+                write_all(process.stdin,b'\x01');process.stdin.close();self._sent.set()
+            except Exception:self._failed()
+        def read():
+            try:
+                self.result=read_target_frame(process.stdout);self._initial.set()
+                if self.result.status!='target_captured':return
+                self._confirmation=decode_target_response(process.stdout)
+                # A green confirmation includes EOF and the stderr barrier.
+                if (not self._stderr.wait(1) or self._fault
+                        or process.wait(probe.timeout)!=0):self._failed()
+                self._confirmed.set()
+            except Exception:self._failed()
+        def drain():
+            try:
+                if process.stderr.read(4096):self._failed()
+            except Exception:self._failed()
+            finally:self._stderr.set()
+        probe._threads=[]
+        for name,function in (('write',write),('read',read),('stderr',drain)):
+            thread=threading.Thread(target=function,daemon=True,name='hugin-delivery-'+name)
+            probe._threads.append(thread);thread.start()
+        while not self._initial.wait(.005):
+            if self._cancelled():self.result=TargetResult('cancelled');return
+            if time.monotonic()>=deadline:self.result=TargetResult('target_probe_timeout');return
+        if self._cancelled():self.result=TargetResult('cancelled')
+        if self._fault:self.result=TargetResult('target_probe_failed')
+        self._expires=time.monotonic()+probe.timeout
+
+    def confirm(self):
+        with self._gate:
+            if self._closed or self._used:return TargetResult('commit_rejected')
+            self._used=True
+            if self.result.status!='target_captured' or self._fault:return TargetResult('target_probe_failed')
+            if self._cancelled():return TargetResult('cancelled')
+            deadline=min(time.monotonic()+.05,self._expires)
+            if time.monotonic()>=deadline:return TargetResult('target_probe_timeout')
+            self._request.set()
+            while not self._confirmed.is_set():
+                if self._cancelled():return TargetResult('cancelled')
+                remaining=deadline-time.monotonic()
+                if remaining<=0:return TargetResult('target_probe_timeout')
+                self._confirmed.wait(min(.002,remaining))
+            if time.monotonic()>deadline:return TargetResult('target_probe_timeout')
+            if self._fault or not self._sent.is_set():return TargetResult('target_probe_failed')
+            if self._cancelled():return TargetResult('cancelled')
+            result=self._confirmation
+            if result.status=='target_captured' and result.identity!=self.result.identity:
+                return TargetResult('target_changed')
+            return result
+
+    def abort_io(self):
+        with self._gate:
+            self._closed=True;self._cancelled=None
+            self._stop.set();self._request.set()
+
+    def close(self):
+        self.abort_io()
+        if not self._lock_held:return
+        try:
+            self._probe._cleanup()
+            if self._fault:raise ClipboardFailure('target_probe_failed')
+        except ClipboardFailure:raise
+        except Exception:raise ClipboardFailure('target_cleanup_failed') from None
+        finally:
+            self._lock_held=False;self._probe._lock.release()
+
+
 class SelectionProbe:
     def __init__(self, *, spawn=None, timeout=2.0, cleanup_timeout=3.0):
         if not 0 < timeout <= 5 or not 0 < cleanup_timeout <= 5:
@@ -188,6 +306,7 @@ class SelectionProbe:
         self.spawn, self.timeout, self.cleanup_timeout = spawn, timeout, cleanup_timeout
         self._lock = threading.Lock()
         self._process = None
+        self._delivery:DeliveryLease|None=None
         self._threads: list[threading.Thread] = []
 
     def read(self, target: WindowTarget, cancelled) -> SelectionResult:
@@ -195,6 +314,25 @@ class SelectionProbe:
 
     def capture_target(self,target:WindowTarget,cancelled)->TargetResult:
         return self._read(target,cancelled,operation='target')
+
+    def _spawn_process(self):
+        if self.spawn is None:
+            from hugin.windows.process import OwnedProcess
+            self.spawn=OwnedProcess
+        return self.spawn([sys.executable,'-I','-B','-u',str(Path(__file__).with_name('selection_probe.py').resolve())],
+            stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
+            close_fds=True,creationflags=0x08000000,memory_limit=PROBE_MEMORY)
+
+    def begin_delivery(self,target:WindowTarget,cancelled)->DeliveryLease:
+        if not self._lock.acquire(blocking=False):raise ClipboardFailure('target_probe_busy')
+        if self._process is not None:
+            self._lock.release();raise ClipboardFailure('target_cleanup_pending')
+        lease=DeliveryLease(self,cancelled);self._delivery=lease
+        try:lease.start(target)
+        except BaseException:
+            lease.close()
+            raise
+        return lease
 
     def _read(self,target,cancelled,*,operation):
         target_mode=operation=='target'
@@ -215,15 +353,9 @@ class SelectionProbe:
                 request = encode_request(target,operation=operation)
             except (ValueError, TypeError, UnicodeError):
                 return result_type('target_changed')
-            if self.spawn is None:
-                from hugin.windows.process import OwnedProcess
-                self.spawn = OwnedProcess
             deadline = time.monotonic() + self.timeout
             try:
-                self._process = self.spawn(
-                    [sys.executable, '-I', '-B', '-u', str(Path(__file__).with_name('selection_probe.py').resolve())],
-                    stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                    close_fds=True, creationflags=0x08000000, memory_limit=PROBE_MEMORY)
+                self._process=self._spawn_process()
             except Exception as failure:
                 self._process = getattr(failure, 'owner', None)
                 return result_type(cleanup_failed if self._process is not None else failed)
@@ -234,12 +366,7 @@ class SelectionProbe:
 
             def write():
                 try:
-                    view = memoryview(request)
-                    while view:
-                        written = stdin.write(view)
-                        if not written or written > len(view):
-                            raise ValueError('invalid selection write')
-                        view = view[written:]
+                    write_all(stdin,request)
                     stdin.close()
                 except Exception:
                     outcome['fault'] = True
@@ -302,7 +429,9 @@ class SelectionProbe:
             self._lock.release()
 
     def _cleanup(self):
+        if self._delivery is not None:self._delivery.abort_io()
         if self._process is None:
+            self._delivery=None
             return
         if self._process.poll() is None:
             self._process.kill()
@@ -316,6 +445,7 @@ class SelectionProbe:
         self._process.close()
         self._process = None
         self._threads = []
+        self._delivery=None
 
     def close(self):
         with self._lock:
