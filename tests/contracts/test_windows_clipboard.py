@@ -1,0 +1,254 @@
+from dataclasses import replace
+import unittest
+
+from hugin.windows.clipboard import (ClipboardService, WindowTarget, ClipboardSnapshot,
+                                     ClipboardFailure, MAX_SNAPSHOT_BYTES)
+
+
+class FakeClipboard:
+    def __init__(self):
+        self.target = WindowTarget(100, 200, 3, 4, 500, 'Edit', (200, 1, 2, 3, 4), (2, 2))
+        self.data = {13: 'original\0'.encode('utf-16-le'), 0xC001: b'html', 8: b'dib'}
+        self.seq = 1
+        self.owner = 90
+        self.mutations = 0
+        self.pastes = 0
+        self.injected = []
+        self.modifiers = False
+        self.selection = 'selected'
+        self.after_stage = lambda: None
+        self.before_commit = lambda: None
+        self.snapshot_failure = None
+        self.copy_owner = self.target.hwnd
+        self.clipboard_locked = False
+
+    def capture_target(self):
+        return self.target
+
+    def modifiers_down(self):
+        return self.modifiers
+
+    def sequence(self):
+        return self.seq
+
+    def snapshot(self, budget):
+        if self.snapshot_failure:
+            raise ClipboardFailure(self.snapshot_failure)
+        if sum(map(len, self.data.values())) > budget:
+            raise ClipboardFailure('snapshot_limit')
+        return ClipboardSnapshot(self.seq, tuple(self.data.items()))
+
+    def replace(self, formats, expected=None):
+        if expected is not None and expected != self.seq:
+            raise ClipboardFailure('clipboard_changed')
+        self.data = dict(formats)
+        self.seq += 1
+        self.owner = 999
+        self.mutations += 1
+        return self.seq
+
+    def stage(self, formats, expected):
+        result = self.replace(formats, expected)
+        self.after_stage()
+        return result
+
+    def copy_selection(self, target):
+        self.injected.append('copy')
+        if self.selection is not None:
+            self.data = {13: (self.selection + '\0').encode('utf-16-le')}
+            self.seq += 1
+            self.owner = self.copy_owner
+
+    def read_selection(self, expected, target, limit):
+        if self.owner not in (target.hwnd, target.focus):
+            raise ClipboardFailure('clipboard_changed')
+        return self.data[13].decode('utf-16-le').rstrip('\0')
+
+    def commit_paste(self, expected, target, still_current, authorize=None, transaction=None):
+        self.before_commit()
+        if self.seq != expected:
+            raise ClipboardFailure('clipboard_changed')
+        if self.target != target:
+            raise ClipboardFailure('target_changed')
+        if not still_current():
+            raise ClipboardFailure('cancelled')
+        if self.modifiers:
+            raise ClipboardFailure('modifiers_active')
+        if authorize is not None and not authorize(transaction):
+            raise ClipboardFailure('commit_rejected')
+        self.pastes += 1
+
+    def sleep(self, seconds):
+        pass
+
+
+class ClipboardContracts(unittest.TestCase):
+    def service(self):
+        backend = FakeClipboard()
+        service = ClipboardService(backend=backend, selection_timeout=0.005)
+        service.approve_capture_target_class('Edit')
+        return backend, service
+
+    def test_capture_is_gated_without_target_attribution_pilot(self):
+        backend = FakeClipboard()
+        service = ClipboardService(backend=backend)
+        self.assertEqual(service.capture_selection(lambda: False).status, 'target_unverified')
+        self.assertEqual(backend.mutations, 0)
+        self.assertEqual(backend.injected, [])
+
+    def test_unknown_delayed_or_oversize_snapshot_never_mutates(self):
+        for reason in ('format_unsupported', 'format_delayed', 'snapshot_limit'):
+            with self.subTest(reason=reason):
+                backend, service = self.service()
+                backend.snapshot_failure = reason
+                result = service.capture_selection(lambda: False)
+                self.assertEqual(result.status, reason)
+                self.assertEqual(backend.mutations, 0)
+                self.assertEqual(backend.injected, [])
+
+    def test_capture_never_falls_back_to_old_text_and_restores_supported_formats(self):
+        backend, service = self.service()
+        saved = backend.data.copy()
+        result = service.capture_selection(lambda: False)
+        self.assertEqual(result.status, 'captured')
+        self.assertEqual(result.text, 'selected')
+        self.assertEqual(backend.data, saved)
+        backend.selection = None
+        result = service.capture_selection(lambda: False)
+        self.assertEqual(result.status, 'selection_empty')
+        self.assertIsNone(result.text)
+        self.assertEqual(backend.data, saved)
+
+    def test_user_copy_during_capture_wins(self):
+        backend, service = self.service()
+        backend.copy_owner = 9999
+        result = service.capture_selection(lambda: False)
+        self.assertEqual(result.status, 'clipboard_changed')
+        self.assertIn('selected', backend.data[13].decode('utf-16-le'))
+        self.assertEqual(backend.mutations, 1)
+
+    def test_changed_caret_control_or_window_prevents_staging(self):
+        for change in ({'hwnd': 101}, {'focus': 201}, {'caret': (200, 2, 2, 3, 4)},
+                       {'selection': (3, 3)}, {'process_created': 501}):
+            backend, service = self.service()
+            target = backend.target
+            backend.target = replace(target, **change)
+            result = service.deliver('dictation', target, lambda: True)
+            self.assertEqual(result.status, 'target_changed')
+            self.assertEqual(backend.mutations, 0)
+            self.assertEqual(backend.pastes, 0)
+
+    def test_paste_is_gated_until_restore_timing_is_proven(self):
+        backend, service = self.service()
+        result = service.deliver('dictation', backend.target, lambda: True)
+        self.assertEqual(result.status, 'target_unverified')
+        self.assertEqual(backend.mutations, 0)
+
+    def test_user_copy_between_stage_and_commit_prevents_paste_and_restore(self):
+        backend, service = self.service()
+        service.approve_target_class('Edit', 0.02)
+        def user_copy():
+            backend.replace({13: b'user copy'})
+        backend.after_stage = user_copy
+        result = service.deliver('dictation', backend.target, lambda: True)
+        self.assertEqual(result.status, 'clipboard_changed')
+        self.assertEqual(backend.pastes, 0)
+        self.assertEqual(backend.data[13], b'user copy')
+
+    def test_cancel_at_serialized_commit_prevents_paste(self):
+        backend, service = self.service()
+        service.approve_target_class('Edit', 0.02)
+        state = {'current': True}
+        backend.before_commit = lambda: state.update(current=False)
+        result = service.deliver('dictation', backend.target, lambda: state['current'])
+        self.assertEqual(result.status, 'cancelled')
+        self.assertEqual(backend.pastes, 0)
+
+    def test_authorization_sees_staged_transaction_after_checks_and_can_reject(self):
+        backend, service = self.service()
+        service.approve_target_class('Edit', 0.02)
+        saved = backend.data.copy()
+        transactions = []
+        def reject(transaction):
+            self.assertEqual(backend.seq, transaction.sequence)
+            self.assertEqual(backend.target, transaction.target)
+            self.assertEqual(backend.pastes, 0)
+            self.assertIn('dictation', backend.data[13].decode('utf-16-le'))
+            self.assertNotIn('dictation', repr(transaction))
+            transactions.append(transaction)
+            return False
+        result = service.deliver('dictation', backend.target, lambda: True, authorize=reject)
+        self.assertEqual(result.status, 'commit_rejected')
+        self.assertEqual(len(transactions), 1)
+        self.assertEqual(backend.pastes, 0)
+        self.assertEqual(backend.data, saved)
+
+    def test_conflict_never_calls_authorization(self):
+        backend, service = self.service()
+        service.approve_target_class('Edit', 0.02)
+        backend.after_stage = lambda: backend.replace({13: b'user'})
+        calls = []
+        result = service.deliver('dictation', backend.target, lambda: True,
+                                 authorize=lambda transaction: calls.append(transaction) or True)
+        self.assertEqual(result.status, 'clipboard_changed')
+        self.assertEqual(calls, [])
+
+    def test_success_submits_once_no_enter_and_restores(self):
+        backend, service = self.service()
+        service.approve_target_class('Edit', 0.02)
+        saved = backend.data.copy()
+        result = service.deliver('dictation', backend.target, lambda: True)
+        self.assertEqual(result.status, 'submitted')
+        self.assertTrue(result.submitted)
+        self.assertEqual(backend.pastes, 1)
+        self.assertEqual(backend.data, saved)
+
+    def test_cancel_or_held_modifier_has_no_native_effect(self):
+        backend, service = self.service()
+        self.assertEqual(service.capture_selection(lambda: True).status, 'cancelled')
+        backend.modifiers = True
+        self.assertEqual(service.capture_selection(lambda: False).status, 'modifiers_active')
+        self.assertEqual(backend.mutations, 0)
+        self.assertEqual(backend.injected, [])
+
+    def test_explicit_copy_does_not_restore(self):
+        backend, service = self.service()
+        self.assertEqual(service.copy('manual copy').status, 'copied')
+        self.assertEqual(backend.data[13].decode('utf-16-le'), 'manual copy\0')
+
+    def test_failed_restore_retains_snapshot_and_blocks_new_automatic_work(self):
+        backend, service = self.service()
+        service.approve_target_class('Edit', 0.02)
+        saved = backend.data.copy()
+        original = backend.replace
+        broken = {'value': True}
+        def replace_or_fail(formats, expected=None):
+            if expected is not None and expected != backend.seq:
+                raise ClipboardFailure('clipboard_changed')
+            if len(formats) > 1 and broken['value']:
+                backend.data = {13: b'partial restore'}
+                backend.seq += 1
+                raise ClipboardFailure('clipboard_write_failed', owned_sequence=backend.seq)
+            return original(formats, expected)
+        backend.replace = replace_or_fail
+        result = service.deliver('dictation', backend.target, lambda: True)
+        self.assertEqual(result.status, 'clipboard_restore_failed')
+        self.assertTrue(result.submitted)
+        self.assertTrue(service.recovery_pending)
+        self.assertEqual(service.capture_selection(lambda: False).status, 'clipboard_recovery_pending')
+        broken['value'] = False
+        self.assertEqual(service.recover().status, 'restored')
+        self.assertFalse(service.recovery_pending)
+        self.assertEqual(backend.data, saved)
+
+    def test_user_copy_supersedes_retained_restore(self):
+        backend, service = self.service()
+        service._pending_restore = (ClipboardSnapshot(1, ((13, b'old'),)), 1)
+        backend.replace({13: b'user'})
+        self.assertEqual(service.recover().status, 'clipboard_changed')
+        self.assertEqual(backend.data[13], b'user')
+        self.assertFalse(service.recovery_pending)
+
+    def test_budget_cannot_exceed_contract(self):
+        with self.assertRaises(ValueError):
+            ClipboardService(backend=FakeClipboard(), snapshot_budget=MAX_SNAPSHOT_BYTES + 1)
