@@ -449,6 +449,164 @@ class CoordinatorContracts(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(HuginError):
                 self.core.dispatch(Tick(value))
 
+    def idle_stt(self):
+        job, operation, _ = self.transcription()
+        self.finish_delivery(job, operation)
+        return operation
+
+    def idle_offload(self):
+        self.idle_stt()
+        begin, = self.effects(Tick(100), BeginEngine)
+        self.assertEqual(begin.operation.action, Action.OFFLOAD)
+        return begin.operation
+
+    def test_idle_offload_is_explicit_once_and_has_no_user_generation(self):
+        previous = self.idle_stt()
+        generation = self.core.snapshot().generation
+        self.assertEqual(self.effects(Tick(99.999), BeginEngine), [])
+        begin, = self.effects(Tick(100), BeginEngine)
+        self.assertEqual(begin.operation.action, Action.OFFLOAD)
+        self.assertEqual(begin.operation.engine, Engine.STT)
+        self.assertIsNone(begin.operation.job)
+        self.assertIsNone(begin.payload)
+        self.assertIsNone(begin.voice)
+        self.assertEqual(begin.operation.engine_instance, previous.engine_instance)
+        self.assertNotEqual(begin.operation.request_id, previous.request_id)
+        self.assertEqual(self.core.snapshot().generation, generation)
+        self.assertEqual(self.core.snapshot().state, State.IDLE)
+        self.assertFalse(self.core.snapshot().escape_reserved)
+        self.assertEqual(self.core.snapshot().retired_operations, ())
+        self.assertEqual(self.core.snapshot().gpu_slot, begin.operation)
+        self.assertEqual(self.effects(Tick(200), BeginEngine), [])
+        self.core.dispatch(EngineTerminal(begin.operation))
+        self.assertEqual(self.effects(Tick(1000), BeginEngine), [])
+        stt = next(item for item in self.core.snapshot().components if item.engine == Engine.STT)
+        self.assertTrue(stt.ready)
+
+    def test_idle_offload_uses_configured_interval_and_validates_it(self):
+        self.core = Coordinator(instance_id='configured', stt_idle_unload_seconds=5, now=10)
+        self.idle_stt()
+        self.assertEqual(self.effects(Tick(14.999), BeginEngine), [])
+        begin, = self.effects(Tick(15), BeginEngine)
+        self.assertEqual(begin.operation.action, Action.OFFLOAD)
+        for value in (0, -1, True, 1.5, 3601):
+            with self.subTest(value=value), self.assertRaises(HuginError):
+                Coordinator(instance_id='invalid', stt_idle_unload_seconds=value)
+
+    def test_idle_offload_never_overlaps_retired_stt_slot(self):
+        job, operation, _ = self.transcription()
+        self.core.dispatch(DeliveryCommit(job, 'own-transaction', True))
+        self.core.dispatch(DeliveryFinished(job))
+        self.assertEqual(self.core.snapshot().retired_operations, (operation,))
+        self.assertEqual(self.effects(Tick(1000), BeginEngine), [])
+        self.assertEqual(self.core.snapshot().gpu_slot, operation)
+        self.core.dispatch(EngineTerminal(operation))
+        self.assertEqual(self.effects(Tick(1089.999), BeginEngine), [])
+        begin, = self.effects(Tick(1090), BeginEngine)
+        self.assertEqual(begin.operation.action, Action.OFFLOAD)
+
+    def test_idle_offload_waits_for_current_tts_slot_and_final_audio_cleanup(self):
+        self.idle_stt()
+        job, operation = self.reading()
+        self.assertEqual(self.effects(Tick(100), BeginEngine), [])
+        self.assertEqual(self.core.snapshot().gpu_slot, operation)
+        drain, = self.effects(EngineTerminal(operation), DrainAudio)
+        self.assertEqual(self.effects(Tick(101), BeginEngine), [])
+        self.core.dispatch(AudioFinished(job, drain.through_sequence))
+        begin, = self.effects(Tick(102), BeginEngine)
+        self.assertEqual(begin.operation.action, Action.OFFLOAD)
+
+    def test_recording_starts_during_offload_but_transcribe_waits_for_terminal(self):
+        offload = self.idle_offload()
+        effects = self.core.dispatch(DictationToggle())
+        start, = [item for item in effects if isinstance(item, StartRecording)]
+        self.assertFalse(any(isinstance(item, CancelEngine) for item in effects))
+        self.core.dispatch(RecordingStarted(start.job))
+        self.assertEqual(self.stop(start.job), [])
+        self.assertEqual(self.core.snapshot().gpu_slot, offload)
+        begin, = self.effects(EngineTerminal(offload), BeginEngine)
+        self.assertEqual(begin.operation.action, Action.TRANSCRIBE)
+        self.assertEqual(begin.operation.job, start.job)
+        self.assertEqual(begin.operation.engine_instance, offload.engine_instance)
+        self.assertEqual(self.core.dispatch(EngineTerminal(offload)), ())
+        self.assertEqual(self.core.snapshot().gpu_slot, begin.operation)
+
+    def test_completed_transcription_rearms_idle_offload_from_its_own_terminal(self):
+        offload = self.idle_offload()
+        self.core.dispatch(EngineTerminal(offload))
+        job, operation, _ = self.transcription('After reload')
+        self.core.dispatch(Tick(200))
+        self.finish_delivery(job, operation)
+        self.assertEqual(self.effects(Tick(289.999), BeginEngine), [])
+        begin, = self.effects(Tick(290), BeginEngine)
+        self.assertEqual(begin.operation.action, Action.OFFLOAD)
+        self.assertEqual(begin.operation.engine_instance, offload.engine_instance)
+        self.assertNotEqual(begin.operation.request_id, offload.request_id)
+
+    def test_offload_fault_retains_slot_until_matching_exit_and_waiter_reinitializes(self):
+        offload = self.idle_offload()
+        job = self.record()
+        self.assertEqual(self.stop(job), [])
+        self.core.dispatch(EngineFault(offload, HuginError('worker_failed', 'private payload')))
+        self.assertEqual(self.core.snapshot().gpu_slot, offload)
+        self.assertEqual(self.core.snapshot().job, job)
+        self.assertEqual(self.core.snapshot().error.phase, 'offload')
+        self.assertEqual(self.effects(Tick(1000), BeginEngine), [])
+        self.core.dispatch(EngineExited(Engine.STT, 'foreign-worker'))
+        self.assertEqual(self.core.snapshot().gpu_slot, offload)
+        begin, = self.effects(EngineExited(Engine.STT, offload.engine_instance), BeginEngine)
+        self.assertEqual(begin.operation.action, Action.INITIALIZE)
+        self.assertNotEqual(begin.operation.engine_instance, offload.engine_instance)
+        self.assertEqual(begin.operation.job, job)
+
+    def test_offload_failed_terminal_blocks_automatic_retry(self):
+        offload = self.idle_offload()
+        self.core.dispatch(EngineTerminal(offload, False))
+        self.assertIsNone(self.core.snapshot().gpu_slot)
+        self.assertEqual(self.core.snapshot().error.code, 'worker_failed')
+        self.assertEqual(self.core.snapshot().error.phase, 'offload')
+        self.assertEqual(self.core.snapshot().state, State.ERROR)
+        stt = next(item for item in self.core.snapshot().components if item.engine == Engine.STT)
+        self.assertFalse(stt.ready)
+        self.assertTrue(stt.blocked)
+        self.assertEqual(self.effects(Tick(1000), BeginEngine), [])
+
+    def test_offload_cannot_publish_payload_or_be_completed_by_unmatched_terminal(self):
+        offload = self.idle_offload()
+        self.assertEqual(self.core.dispatch(EngineAudio(offload, b'\x00\x00')), ())
+        self.assertEqual(self.core.dispatch(EngineResult(offload, 'Not a transcript')), ())
+        self.assertEqual(self.core.dispatch(EngineTerminal(replace(offload, request_id='foreign'))), ())
+        self.assertEqual(self.core.snapshot().gpu_slot, offload)
+        self.assertEqual(self.core.snapshot().result.text, 'Synthetic dictation')
+        self.assertEqual(self.core.snapshot().state, State.IDLE)
+
+    def test_cancel_waiting_dictation_does_not_cancel_maintenance_or_publish_late_work(self):
+        offload = self.idle_offload()
+        job = self.record()
+        self.assertEqual(self.stop(job), [])
+        self.assertEqual(self.effects(Cancel(), CancelEngine), [])
+        self.assertIsNone(self.core.snapshot().job)
+        self.assertEqual(self.core.snapshot().gpu_slot, offload)
+        self.assertEqual(self.effects(EngineTerminal(offload), BeginEngine), [])
+        self.assertEqual(self.core.snapshot().state, State.IDLE)
+
+    def test_verified_offload_exit_without_user_job_does_not_invent_failure(self):
+        offload = self.idle_offload()
+        self.core.dispatch(EngineExited(Engine.STT, offload.engine_instance))
+        self.assertIsNone(self.core.snapshot().gpu_slot)
+        self.assertIsNone(self.core.snapshot().error)
+        self.assertEqual(self.core.snapshot().state, State.IDLE)
+        self.assertEqual(self.effects(Tick(1000), BeginEngine), [])
+
+    def test_shutdown_keeps_offload_owned_until_confirmed_exit(self):
+        offload = self.idle_offload()
+        self.core.dispatch(Shutdown())
+        self.assertEqual(self.core.snapshot().gpu_slot, offload)
+        self.assertEqual(self.effects(Tick(1000), BeginEngine), [])
+        self.core.dispatch(EngineExited(Engine.STT, offload.engine_instance))
+        self.assertIsNone(self.core.snapshot().gpu_slot)
+        self.assertEqual(self.core.snapshot().state, State.STOPPING)
+
 
 if __name__ == '__main__':
     unittest.main()

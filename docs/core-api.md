@@ -8,7 +8,8 @@ with `repr`: recording, selection, transcript and audio payloads are private.
 
 ```python
 core = Coordinator(instance_id=fresh_run_id, limits=Limits(),
-                   default_voice="freya", now=time.monotonic())
+                   default_voice="freya", now=time.monotonic(),
+                   stt_idle_unload_seconds=90)
 core.dispatch(Tick(time.monotonic()))
 effects = core.dispatch(DictationToggle())
 view = core.snapshot()
@@ -16,6 +17,8 @@ view = core.snapshot()
 
 `Limits` fields are `capture_bytes`, `transcript_bytes`, `selection_bytes`,
 `frame_bytes`, `result_ttl_seconds`; use those names from `Settings.limits`.
+`stt_idle_unload_seconds` is a separate constructor argument from
+`Settings.stt['idle_unload_seconds']` (initially 90, integer 1–3600).
 `Snapshot` has `state`, `job`, `cancelling_job`, `generation`, `voice`, `result`,
 `gpu_slot`, `retired_operations`, `components`, `error`, `escape_reserved`.
 `ResultSlot(job, text, expires_at)` is the only retained finished transcript.
@@ -27,7 +30,11 @@ references on replacement, deletion, expiry and shutdown.
 `kind` is `JobKind.DICTATION` or `JobKind.READING`. Use `job.request_id` for
 controller audio ownership. `Operation(job, engine, engine_instance,
 request_id, action)` identifies one GPU operation; `engine` is `Engine.STT`
-or `Engine.TTS`, `action` is `Action.INITIALIZE`, `TRANSCRIBE` or `SYNTHESIZE`.
+or `Engine.TTS`, `action` is `Action.INITIALIZE`, `TRANSCRIBE`, `SYNTHESIZE`
+or `OFFLOAD`. `Operation.job` is optional: STT idle offload has `job=None`,
+no user generation, no Escape reservation and no foreground state transition.
+Maintenance is shown in `gpu_slot`, not in `retired_operations`, which means
+retired user work only. All kinds share the same slot.
 Keep the exact operation with worker requests and normalized replies. Identity
 comparison includes the full operation, not a PID, engine name or generation
 alone.
@@ -44,7 +51,7 @@ alone.
 | `EngineReady(operation)` | Valid only for initialization; readiness alone retains the GPU slot. |
 | `EngineResult(operation, text)` | Only fully validated atomic STT text; emits `StageDelivery(job, text, target)` and replaces the RAM slot. Framing/UTF-8/hash validation belongs to IPC before this event. |
 | `EngineAudio(operation, pcm)` | Validated 24 kHz mono PCM16 bytes; emits `PlayAudio(job, pcm, sequence)` with a monotonically increasing per-job audio sequence. The player owns bounded buffering/backpressure. |
-| `EngineTerminal(operation, success=True)` | Verified end of this operation's native/GPU work and stream. Releases only its matching slot, including retired jobs. May emit the next `BeginEngine`. |
+| `EngineTerminal(operation, success=True)` | Verified end of this operation's native/GPU work and stream. Releases only its matching slot, including retired jobs or maintenance. May emit the next `BeginEngine`. |
 | `EngineFault(operation, error)` | `error` is `HuginError`; public failure keeps only its code and the reducer-owned phase. Resource ownership persists until terminal or verified exit. |
 | `EngineExited(engine, engine_instance)` | Adapter has observed exit of its owned process/handle. Releases only that incarnation's resource; a foreign/stale identity does nothing. |
 | `AudioReset(job, success=True)` | Reply to `ResetAudio(job)` only after confirmed stop/reset and queue discard. Failure retains the barrier and forbids microphone start. |
@@ -65,11 +72,39 @@ and the next starts only after the preceding terminal. Do not split again in
 the application. Keep the same output stream across chunks; do not reset the
 player between them. The final terminal emits `DrainAudio(job, through_sequence)`;
 run player drain, then acknowledge that exact sequence with `AudioFinished`.
-Initialize and inference use the same
+Initialize, inference and offload use the same
 slot. After `EngineReady`, send the initialization terminal only when its native
 work is finished. No model work may be started independently of this arbiter.
-Worker chunking, cancellation/exit watchdogs, offload and recovery need their
+Worker chunking, cancellation/exit watchdogs, offload execution and recovery need their
 adapter implementations; they are not simulated by the reducer.
+
+Idle time starts at the latest matching STT initialization/transcription
+terminal while its component remains ready and unblocked. At the configured
+threshold, `Tick` may emit exactly one
+`BeginEngine(Operation(job=None, engine=Engine.STT, action=Action.OFFLOAD, ...),
+payload=None, voice=None)`. It requires no current user job, cancellation,
+capture/delivery/audio cleanup or GPU slot. No current or retired operation
+may overlap it. The application never calls `EnginePool.offload` outside this
+effect. Repeated ticks cannot start a second offload while the first is held;
+successful offload clears idle eligibility until later STT model use completes.
+
+The pool's current `offload('stt')` creates its own worker UUID and generation
+zero and returns a terminal Future. The adapter binds that Future and the
+verified actual worker incarnation to the exact Core operation that authorized
+it, then enqueues `EngineTerminal` for that stored operation. Do the same for
+initialization. Never reinterpret a foreign terminal as whichever operation
+happens to occupy the slot. The Future must confirm native completion; a
+fault/timeout without that proof retains the Core slot until matching terminal
+or observed own-worker exit. Offload failures block that component and do not
+automatically retry. Offload never produces user text/audio.
+
+Dictation may start microphone capture during offload. Its later inference
+waits for the offload terminal/exit, just like any other occupied GPU slot.
+Successful offload keeps STT `ready=True`: the worker reloads the model inside
+the next centrally scheduled transcription, rather than a separate spontaneous
+load. Observed worker exit clears readiness and a waiting transcription must
+first initialize a fresh incarnation. Cancelling a user waiting behind offload
+does not cancel maintenance or authorize early resource release.
 
 `CancelEngine(operation)` requests independent worker cancellation;
 `CancelSelection(job)` and `CancelDelivery(job)` cancel the clipboard owner's
