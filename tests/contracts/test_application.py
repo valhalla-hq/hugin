@@ -214,6 +214,11 @@ class ApplicationContracts(unittest.TestCase):
         self.assertEqual(self.pool.workers,{})
         self.assertTrue(self.controller.shutdown_ready())
 
+    def test_full_user_queue_cannot_drop_quit(self):
+        for _ in range(64):self.controller.command('clear')
+        self.controller.command('quit');self.pump()
+        self.assertTrue(self.controller.shutdown_ready())
+
     def test_deliberate_quit_retries_identified_audio_reset_barrier(self):
         self.controller.command('read');self.pump()
         real_stop=self.controller.output.stop

@@ -15,13 +15,19 @@ from hugin.windows.instance import InstanceGuard
 class NativeApplication(unittest.TestCase):
     def test_idle_pilot_tray_hotkeys_quit_and_mutex_release(self):
         original=HuginWindow.run
+        tray_owners=[]
         def brief(window):
             self.assertEqual(window.root.state(),'withdrawn')
+            tray_owners.append(window._tray)
             window.root.after(250,lambda:window.on_action('quit',None))
             original(window)
         root=Path(__file__).resolve().parents[2]
         with patch.object(HuginWindow,'run',brief):
             self.assertEqual(Application(load_settings(root),pilot=True).run(),0)
+        self.assertEqual(len(tray_owners),1)
+        self.assertTrue(tray_owners[0].closed)
+        self.assertFalse(tray_owners[0]._thread.is_alive())
+        self.assertFalse(tray_owners[0]._setup.is_alive())
         guard=InstanceGuard()
         try: self.assertTrue(guard.acquire())
         finally: guard.close()

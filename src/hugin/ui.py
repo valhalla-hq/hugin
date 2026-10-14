@@ -40,12 +40,13 @@ class HuginWindow:
         self._tray=None
         self._alive=False
         self._closed=False
+        self.failure=None
         try: self._build(on_action,with_tray=with_tray)
-        except Exception:
+        except BaseException as cause:
             # A failed constructor still owns its created root/tray parts.
             try: self.stop()
-            except Exception: pass
-            error=HuginError('interface_failed','window_start')
+            except BaseException: pass
+            error=HuginError('interface_failed','window_start') if isinstance(cause,Exception) else cause
             error.owner=self
             raise error from None
 
@@ -140,11 +141,12 @@ class HuginWindow:
         body.bind('<Configure>',reflow)
         if with_tray:
             import pystray
-            self._tray = pystray.Icon('hugin',tray_image(),'Hugin · wird vorbereitet',menu=pystray.Menu(
+            from .windows.tray import TrayOwner
+            self._tray = TrayOwner(pystray.Icon('hugin',tray_image(),'Hugin · wird vorbereitet',menu=pystray.Menu(
                 pystray.MenuItem('Öffnen',lambda:self._command('show'),default=True),
                 pystray.MenuItem('Diagnose kopieren',lambda:self.on_action('diagnose',None)),
-                pystray.MenuItem('Beenden',lambda:self.on_action('quit',None))))
-            self._tray.run_detached()
+                pystray.MenuItem('Beenden',lambda:self.on_action('quit',None)))))
+            self._tray.start()
         self.render(View())
         self.root.after(25,self._pump)
 
@@ -170,6 +172,9 @@ class HuginWindow:
     def _pump(self):
         if not self._alive:
             return
+        if self._tray and self._tray.error and self.failure is None:
+            self.failure=HuginError('interface_failed','tray_loop')
+            self.on_action('quit',None)
         try:
             while True:
                 command = self._commands.get_nowait()
@@ -204,7 +209,7 @@ class HuginWindow:
             self.text.configure(state='disabled')
         self.copy.configure(state='normal' if view.text else 'disabled')
         self.clear.configure(state='normal' if view.text else 'disabled')
-        if self._tray and (old is None or old.status!=view.status):
+        if self._tray and (old is None or old.status!=view.status or old.activity!=view.activity):
             self._tray.title='Hugin · '+view.status
             color = {'idle':'#7dc19b','recording':'#ed7167','playing':'#80bded',
                 'error':'#ed7167'}.get(view.activity,'#dfb96c')
@@ -224,7 +229,8 @@ class HuginWindow:
         if self._closed: return
         self._alive = False
         if self._tray:
-            self._tray.stop()
+            self._tray.close()
+            if not self._tray.closed: raise HuginError('interface_failed','tray_cleanup')
             self._tray = None
         if self.root is not None: self.root.destroy()
         self._closed = True

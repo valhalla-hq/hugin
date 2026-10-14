@@ -37,6 +37,7 @@ def main():
             window.post(view)
             window.show()
             window.run()
+            if window.failure: raise window.failure
             return 0
         if not args.pilot:
             # Productive hooks require the separately checked migration record.

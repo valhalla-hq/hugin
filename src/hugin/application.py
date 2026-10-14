@@ -131,6 +131,8 @@ class Controller:
             key = (type(event),event.job,event.success)
         elif isinstance(event,(c.RecordingStarted,c.RecordingStopped)):
             key = (type(event),event.job)
+        elif isinstance(event,_Command) and event.kind == 'quit':
+            key = (type(event),'quit')
         if key is not None:
             with self._lock:
                 if key not in self._completions:
@@ -161,7 +163,7 @@ class Controller:
         if invalidates:
             try: self.output.stop()
             except HuginError as error: self._post(_Failure(error),priority=0)
-        self._post(_Command(kind,value),priority=0)
+        self._post(_Command(kind,value),priority=-1 if kind == 'quit' else 0)
 
     def worker_event(self, event):
         """WorkerClient owns protocol parsing; map exact incarnations and requests."""
@@ -627,7 +629,7 @@ class Application:
             inputs = WindowsInputs(command,pilot=self.pilot)
             signals = WindowsSignals(command)
             try: window = HuginWindow(command)
-            except HuginError as error:
+            except BaseException as error:
                 if isinstance(getattr(error,'owner',None),HuginWindow): window=error.owner
                 raise
             clipboard=ClipboardService(snapshot_budget=self.settings.limits['clipboard_bytes'])
@@ -645,6 +647,7 @@ class Application:
             thread_started=True
             if self.show: window.show()
             window.run()
+            if getattr(window,'failure',None): raise window.failure
             return 0
         finally:
             owner_closed=controller is None

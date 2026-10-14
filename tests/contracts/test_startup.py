@@ -1,6 +1,7 @@
 """Startup unwind uses fake owners; no native input registrations."""
 from contextlib import ExitStack
 from pathlib import Path
+import queue
 from types import ModuleType,SimpleNamespace as NS
 import unittest
 from unittest.mock import patch
@@ -14,7 +15,7 @@ def module(name,**fields):
 
 
 class StartupContracts(unittest.TestCase):
-    def _failure_closes_io_before_instance_release(self,ui_failure=False,join_failure=False,cleanup_failure=False,window_failure=False,window_start_failure=False):
+    def _failure_closes_io_before_instance_release(self,ui_failure=False,join_failure=False,cleanup_failure=False,window_failure=False,window_start_failure=False,window_interrupt=False):
         owners=[];guards=[];released=[];controllers=[];joined=[];commands=[]
         class Owner:
             def __init__(self,*args,**kwargs):self.closed=False;owners.append(self)
@@ -27,8 +28,9 @@ class StartupContracts(unittest.TestCase):
         class Window(Owner):
             def __init__(self,*args,**kwargs):
                 super().__init__(*args,**kwargs)
-                if window_start_failure:
-                    error=HuginError('interface_failed','window_start');error.owner=self
+                if window_start_failure or window_interrupt:
+                    error=KeyboardInterrupt() if window_interrupt else HuginError('interface_failed','window_start')
+                    error.owner=self
                     raise error
             def stop(self):
                 if window_failure: raise RuntimeError('synthetic window cleanup failure')
@@ -78,13 +80,13 @@ class StartupContracts(unittest.TestCase):
             patches.enter_context(patch.object(application,'Controller',Controller))
             patches.enter_context(patch.object(application.threading,'Thread',FailedThread))
             app=application.Application(settings,pilot=True)
-            with self.assertRaises((RuntimeError,HuginError)):app.run()
+            with self.assertRaises((RuntimeError,HuginError,KeyboardInterrupt)):app.run()
         if join_failure or cleanup_failure or window_failure:
             self.assertFalse(guards[0].closed,'unconfirmed cleanup must retain the instance owner')
             self.assertIs(app._startup_owners[0],guards[0])
         else:
             self.assertTrue(guards[0].closed)
-            if window_start_failure:
+            if window_start_failure or window_interrupt:
                 self.assertTrue(next(owner for owner in owners if isinstance(owner,Window)).closed)
             else:
                 self.assertTrue(released and all(released),'all started owners must close before mutex release')
@@ -110,8 +112,33 @@ class StartupContracts(unittest.TestCase):
     def test_partial_window_start_retains_owner_for_startup_cleanup(self):
         self._failure_closes_io_before_instance_release(window_start_failure=True)
 
+    def test_interrupted_partial_window_start_keeps_owner_for_cleanup(self):
+        self._failure_closes_io_before_instance_release(window_interrupt=True)
+
 
 class WindowCleanupContracts(unittest.TestCase):
+    def test_interrupted_constructor_closes_partial_root_and_preserves_interrupt(self):
+        from hugin import ui
+        class Root:
+            closed=False
+            def withdraw(self):raise KeyboardInterrupt()
+            def destroy(self):self.closed=True
+        root=Root()
+        with patch.object(ui.tk,'Tk',return_value=root),patch.object(ui.sys,'platform','fixture'):
+            with self.assertRaises(KeyboardInterrupt) as failure:ui.HuginWindow(lambda *args:None,with_tray=False)
+        self.assertTrue(root.closed)
+        self.assertIs(failure.exception.owner.root,root)
+
+    def test_native_tray_failure_requests_owned_shutdown_once(self):
+        from hugin.ui import HuginWindow
+        window=HuginWindow.__new__(HuginWindow);calls=[]
+        window._alive=True;window._tray=NS(error=HuginError('input_failed','tray_loop'))
+        window.failure=None;window._commands=queue.Queue();window._updates=queue.Queue()
+        window.root=NS(after=lambda *args:None);window.on_action=lambda *args:calls.append(args)
+        window._pump();window._pump()
+        self.assertEqual(calls,[('quit',None)])
+        self.assertEqual(window.failure.code,'interface_failed')
+
     def test_window_constructor_failure_preserves_and_closes_partial_root(self):
         from hugin import ui
         class Root:
@@ -132,7 +159,7 @@ class WindowCleanupContracts(unittest.TestCase):
                 if 'root' in calls: raise RuntimeError('already destroyed')
                 calls.append('root')
         window=HuginWindow.__new__(HuginWindow)
-        window.root=Root();window._tray=NS(stop=lambda:calls.append('tray'))
+        window.root=Root();window._tray=NS(close=lambda:calls.append('tray'),closed=True)
         window._alive=True;window._closed=False
         window.stop();window.stop()
         self.assertEqual(calls,['tray','root'])
