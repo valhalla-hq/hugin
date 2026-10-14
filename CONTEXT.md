@@ -26,6 +26,15 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 - Private by default.
 - Weitere Arbeit und routinemäßige private Integration folgen dem aktuellen zentralen Lifecycle-Vertrag; keine abweichende lokale Autoritätsregel.
 
+## Bounded Helper: Audio-Refill
+
+- Auftrag: stark abgehackte/statische Wiedergabe bei beiden Stimmen untersuchen, engsten PCM-/Playerfix vorbereiten. Eigener Worktree C:/Users/brian/brian-projects/worktrees/hugin/hugin-audio-fix-mjolnir, Branch codex/hugin-audio-fix-mjolnir, Basis main 8c64029c8068a6fe3c58d177a1ed7b0c353ca773; Preflight-Control e3deecae6673a024aa9015a4387737fbec04c795. Root besitzt Integration und echte Playback-/Stoppprüfung; laufenden Pilot nicht verändern.
+- Befund an src/hugin/audio.py: Ein 6000-Byte-IPC-Paket belegte als einzelner WAVEHDR die komplette native 125ms-Queue. Ganze Header werden erst nach WHDR_DONE freigegeben; Nachfüllen wartete deshalb auf eine leere Queue. Kleinster Fix begrenzt jeden nativen Write auf höchstens die halbe vorhandene Kapazität, initial 3000 Bytes. Queuebudget bleibt 6000 Byte nativ plus höchstens 6000 Byte im Client.
+- Sourcecommit 8aad103bd5174e0b145b46b8557d9b3f0ad9c482 enthält nur audio.py und test_audio.py. Beide bestätigten synthetischen Stimmen zuerst rot im deterministischen FIFO mit 10ms modelliertem Header-Rücklauf plus 1ms Dispatch; nach Fix grün. Kleine/Restframes, Drain, Resetfehler, Cancel/alte Jobidentität und 1/63/125/250ms Buffergrößen geprüft.
+- 97 fokussierte Audio/Application/Coordinator/SimulatedIPC-Tests grün/4,381s; Docs 19 Anforderungen/17 AC, Syntax und Diff grün. Ruff ist im freigegebenen stabilen Controller nicht vorhanden und wurde weder installiert noch über eine andere venv gestartet.
+- Beide vorhandenen echten Pilot-WAVs rein offline vollständig durch denselben FIFO gespielt: Freya 291840 Bytes, Tyr 284160 Bytes, PCM jeweils exakt; modellierte Queue-Lücken 48/47 vor Fix, beide null danach. Kein physischer Hör-/Latenz-/Treibernachweis daraus. Die WAVs sind 24kHz mono PCM16 mit normalen Peaks; keine neue Sprachgenerierung.
+- Kein Rootworktree-/Runtime-/Paket-/Modell-/Profil-/Autostartedit und keine echte Audio-, GPU-, Mikrofon-, Eingabe- oder Appstopaktion durch diesen Helper. Metadaten werden separat gepusht; Sourcehash bleibt unverändert. Ownership aktiv bis regulärem Release, Worktree/Runtime/Caches erhalten.
+
 ## Pilot-Kürzel
 
 - Nutzerauftrag: einfache Tasten ohne Fn. Strg+Alt+D toggelt Diktat,
@@ -37,8 +46,8 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Next Step
 
-- Kürzeländerung nach Review/CI integrieren und Pilot mit Strg+Alt+D/V neu starten. Danach menschlicher Hör-/Tasten-/Zielvergleich. Einmaliger lokaler Rückweg hält die eigene Familie und startet nach Tray-Beenden/geschlossenem Job die unveränderten Startup-lnks; Status im lokalen .runtime/pilot-session-*.json. Normale Maus-/Alt+Y-Hooks bleiben gesperrt.
+- Root prüft und integriert ausschließlich den engen Sourcecommit 8aad103 und koordiniert danach reales Hören beider Stimmen und Stopp/Drain. Der Helper startet keine Ausgabe und stoppt den laufenden Pilot nicht. Anschließend den sauberen gepushten Helper-Metadatacheckpoint regulär freigeben, nichts löschen.
 
 ## Active Handoff
 
-- `handoffs/2026-10-14-simple-hotkeys.md`
+- `handoffs/2026-10-14-hugin-audio-fix.md`
