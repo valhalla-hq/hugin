@@ -230,34 +230,91 @@ def _insertion(automation,uia,binding):
     return position,selected.Clone()
 
 
+@dataclass
+class _TargetProof:
+    identity: UiaTargetIdentity
+    binding: _Binding
+
+
+def _target_proof(automation,uia,target,native_target,cancelled):
+    if cancelled():raise _SelectionFailure('cancelled')
+    if native_target()!=target:raise _SelectionFailure('target_changed')
+    first=_bind_edit(automation,uia,target)
+    position,original=_insertion(automation,uia,first)
+    if cancelled():raise _SelectionFailure('cancelled')
+    _confirm_focus(automation,first,target,native_target)
+    second=_bind_edit(automation,uia,target)
+    current_position,current=_insertion(automation,uia,second)
+    if ((first.focus_id,first.root_id,first.element_id,first.focus_pid,position)!=
+        (second.focus_id,second.root_id,second.element_id,second.focus_pid,current_position)
+            or any(original.CompareEndpoints(endpoint,current,endpoint)!=0 for endpoint in (0,1))):
+        raise _SelectionFailure('target_changed')
+    final_focus=automation.GetFocusedElement()
+    if not final_focus or _identity(final_focus)!=first.focus_id:
+        raise _SelectionFailure('target_changed')
+    final=_selected(_edit_pattern(final_focus,uia))
+    if final is None or any(original.CompareEndpoints(endpoint,final,endpoint)!=0 for endpoint in (0,1)):
+        raise _SelectionFailure('target_changed')
+    _confirm_focus(automation,second,target,native_target)
+    if cancelled():raise _SelectionFailure('cancelled')
+    return _TargetProof(UiaTargetIdentity(first.focus_id,first.root_id,first.element_id,
+        first.focus_pid,position),second)
+
+
+def _target_failure(failure):
+    return TargetResult('target_unverifiable' if failure.status=='selection_unsupported' else failure.status)
+
+
 def read_uia_target(automation,uia,target,native_target,cancelled):
     try:
-        if cancelled():return TargetResult('cancelled')
-        if native_target()!=target:return TargetResult('target_changed')
-        first=_bind_edit(automation,uia,target)
-        position,original=_insertion(automation,uia,first)
-        if cancelled():return TargetResult('cancelled')
-        _confirm_focus(automation,first,target,native_target)
-        second=_bind_edit(automation,uia,target)
-        current_position,current=_insertion(automation,uia,second)
-        if ((first.focus_id,first.root_id,first.element_id,first.focus_pid,position)!=
-            (second.focus_id,second.root_id,second.element_id,second.focus_pid,current_position)
-                or any(original.CompareEndpoints(endpoint,current,endpoint)!=0 for endpoint in (0,1))):
-            return TargetResult('target_changed')
-        final_focus=automation.GetFocusedElement()
-        if not final_focus or _identity(final_focus)!=first.focus_id:
-            return TargetResult('target_changed')
-        final=_selected(_edit_pattern(final_focus,uia))
-        if final is None or any(original.CompareEndpoints(endpoint,final,endpoint)!=0 for endpoint in (0,1)):
-            return TargetResult('target_changed')
-        _confirm_focus(automation,second,target,native_target)
-        if cancelled():return TargetResult('cancelled')
-        return TargetResult('target_captured',UiaTargetIdentity(first.focus_id,first.root_id,
-            first.element_id,first.focus_pid,position))
+        return TargetResult('target_captured',_target_proof(automation,uia,target,native_target,cancelled).identity)
     except _SelectionFailure as failure:
-        return TargetResult('target_unverifiable' if failure.status=='selection_unsupported' else failure.status)
+        return _target_failure(failure)
     except Exception:
         return TargetResult('target_probe_failed')
+
+
+def confirm_uia_target(automation,uia,target,native_target,proof):
+    """Warm, single confirmation against held COM facts; never an ancestor walk."""
+    try:
+        _confirm_focus(automation,proof.binding,target,native_target)
+        root=automation.ElementFromHandle(target.hwnd)
+        if not root or _identity(root)!=proof.identity.root_id:
+            return TargetResult('target_changed')
+        focus=automation.GetFocusedElement()
+        if not focus or _identity(focus)!=proof.identity.focus_id:return TargetResult('target_changed')
+        pattern=_edit_pattern(focus,uia)
+        binding=_Binding(proof.identity.focus_id,proof.identity.root_id,
+            proof.identity.element_id,proof.identity.focus_pid,pattern)
+        position,current=_insertion(automation,uia,binding)
+        if position!=proof.identity.position:
+            return TargetResult('target_changed')
+        _confirm_focus(automation,proof.binding,target,native_target)
+        return TargetResult('target_captured',proof.identity)
+    except _SelectionFailure as failure:return _target_failure(failure)
+    except Exception:return TargetResult('target_probe_failed')
+
+
+def _write_frame(data):
+    view=memoryview(data)
+    while view:
+        written=sys.stdout.buffer.write(view)
+        if not written or written>len(view):raise OSError('invalid probe write')
+        view=view[written:]
+    sys.stdout.buffer.flush()
+
+
+def _com_delivery(client,uia,target,native):
+    automation=client.CreateObject(uia.CUIAutomation,interface=uia.IUIAutomation,clsctx=1)
+    try:proof=_target_proof(automation,uia,target,native.capture_native_target,lambda:False)
+    except _SelectionFailure as failure:
+        _write_frame(encode_target_response(_target_failure(failure)));return
+    _write_frame(encode_target_response(TargetResult('target_captured',proof.identity)))
+    # Exactly one private confirmation command. EOF and any other byte reject.
+    if read_exact(sys.stdin.buffer,1)!=b'\x01' or sys.stdin.buffer.read(1)!=b'':
+        raise ValueError('invalid delivery confirmation')
+    _write_frame(encode_target_response(confirm_uia_target(automation,uia,target,
+        native.capture_native_target,proof)))
 
 
 def _system_typelib():
@@ -277,6 +334,8 @@ def _com_read(client, uia, target,operation='selection'):
     from hugin.windows.clipboard import NativeClipboard, MAX_TEXT_BYTES
     native = NativeClipboard()
     try:
+        if operation=='delivery':
+            return _com_delivery(client,uia,target,native)
         automation = client.CreateObject(uia.CUIAutomation, interface=uia.IUIAutomation, clsctx=1)
         if operation=='target':
             return read_uia_target(automation,uia,target,native.capture_native_target,lambda:False)
@@ -318,7 +377,7 @@ def _load_comtypes():
 
 
 def run_native(target,operation='selection'):
-    result_type=TargetResult if operation=='target' else SelectionResult
+    result_type=TargetResult if operation in ('target','delivery') else SelectionResult
     if sys.platform != 'win32':
         return result_type('dependency_unavailable')
     # comtypes initializes its importing thread. Select MTA before import;
@@ -338,7 +397,7 @@ def run_native(target,operation='selection'):
     except _SelectionFailure as failure:
         return result_type(failure.status)
     except Exception:
-        return result_type('target_probe_failed' if operation=='target' else 'selection_failed')
+        return result_type('target_probe_failed' if operation in ('target','delivery') else 'selection_failed')
     finally:
         # Provider interfaces leave _com_read before apartment teardown.
         gc.collect()
@@ -354,12 +413,13 @@ def main():
         if length > REQUEST_LIMIT:
             raise ValueError('selection request limit')
         operation,target = decode_operation(read_exact(sys.stdin.buffer, length))
-        if sys.stdin.buffer.read(1) != b'':
+        if operation!='delivery' and sys.stdin.buffer.read(1) != b'':
             raise ValueError('trailing selection request')
         result = run_native(target,operation)
-        data = encode_target_response(result) if operation=='target' else encode_response(result.status, result.text)
+        if operation=='delivery' and result is None:return 0
+        data = encode_target_response(result) if operation in ('target','delivery') else encode_response(result.status, result.text)
     except Exception:
-        data = encode_target_response(TargetResult('target_probe_failed')) if operation=='target' else encode_response('selection_failed')
+        data = encode_target_response(TargetResult('target_probe_failed')) if operation in ('target','delivery') else encode_response('selection_failed')
     try:
         view = memoryview(data)
         while view:
