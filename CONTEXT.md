@@ -1,34 +1,34 @@
-# Hugin Context
+# Hugin Visual Helper Context
 
-Status: implementation
-Owner: Brian
-Type: application
-Data boundary: Privater Quellcode, kuratierte Konfiguration, Paket-/Modelllocks und bestaetigte kleine synthetische Stimmreferenzen. Keine persoenlichen Diktate, Dokumente, Audioaufnahmen, Credentials, Rohlogs, Modellgewichte oder virtuellen Umgebungen in Git.
+Status: helper checkpoint for parent integration
+Owner: Brian; accountable executor `/root`, bounded helper `/root/hugin_windows`
 Source truth: `valhalla-hq/hugin`
 
-## Goal
+## Scope
 
-Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-14-hugin-v1 erstellt und die schrittweise Umsetzung beauftragt. Kleine native Oberflaeche, XBUTTON2 und Alt+Y fuer Diktat-Toggle, XBUTTON1 fuer Vorlesen-Toggle, Diktat stoppt Vorlesen, beide unveraenderten Stimmen Freya/deutsch-3 und Tyr/deutsch-a. Escape-Abbruch, ein letztes RAM-Diktat mit Kopieren/Loeschen, technische Diagnose ohne Inhalte. Whispering und PipPal laufen bis zur geprueften Umstellung weiter. Lokaler Einstieg C:/Users/brian/Hugin; vorhandene Planungsdateien erhalten und im ersten exklusiven Task uebernehmen.
+Darstellung im eigenen Task `hugin-visual` auf Mjolnir: Navy/Violett, ruhige
+Karten, eigener skalierbarer Rabe. Funktions-, Controller-, Thread-, Tray-
+und Text-Lifetimeverträge unverändert. Keine Worker, Modelle, Eingabe-Hooks,
+Zwischenablage, GPU oder Altstack-Aktionen in diesem Helper.
 
 ## Current State
 
-- Private Initialisierung und Katalogregistrierung abgeschlossen. Pilot-PR https://github.com/valhalla-hq/hugin/pull/1 am unveränderten geprüften Head b3ee07cb18b94764a1ea24b56179ae329382b868 integriert; Merge cf1c70570b790211b54ce27e8a93b8e641703d69.
-- Task codex/hugin-v1-mjolnir dokumentiert anschließend den echten Restore und festen lokalen Einstieg; keine produktive Aktivierung.
-- Coordinator, Windows-Adapter samt isoliertem UIA/COM-Gerätesignalen, bestätigtem Trayabschluss, Worker-IPC, eigene Audioadapter und kleines Interface verbunden. 252 Contracts/Integrationsprüfungen und 44 Windows-Prüfungen ohne Skips grün; docs/compile/diff geprüft.
-- Main cf1c705 vollständig aus 29 echten Modell-/CUDA-Dateien und 122 lokalen Wheels wiederhergestellt: drei frische Umgebungen, Versionen/pip check grün; Apply 279,716s, Wiederholung ohne Neuinstallation 63,824s. 44 Windows-Prüfungen ohne Skips und echte CPU-Probe aus der finalen Installation grün; GPU-/Hör-/physische Zielmatrix-Abnahme offen.
-- C:/Users/brian/Hugin ist ein geprüfter Junction zum sauberen _repos/hugin-Mainclone. Die sechs ursprünglichen Planungsdateien bleiben mit identischen Hashes in C:/Users/brian/Hugin-Planung-2026-10-14 erhalten. Keine venv verschoben.
-- Whispering/PipPal und produktive Tasten/Autostarts sind unverändert. Keine Hugin-Gesamtabnahme behauptet.
-- GitHub main-Protection-Abfrage liefert HTTP403 wegen Tarifgrenze; keine Policy geändert. Vertraglicher PR-/Review-/CI-Gate bleibt maßgeblich.
-
-## Decisions
-
-- Private by default.
-- Weitere Arbeit und routinemäßige private Integration folgen dem aktuellen zentralen Lifecycle-Vertrag; keine abweichende lokale Autoritätsregel.
-
-## Next Step
-
-- Kontrollierten Hardware-Pilot mit Brian abstimmen. Normale Eingaben bleiben technisch gesperrt; Pilot Ctrl+Alt+Shift+F9/F10. Altstack vor einer gesondert abgestimmten Pilotpause nicht beenden. GPU-/Hör-/Zielmatrix-Abnahme und produktiver Wechsel sind weiterhin offen.
+- Branch: `codex/hugin-visual-mjolnir`; exclusive worktree:
+  `C:/Users/brian/brian-projects/worktrees/hugin/hugin-visual-mjolnir`.
+- Base main: `e762108bf189ce3428f6fba9cca6f2cbb412a7ce`; preflight control:
+  `e3deecae6673a024aa9015a4387737fbec04c795`.
+- Source commit: `82c619b706979c6ac6b68c3cf3a4a64dcaf6e8f2`.
+  Parent cherry-picks ausschließlich diesen Source-/Testcommit. Diese
+  Helfermetadaten gehören nicht in den Integrationsbranch.
+- 223 Contracts auch mit Python `-S`, 7 native UI-Prüfungen und Docs grün.
+  Eigene synthetische Fenster bei emulierten 100/150/200 Prozent DPI,
+  kleinster Fenstergröße und zweizeiliger Diagnose geprüft. Screenshots
+  einschließlich Stimmen-Popup unter `.runtime/visual-qa/` gesichtet.
+- Native Betriebssystem-DPI-Wechsel und Gesamt-App-/GPU-Pilot bleiben beim
+  Parent. Keine neue Dependency und keine fremden Logos/Assets.
+- Ownership bleibt aktiv. Parent führt unabhängigen Review und Integration
+  in PR <https://github.com/valhalla-hq/hugin/pull/3> durch.
 
 ## Active Handoff
 
-- `handoffs/2026-10-14-hugin-v1.md`
+- `handoffs/2026-10-14-hugin-visual-helper.md`
