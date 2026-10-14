@@ -1,5 +1,6 @@
 import os
 import unittest
+import weakref
 
 from hugin.ui import HuginWindow,View
 
@@ -24,3 +25,14 @@ class NativeWindowContract(unittest.TestCase):
         self.window.render(View(text=''))
         self.assertEqual(self.window.text.get('1.0','end-1c'),'')
         self.assertEqual(str(self.window.copy['state']),'disabled')
+
+    def test_stop_releases_displayed_and_pending_python_text(self):
+        class Marker(str):pass
+        shown=Marker('Synthetischer angezeigter Inhalt')
+        pending=Marker('Synthetischer wartender Inhalt')
+        shown_ref,pending_ref=weakref.ref(shown),weakref.ref(pending)
+        self.window.render(View(text=shown));self.window.post(View(text=pending))
+        del shown,pending
+        self.window.stop()
+        self.assertIsNone(shown_ref())
+        self.assertIsNone(pending_ref())

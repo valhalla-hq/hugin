@@ -176,6 +176,7 @@ class HuginWindow:
 
     def _fail(self,cause=None,*,notify=True):
         if self.failure is None:
+            self._forget_views()
             self.failure=cause if cause is not None and not isinstance(cause,Exception) else HuginError('interface_failed','window_pump')
             self.failure.owner=self
             if notify:
@@ -244,8 +245,24 @@ class HuginWindow:
     def request_stop(self):
         self._command('stop')
 
+    def _forget_views(self):
+        self._view=None
+        updates=getattr(self,'_updates',None)
+        if updates is not None:
+            try:
+                while True: updates.get_nowait()
+            except queue.Empty: pass
+        text=getattr(self,'text',None)
+        if text is not None:
+            try:
+                text.configure(state='normal');text.delete('1.0','end');text.configure(state='disabled')
+            except Exception:
+                # Confirmed root destruction remains the native cleanup barrier.
+                pass
+
     def stop(self):
         if self._closed: return
+        self._forget_views()
         if self._tray:
             self._tray.close()
             if not self._tray.closed: raise HuginError('interface_failed','tray_cleanup')
