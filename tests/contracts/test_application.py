@@ -4,6 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace as NS
 import threading
 import unittest
+from hugin.errors import HuginError
 
 from hugin import coordinator as c
 from hugin.config import load_settings
@@ -55,7 +56,7 @@ class Pool:
     def __init__(self): self.workers = {}; self.starts = []; self.inference = []
     def start(self, engine):
         self.starts.append(engine)
-        self.workers[engine] = NS(engine_instance='actual-' + engine, process=None)
+        self.workers[engine] = NS(engine_instance='actual-' + engine, process=None,close=lambda:None)
         self.future = Future()
         return self.future
     def transcribe(self, pcm, request_id, generation):
@@ -82,7 +83,8 @@ class ApplicationContracts(unittest.TestCase):
         self.controller = Controller(load_settings(ROOT), inputs=Inputs(),
             microphone=Microphone(self.calls), output=Output(self.calls),
             clipboard=self.clipboard, pool=self.pool, publish=lambda view: None,
-            capture_executor=Immediate(), audio_executor=Immediate(), maintenance_executor=Immediate())
+            capture_executor=Immediate(), audio_executor=Immediate(), maintenance_executor=Immediate(),
+            selection_executor=Immediate())
 
     def pump(self):
         while self.controller.pump_once(): pass
@@ -150,6 +152,58 @@ class ApplicationContracts(unittest.TestCase):
         now = self.controller.core.snapshot().result.expires_at
         self.controller.handle(c.Tick(now))
         self.assertEqual(self.controller.view().text,'')
+
+    def test_start_watchdog_finishes_before_inference_uses_same_worker(self):
+        op = self.dictation_ready()
+        self.assertNotIn((op.engine,op.engine_instance),self.controller._deadlines)
+
+    def test_failed_worker_cleanup_remains_shutdown_barrier(self):
+        self.dictation_ready()
+        worker = self.pool.workers['stt']
+        def fail(): raise HuginError('worker_timeout','cleanup')
+        worker.close = fail
+        self.controller.command('quit'); self.pump()
+        self.assertFalse(self.controller.shutdown_ready())
+        self.assertIs(self.pool.workers['stt'],worker)
+        # A deliberate second quit retries that same held owner.
+        worker.close = lambda:None
+        self.controller.command('quit'); self.pump()
+        self.assertTrue(self.controller.shutdown_ready())
+
+    def test_selecting_same_voice_does_not_silence_current_reading(self):
+        self.controller.command('read'); self.pump()
+        job = self.controller.core.snapshot().job
+        self.controller.command('voice','freya'); self.pump()
+        self.assertFalse(self.controller._token(job).is_set())
+
+    def test_quit_waits_for_pending_capture_start_and_stop_acknowledgements(self):
+        class Deferred:
+            def __init__(self): self.pending=[]
+            def submit(self,fn,*args):
+                future=Future();self.pending.append((fn,args,future));return future
+            def flush(self):
+                while self.pending:
+                    fn,args,future=self.pending.pop(0)
+                    try: future.set_result(fn(*args))
+                    except Exception as error: future.set_exception(error)
+        deferred=Deferred()
+        self.controller.capture_executor=deferred
+        self.controller.command('dictation');self.pump()
+        self.controller.command('quit');self.pump()
+        self.assertFalse(self.controller.shutdown_ready())
+        deferred.flush();self.pump()
+        self.assertFalse(self.controller.microphone.owned)
+        self.assertTrue(self.controller.shutdown_ready())
+
+    def test_full_user_queue_cannot_drop_confirmed_worker_cleanup(self):
+        self.dictation_ready()
+        # Quit dispatch is direct to isolate overflow at the completion producer.
+        for _ in range(64): self.controller.command('clear')
+        self.controller.handle(c.Shutdown())
+        self.controller._stop=True
+        self.pump()
+        self.assertEqual(self.pool.workers,{})
+        self.assertTrue(self.controller.shutdown_ready())
 
 
 if __name__ == '__main__': unittest.main()

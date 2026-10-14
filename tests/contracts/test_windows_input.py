@@ -82,6 +82,7 @@ class WindowsInputContracts(unittest.TestCase):
         with self.assertRaises(HuginError):
             inputs.stop()
         self.assertTrue(backend.closed)
+        self.assertTrue(inputs.closed)
 
     def test_queue_overflow_is_a_visible_failure(self):
         inputs = WindowsInputs(lambda _: None, backend=FakeInputs(), queue_size=1)
@@ -104,6 +105,7 @@ class WindowsInputContracts(unittest.TestCase):
             inputs.stop()
         self.assertEqual(inputs.error.code, 'input_failed')
         self.assertNotIn('PRIVATE', str(inputs.error))
+        self.assertTrue(inputs.closed)
 
 
 if __name__ == '__main__':

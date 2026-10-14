@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import queue
+import sys
 import tkinter as tk
 from tkinter import ttk
 
@@ -32,11 +33,21 @@ def tray_image(color='#b58b39'):
 class HuginWindow:
     def __init__(self, on_action, *, with_tray=True):
         self.on_action = on_action
+        if sys.platform == 'win32':
+            import ctypes
+            dpi = ctypes.WinDLL('user32').SetProcessDpiAwarenessContext
+            dpi.argtypes = [ctypes.c_void_p]
+            dpi.restype = ctypes.c_int
+            dpi(ctypes.c_void_p(-4))
         self.root = tk.Tk(className='Hugin')
         self.root.withdraw()
         self.root.title('Hugin')
-        self.root.geometry('500x550')
-        self.root.minsize(430,480)
+        scale = max(1,self.root.winfo_fpixels('1i')/96)
+        self.root.geometry(f'{round(500*scale)}x{min(round(550*scale),round(self.root.winfo_screenheight()*.9))}')
+        self.root.minsize(round(430*scale),min(round(480*scale),round(self.root.winfo_screenheight()*.8)))
+        from PIL import ImageTk
+        self._window_icon = ImageTk.PhotoImage(tray_image(),master=self.root)
+        self.root.iconphoto(True,self._window_icon)
         self.root.configure(background='#f3f5f7')
         self.root.protocol('WM_DELETE_WINDOW',self.hide)
         self._updates = queue.Queue(maxsize=2)
@@ -53,7 +64,7 @@ class HuginWindow:
         style.configure('Status.TLabel',font=('Segoe UI Semibold',13),foreground='#21516a')
         style.configure('Small.TLabel',font=('Segoe UI',9),foreground='#586675')
         style.configure('Error.TLabel',foreground='#a53328')
-        body = ttk.Frame(self.root,padding=20)
+        body = ttk.Frame(self.root,padding=round(20*scale))
         body.pack(fill='both',expand=True)
         body.columnconfigure(0,weight=1)
         body.rowconfigure(8,weight=1)
@@ -69,11 +80,14 @@ class HuginWindow:
         shortcuts = ttk.Frame(body)
         shortcuts.grid(row=3,column=0,sticky='ew',pady=(0,14))
         shortcuts.columnconfigure(1,weight=1)
+        self._shortcut_labels = []
         for index,(name,text) in enumerate((('Diktieren','Vordere Taste oder Alt+Y · erneut: fertig'),
                 ('Vorlesen','Text markieren · hintere Taste · erneut: Stopp'),
                 ('Abbrechen','Escape während einer Aktion'))):
             ttk.Label(shortcuts,text=name).grid(row=index,column=0,sticky='nw',padx=(0,12),pady=3)
-            ttk.Label(shortcuts,text=text,style='Small.TLabel',wraplength=330).grid(row=index,column=1,sticky='w',pady=3)
+            label = ttk.Label(shortcuts,text=text,style='Small.TLabel',wraplength=round(330*scale))
+            label.grid(row=index,column=1,sticky='w',pady=3)
+            self._shortcut_labels.append(label)
         voices = ttk.Frame(body)
         voices.grid(row=4,column=0,sticky='ew',pady=(0,16))
         ttk.Label(voices,text='Stimme').pack(side='left',padx=(0,12))
@@ -100,6 +114,11 @@ class HuginWindow:
         self.error = ttk.Label(body,style='Error.TLabel',wraplength=440)
         self.error.grid(row=11,column=0,sticky='ew',pady=(5,8))
         ttk.Button(body,text='Diagnose kopieren',command=lambda:self.on_action('diagnose',None)).grid(row=12,column=0,sticky='w')
+        def reflow(event):
+            width = max(100,event.width-round(40*scale))
+            for label in (self.detail,self.components,self.error): label.configure(wraplength=width)
+            for label in self._shortcut_labels: label.configure(wraplength=max(100,width-round(90*scale)))
+        body.bind('<Configure>',reflow)
         if with_tray:
             import pystray
             self._tray = pystray.Icon('hugin',tray_image(),'Hugin · wird vorbereitet',menu=pystray.Menu(

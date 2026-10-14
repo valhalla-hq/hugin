@@ -52,6 +52,7 @@ class WindowsInputs:
         if type(queue_size) is not int or not 1 <= queue_size <= 256:
             raise ValueError('queue_size must be between 1 and 256')
         self.on_action, self.pilot = on_action, pilot
+        self._cleanup_succeeded = False
         self._backend = backend
         self._events: queue.Queue[str] = queue.Queue(queue_size)
         self._commands: queue.Queue[_CancelCommand] = queue.Queue(16)
@@ -123,6 +124,12 @@ class WindowsInputs:
             raise self.error
         if command.error is not None:
             raise command.error
+
+    @property
+    def closed(self):
+        """Cleanup fact is independent of the retained operational error."""
+        return self._cleanup_succeeded and not any(
+            thread is not None and thread.is_alive() for thread in (self._thread,self._dispatcher))
 
     def stop(self):
         self._halt.set()
@@ -206,6 +213,7 @@ class WindowsInputs:
             self._halt.set()
             try:
                 self._backend.close()
+                self._cleanup_succeeded = True
             except Exception:
                 self.error = HuginError('input_failed', 'input_cleanup')
             self._ready.set()
