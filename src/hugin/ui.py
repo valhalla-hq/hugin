@@ -58,6 +58,7 @@ class HuginWindow:
         self._view = None
         self._tray = None
         self._alive = True
+        self._closed = False
         style = ttk.Style(self.root)
         if 'vista' in style.theme_names():
             style.theme_use('vista')
@@ -205,10 +206,13 @@ class HuginWindow:
         self._command('stop')
 
     def stop(self):
+        if self._closed: return
         self._alive = False
         if self._tray:
             self._tray.stop()
+            self._tray = None
         self.root.destroy()
+        self._closed = True
 
     def run(self):
         self.root.mainloop()

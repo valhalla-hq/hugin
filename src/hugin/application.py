@@ -642,15 +642,18 @@ class Application:
             thread_started=True
             if self.show: window.show()
             window.run()
-            controller.command('quit')
-            thread.join()
             return 0
         finally:
             try:
-                if not thread_started:
+                if thread_started:
+                    # A UI/show failure must follow the same owned shutdown as
+                    # a normal close. Keep the mutex until native cleanup ends.
+                    controller.command('quit')
+                    thread.join()
+                else:
                     if controller:
                         if not controller.finish_io(): self._startup_owners=controller
                         for executor in (controller.capture_executor,controller.audio_executor,controller.maintenance_executor,controller.selection_executor):
                             executor.shutdown(wait=True,cancel_futures=True)
-                    if window: window.stop()
+                if window: window.stop()
             finally: guard.close()
