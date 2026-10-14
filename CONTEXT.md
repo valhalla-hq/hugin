@@ -53,4 +53,7 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Active Handoff
 
-- `handoffs/2026-10-14-hugin-windows-tray-helper.md` (dieser Helper-Branch; vorheriger UIA-Handoff `handoffs/2026-10-14-hugin-windows-uia-helper.md`; Haupthandoff weiterhin `handoffs/2026-10-14-hugin-v1.md` auf dem Integrationsbranch)
+- `handoffs/2026-10-14-hugin-windows-tray-helper.md`
+
+Dieser Helper-Branch; vorheriger UIA-Handoff `handoffs/2026-10-14-hugin-windows-uia-helper.md`.
+Haupthandoff weiterhin `handoffs/2026-10-14-hugin-v1.md` auf dem Integrationsbranch.
