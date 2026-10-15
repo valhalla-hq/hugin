@@ -5,7 +5,7 @@ import sys
 import unittest
 from unittest.mock import patch
 
-from hugin.windows.clipboard import (NativeClipboard, ClipboardFailure, _Input,
+from hugin.windows.clipboard import (NativeClipboard, ClipboardFailure,ClipboardService,ClipboardSnapshot, _Input,
                                      _GuiThreadInfo, _KeyInput, _MouseInput, WindowTarget)
 from hugin.windows.process import (NativeProcess, _StartupInfo, _StartupInfoEx,
                                    _ProcessInformation, _ExtendedLimits)
@@ -99,6 +99,51 @@ class WindowsAbiContracts(unittest.TestCase):
         with self.assertRaises(ClipboardFailure) as failure:
             backend.snapshot(1024)
         self.assertEqual(failure.exception.status, 'format_unsupported')
+
+    def test_browser_text_preserves_opaque_source_metadata_and_rejects_unknown_formats(self):
+        names={'HTML Format':49152,'Rich Text Format':49153,
+            'Chromium internal source RFH token':49154,
+            'Chromium internal source URL':49155,
+            'Hugin.Private.ClipboardTransaction.v1':49156}
+        library=Library()
+        library.functions['RegisterClipboardFormatW']=lambda name:names[name]
+        with patch.object(ctypes,'WinDLL',return_value=library):
+            backend=NativeClipboard()
+        original={13:b'T\0\0\0',49152:b'<b>T</b>',
+            49154:b'\x00\xff\x01\x80',49155:b'\x00https://example.invalid/\xff'}
+        class ClipboardOS:
+            current=4
+            data=dict(original)
+            def EnumClipboardFormats(self,previous):
+                order=list(self.data)
+                index=order.index(previous)+1 if previous else 0
+                return order[index] if index<len(order) else 0
+            def GetClipboardSequenceNumber(self):return self.current
+            def GetClipboardOwner(self):return 100
+            def GetClipboardData(self,identity):return identity
+            def EmptyClipboard(self):self.data={};self.current+=1;return 1
+            def SetClipboardData(self,identity,handle):
+                self.data[identity]=allocations[handle];self.current+=1;return handle
+        class MemoryOS:
+            def GlobalSize(self,handle):return len(backend.user.data[handle])
+        @contextmanager
+        def opened(**_):yield
+        backend.user,backend.kernel=ClipboardOS(),MemoryOS()
+        backend._opened,backend.hwnd=opened,100
+        backend._read_handle=lambda handle,size:backend.user.data[handle][:size]
+        allocations={}
+        def allocate(data):
+            handle=len(allocations)+1000;allocations[handle]=data;return handle
+        backend._allocate=allocate
+        saved=backend.snapshot(1024)
+        self.assertEqual(dict(saved.formats),original)
+        backend.replace(saved.formats,saved.sequence)
+        self.assertEqual(backend.user.data,original)
+        backend.user.data[49199]=b'unknown format'
+        backend._read_handle=lambda *_:self.fail('unknown format must reject before byte copy')
+        with self.assertRaises(ClipboardFailure) as failure:backend.snapshot(1024)
+        self.assertEqual(failure.exception.status,'format_unsupported')
+        self.assertEqual(backend.user.data,{**original,49199:b'unknown format'})
 
     def test_native_snapshot_accounts_all_sizes_before_copying(self):
         backend = object.__new__(NativeClipboard)
@@ -226,9 +271,10 @@ class WindowsAbiContracts(unittest.TestCase):
         backend = object.__new__(NativeClipboard)
         backend._unfreed = set()
         class ClipboardOS:
-            sequence = 1
+            sequence = 1;owner=99
             def GetClipboardSequenceNumber(self):
                 return self.sequence
+            def GetClipboardOwner(self):return self.owner
             def EmptyClipboard(self):
                 self.sequence = 2
                 return True
@@ -239,12 +285,79 @@ class WindowsAbiContracts(unittest.TestCase):
         def opened(**_):
             yield
             backend.user.sequence = 77  # user copy after the clipboard lock
+            backend.user.owner=200
             raise ClipboardFailure('clipboard_failed')
         backend.user = ClipboardOS()
+        backend.hwnd=99
         backend._opened, backend._allocate = opened, lambda _: 100
         with self.assertRaises(ClipboardFailure) as failure:
             backend.replace(((13, b'text'),), 1)
         self.assertEqual(failure.exception.owned_sequence, 3)
+
+    def publication_fixture(self,*,foreign=False,partial=False):
+        backend=object.__new__(NativeClipboard)
+        backend.hwnd=99;backend._unfreed=set()
+        class ClipboardOS:
+            current=1;owner=99
+            def GetClipboardSequenceNumber(self):return self.current
+            def GetClipboardOwner(self):return self.owner
+            def EmptyClipboard(self):self.current=2;return True
+            def SetClipboardData(self,identity,handle):
+                if partial and identity==49152:return 0
+                self.current=3;return handle
+        class MemoryOS:
+            def GlobalFree(self,handle):return 0
+        @contextmanager
+        def opened(write=False):
+            try:yield
+            finally:
+                if write:
+                    # Windows adds its implicit text formats on CloseClipboard.
+                    backend.user.current=77 if foreign else 6
+                    backend.user.owner=200 if foreign else 99
+        backend.user,backend.kernel=ClipboardOS(),MemoryOS()
+        backend._opened=opened;backend._allocate=lambda _:100
+        return backend
+
+    def test_complete_write_reports_own_sequence_after_implicit_format_publication(self):
+        backend=self.publication_fixture()
+        self.assertEqual(backend.replace(((13,b'text'),),1),6)
+
+    def test_user_copy_at_publication_is_not_claimed_as_an_owned_sequence(self):
+        backend=self.publication_fixture(foreign=True)
+        with self.assertRaises(ClipboardFailure) as failure:
+            backend.replace(((13,b'text'),),1)
+        self.assertEqual(failure.exception.status,'clipboard_changed')
+        self.assertEqual(failure.exception.owned_sequence,3)
+        self.assertEqual(backend.user.current,77)
+
+    def test_partial_write_retains_the_published_own_sequence_for_restore(self):
+        backend=self.publication_fixture(partial=True)
+        with self.assertRaises(ClipboardFailure) as failure:
+            backend.replace(((13,b'text'),(49152,b'nonce')),1)
+        self.assertEqual(failure.exception.status,'clipboard_write_failed')
+        self.assertEqual(failure.exception.owned_sequence,6)
+
+    def test_unstable_zero_or_failed_owner_observation_is_unknown_not_foreign(self):
+        for kind in ('unstable','zero','owner_error'):
+            backend=self.publication_fixture()
+            sequence=iter((5,6) if kind=='unstable' else (0,0) if kind=='zero' else (6,6))
+            backend.user.GetClipboardSequenceNumber=lambda:next(sequence)
+            if kind=='owner_error':
+                def owner_error():ctypes.set_last_error(5);return 0
+                backend.user.GetClipboardOwner=owner_error
+            with self.assertRaises(ClipboardFailure) as failure:
+                backend.restorable_sequence(3)
+            self.assertEqual(failure.exception.status,'clipboard_busy',kind)
+
+    def test_changed_sequence_with_null_owner_retains_the_original_recovery_snapshot(self):
+        backend=self.publication_fixture();backend.user.current=6;backend.user.owner=0
+        saved=ClipboardSnapshot(1,((13,b'original'),))
+        service=ClipboardService(backend=backend);service._pending_restore=(saved,3)
+        self.assertEqual(service.recover().status,'clipboard_restore_failed')
+        self.assertTrue(service.recovery_pending)
+        self.assertIs(service._pending_restore[0],saved)
+        self.assertEqual(backend.restorable_sequence(6),6)
 
     def test_direct_edit_selection_uses_utf16_offsets_without_clipboard(self):
         backend = object.__new__(NativeClipboard)

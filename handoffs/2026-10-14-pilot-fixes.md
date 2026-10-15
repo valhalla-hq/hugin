@@ -1,91 +1,88 @@
-# Hugin Pilotkorrekturen
+# Hugin Pilotkorrekturen — Stand 15.10.2026
 
-- Repository valhalla-hq/hugin; Basis main 8c64029c8068a6fe3c58d177a1ed7b0c353ca773.
-- Executor Mjolnir, Branch codex/hugin-pilot-fixes-mjolnir, Worktree
-  C:/Users/brian/brian-projects/worktrees/hugin/hugin-pilot-fixes-mjolnir.
-- Preflight-Control e3deecae6673a024aa9015a4387737fbec04c795; Ownership aktiv.
-- PR https://github.com/valhalla-hq/hugin/pull/5; vor Fortsetzung exakten Head,
-  Check-/Merge- und Laufzustand frisch lesen. Root-Ownership bleibt aktiv,
-  bis die offene tatsächliche Codex-Abnahme abgeschlossen ist.
-- Auftrag/Prüfplan: specs/2026-10-14-hugin-v1/pilot-fixes.md. Automatisches
-  Einfügen in Codex reparieren, Audioaussetzer bei Freya UND Tyr beheben,
-  ersten Modellstart erklären. Bestehende Modelle/Autostarts/Profile erhalten.
-- Root: Controller/Meldungen/Ladeanzeige, UIA-Integration, Abnahme, PR/Merge.
-  Windowshelper: eigener hugin-codex-target-Worktree, begrenzte UIA-Target-
-  Metadaten und unmittelbarer nativer Commit. Audiohelper: eigener
-  hugin-audio-fix-Worktree, PCMOutput-Doppelbufferung. Keine parallele GPU.
-- Erster Root-Guard: drei falsche Zielwechselmeldungen und fehlende Ladeanzeige
-  zuerst rot, nach engem Mapping-/Statusfix 24 Controllerverträge grün.
-- Nativer Codex-Prozess heißt ChatGPT.exe im OpenAI.Codex-WindowsApps-Paket;
-  nicht aus dem Produktnamen Codex.exe ableiten. Keine privaten UI-Inhalte
-  persistieren. Synthetische Eingabeprobe darf keine Nachricht absenden.
-- Vorheriger Pilot Main.runtime/pilot-session-eb6211bb-4b98-459a-980b-7e3686849a9f.json
-  regulär beendet, Rückweg bestätigt. Neuer einmaliger Supervisor liegt in
-  Root.runtime/pilot_session.pyw; neuer Nachweis nach geprüftem Start unter
-  Main.runtime/pilot-session-*.json, benannt durch
-  Root.runtime/current-pilot-fixes-session.txt. Während Lauf nicht entfernen.
-- Geprüfte private Integration und geordneter Neustart folgen nach Source/
-  Native-Abnahme und unabhängigen Reviews. Vollständige Produktabnahme offen.
-- Native Audioabnahme erfolgreich: alter Source Freya48/Tyr47 leere native
-  Queue beim Nachfüllen; Fix beide0, Bytes/Hashes exakt, alle Player geschlossen.
-  Reale Laufzeiten 6,905→6,084s / 6,697→5,921s. Native Null-PCM-Stoppguard grün.
-  Kuratierter Nachweis docs/pilot-fixes-2026-10-14.md; JSON ignoriert in .runtime.
-- Audio8aad103 übernommen als49145d5; UIA59dce8f als1ad2bf3. Beide Helper
-  clean gepusht und regulär released; Worktrees/Artefakte bleiben erhalten.
-- Review schloss UIA-Queuegap, Callback-Lifetime, Änderung während warmer
-  Positionsmessung und Writer-/Response-Abschlussreihenfolge guard-first.
-  Finaler Sourcehead1a401104a67abb528cfdfadb6dc277aef7931c54. Unabhängige
-  Gegenprüfung ohne konkrete offene P1/P2 im berührten Delta. Echte warme
-  Codex-Bestätigung innerhalb50ms bleibt ungemessen, targets.json bleibt leer.
-- Root32 Controllerguards grün, inklusive eigenen Submit-Tickets: queued Throw
-  wird widerrufen; bereits geclaimte Arbeit behält echte Cleanupbarriere.
-  Beide neuen Blockierungsfälle waren zuerst rot. Targetparser bindet Paket-
-  scopes als named Approval; reale Family am gehaltenen Prozesshandle bestätigt.
-- Vorherige Huginsitzung geordnet beendet, Supervisor-Rückweg bestätigt und
-  Altapps für echte Audioprobe normal pausiert. Danach unveränderte Startup-lnks
-  wieder gestartet, damit während der weiteren Prüfung ein Rückweg verfügbar ist.
-  Anschließend erneut regulär pausiert für die native Abnahme. Aktualisierten
-  Pilot erst am exakten CI-/Review-geprüften Main starten. Aktuelle Altapp-PIDs/
-  Handles frisch bestimmen, alte Snapshots nicht als Killrecht.
-- Reale Codex-Pasteprobe stoppt ohne Änderung bei vorhandenem Nachrichtenentwurf.
-  Windows verweigert zusätzlich programmgesteuertes Foreground. Nutzerfrage
-  nach aktivem leerem Codex-Feld pending; kein Ziel freigeben/Entwurf löschen.
-  Root.runtime/codex_paste_probe.py prüft synthetisches genau-einmal-Paste,
-  Clipboard-Restore und echten Caret-Gegenfall; kein Enter. Erst nach Erfolg
-  die exakte Paket-/Klassenfreigabe samt Nachweis/Test aktivieren.
-- Finale Vertrags-/Integrationschecks, Docs und48 Windows-Prüfungen ohne Skips
-  grün; kuratierter Beleg docs/pilot-fixes-2026-10-14.md. Audio-/Statuspilot kann
-  bereitgestellt werden, PF-001/Codex-Autopaste und Gesamtabnahme bleiben offen.
+## Auftrag und Git
 
-Fortsetzen: AGENTS.md, CONTEXT.md, diesen Handoff und pilot-fixes.md lesen.
-Exakten Branch-/PR-/Runtimezustand prüfen, nur eigene gehaltene Ressourcen
-bereinigen. Kein Force-Stop alter Apps oder Modellparallelbetrieb.
+- Codex-Diktat einfügen, Aussetzer bei Freya UND Tyr beheben, ersten Modellstart
+  anzeigen. Vertrag: specs/2026-10-14-hugin-v1/pilot-fixes.md.
+- Repository valhalla-hq/hugin; Branch codex/hugin-pilot-fixes-mjolnir.
+  Root-Worktree C:/Users/brian/brian-projects/worktrees/hugin/hugin-pilot-fixes-mjolnir.
+  Ownership aktiv auf Mjolnir; einmaliger Supervisor braucht diesen Worktree.
+  Keine fremde Helper-Ownership übernehmen.
+- Control e3deecae6673a024aa9015a4387737fbec04c795. PR5/6 integriert;
+  Main/aktuell laufender Pilot2298f298c99e5f7491465b91b8a17eeef2575a69.
+- Geprüfter Source ce0c1cfeb498b31db8fbafc5bf5e38e8b2001396,
+  Draft/Fortsetzung https://github.com/valhalla-hq/hugin/pull/7.
+  Routineintegration unter zentralem Lifecycle autorisiert; keine neue Policy,
+  Kosten, Veröffentlichung oder dauerhafte Autostartänderung.
 
-## Aktueller Stand15.10.2026
+## Umsetzung und Prüfstand
 
-- Dieselbe Root-Ownership/Worktree bleibt aktiv. PR5 wurde integriert;
-  Basis Main46e6a40a75f9e4889efeb731c8329d76a800242e. Neuer DraftPR6:
-  https://github.com/valhalla-hq/hugin/pull/6, Sourcehead
-  c3bacfd4233eb0ab3a73dacefb6807d45cd86551. Exakten CI-/Gitstand frisch prüfen.
-- Globale UIA-Positionsrundwege durch lokale begrenzte Vorwärtssuche plus
-  exakten Rückweg ersetzt; Nullposition über Endpunktgleichheit. Zwei neue
-  Guards zuerst rot;312 Sourcechecks,29 Targetcontracts,16 ABI-Verträge und
-  eigener nativer HiddenRichEdit grün. Zwei unabhängige Reviews geschlossen.
-- Native Codex-Position0: Bestätigung35,4/50,3ms inklusive äußerem Messaufruf,
- 50ms-Deadline unverändert; eigene EOF-/stderr-/Familienbarrieren bestätigt.
-  Ausführliche Grenzen docs/codex-delivery-2026-10-15.md.
-- Brian bestätigte „Bereit – Feld ist leer“. Die UIA-Leerrepräsentation war
-  widersprüchlich; Rootfixture erhält jetzt ihren Ausgangszustand und löscht
-  nur verifizierten synthetischen Präfix. Bislang kein Paste. Später wechselte
-  Vordergrund zu anderer App; neue Frage „Jetzt testen“ pending. Sofort nach
-  Antwort Root.runtime/codex_paste_probe.py --ready-confirmed ausführen,
-  vorausgesetzt Codex ist aktiv. Kein Absenden/keine Fremddaten löschen.
-- Whispering/PipPal am15.10 regulär pausiert, geschützte Dateien erhalten;
-  Freya und Tyr seriell über korrigierten Output abgespielt. Hörurteil offen.
-- Hugin-Pilot Main46e6a40 erneut gestartet. Exakter Sitzungsnachweis durch
-  Root.runtime/current-pilot-fixes-session.txt; Supervisor mit eigenem Job
-  und geprüftem Altstack-Rückweg. Quelle/PIDs/Handles frisch verifizieren.
-  Neue Source wird erst nach CI/Reviewintegration neu gestartet.
-- Nächster Schritt: echte Paste/Restore/Caret-Gegenprobe vollständig belegen,
-  dann ausschließlich konkrete Codex-Familie/Klasse mit gemessener Restorezeit
-  in targets.json und shipped-profile Contract aktivieren. Bis dahin leer.
+- Audiofix/Ladeanzeige/präzise Meldungen integriert. Freya48/Tyr47 leere Refills
+  vorher, beide0 nachher; PCM-Bytes/Hashes identisch. Native Laufzeiten6,905→
+  6,084s /6,697→5,921s, Stoppguard grün. Menschliches Hörurteil beider offen.
+- Character-Suche entfernt: reale Codex-Endaffinität war damit nicht exakt
+  darstellbar. Lokale UTF-16-Präfixlänge, Caret-Kind-ID und Endrelation bilden
+  jetzt den Nachweis. Höchstens262145 Zeichen lesen/262144 UTF-16-Einheiten
+  akzeptieren; nur kurz im isolierten RAM, kein Value/Inhalt in IPC/Diagnose/
+  Dateien. Position0 ohne Textlesen. Die frühere Aussage eines vollständig
+  textfreien produktiven Metadatenpfads ist ausdrücklich ersetzt.
+- Edit-Range und Präfix müssen GetChildren.Length0 beweisen; Objekte/unknown
+  vor Lesen sperren. Nach letztem GetText Auswahl/Kind/Endrelation/Struktur/
+  Editierbarkeit frisch prüfen.50ms-Deadline unverändert.
+- Windows ergänzt Formate beim Close: veröffentlichte Sequenz am Produzenten
+  einmal mit stabilem Sequenz-/Owner-Nachweis normalisieren. NULL-Owner bleibt
+  unknown, RAM-Snapshot erhalten; belegte fremde Nutzerkopie gewinnt.
+- Zwei exakte Chromium-Herkunftsformate opak als HGLOBAL erhalten. Andere
+  unbekannte/OLE-/verzögerte Formate bleiben vor Clipboardmutation gesperrt.
+- 328 Sourcechecks in19,016s und23 Windowschecks in0,341s grün, keine Skips.
+  Windowsumfang22 ABI-/Producerguards + eigener nativer HiddenRichEdit.
+  Zwei unabhängige Reviews, reproduzierte P1/P2 geschlossen. Zusätzlicher
+  Boundaryreview110 passende Source-/Mocktests grün. Keine native Freigabe
+  allein aus simulierten Prüfungen ableiten.
+- Vollständige native Proben am Feldanfang UND echten Textende bestanden:
+  einmaliges Paste, alle Clipboardformate zurück, echter Home-Gegenfall
+  target_changed/noSubmit, eigenes Literal gezielt entfernt, Baseline erhalten,
+  Service/Familie geschlossen. Warm40,7/42,0ms, Delivery0,476/0,483s; kein Enter.
+  Root.runtime/codex-paste-proof.json und codex-paste-end-proof.json enthalten
+  nur kuratierte technische Fakten. Dies sind Einzelproben, keine p95-Zusage.
+- Exakte Freigabe Chrome_RenderWidgetHostHWND + FamilieOpenAI.Codex_2p2nqsd0c76g0,
+  .15s-Restore; capture_fallback leer.47 Profile-/Target-/Commit-/Lease-Guards grün.
+- docs/codex-delivery-2026-10-15.md ist der aktuelle kuratierte Nachweis;
+  docs/pilot-fixes-2026-10-14.md hält den früheren Source-/Prüfstand fest.
+
+## Laufzustand und Daten
+
+- C:/Users/brian/Hugin zeigt auf sauberen Mainclone. Exakte Sitzung über
+  Root.runtime/current-pilot-fixes-session.txt frisch lesen; zuletzt
+  pilot-session-b758c2ec-768c-42bf-8b42-310597fcfd23.json,
+  Supervisor5232/App-Launcher21684/tatsächliche App14688. Vor Wirkung frisch
+  binden; PIDs allein sind keine Autorität.
+- Einmaliger Supervisor Root.runtime/pilot_session.pyw. Normaler Tray-Beenden-
+  Pfad wartet eigenes Familienende ab und startet beide unveränderten alten
+  Startup-lnks. Main erst nach Appende aktualisieren; kein Live-Source-Mix.
+- Whispering/PipPal und alter Qwen regulär pausiert, alter STT-HTTP-Standby
+  unverändert. Profil/Startup-lnks hashidentisch. Alte Apps nur regulär
+  beenden; keine fremden Killaktionen oder parallele GPU.
+- Strg+Alt+D/V aktiv; Maus/Alt+Y/Gesamtmigration gesperrt.
+- Eine frühe fehlgeschlagene Testprobe verlor den RAM-Clipboard-Ausgangsstand
+  bei Prozessende. Dieser wurde nicht wiederhergestellt; nur eigenes geprüftes
+  Testartefakt entfernt. Spätere Restores gelten separat. Keine Rohinhalte in Git.
+
+## Offen und nächste Schritte
+
+1. PF-001-Komponentenprobe bestanden. Konfigurationsdelta separat reviewen,
+   finalen PR7-Head/Hosted-CI prüfen. Produktive Maus-/Alt+Y-Abnahme bleibt offen.
+2. Wiederholungen bei Bedarf über Root.runtime/focus_codex_probe.py bzw.
+   zusätzlich --at-end. Nur eigener gebundener Hauptcomposer, keine Fragekarte;
+   kein Enter/Feldlöschen. Gebundener Codex ChatGPT.exe26.1007.9446.0 mit exakter
+   Familie. Bei Identitätswechsel neu binden; RAM-Owner bei Cleanupfehler behalten.
+3. Kontext/Handoff/PR aktualisieren, gepushten Head/CI prüfen, routine-privat
+   integrieren. Hugin normal beenden, Rückweg beweisen, Main FF, alte Apps
+   regulär pausieren und geprüften Pilot neu starten. Exakten Receiptpfad
+   wählen, kein beliebiges neuestes JSON.
+4. Mikrofontest im neuen Pilot, Hörurteil Freya/Tyr und weitere Produktabnahme.
+
+Fortsetzen: Hugin AGENTS.md, CONTEXT.md, exakt diesen Handoff und pilot-fixes.md
+lesen; Preflight mit aktivem Branch, Git/PR/Ownership/Sitzung frisch prüfen.
+Dieselbe Root-Ownership weiterverwenden. Native Codex-Komponentenprobe ist
+abgeschlossen; Mikrofon-/Hör-/Gesamtabnahme weiter ausdrücklich offen halten.

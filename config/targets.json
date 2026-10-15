@@ -1,5 +1,12 @@
 {
   "schema_version": 1,
-  "delivery": [],
+  "delivery": [
+    {
+      "control_class": "Chrome_RenderWidgetHostHWND",
+      "package_family": "OpenAI.Codex_2p2nqsd0c76g0",
+      "restore_delay_seconds": 0.15,
+      "evidence": "docs/codex-delivery-2026-10-15.md"
+    }
+  ],
   "capture_fallback": []
 }

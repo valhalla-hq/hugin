@@ -1,4 +1,4 @@
-"""Metadata-only target proofs. No native input, clipboard or provider text."""
+"""Target metadata contracts; only bounded synthetic Edit prefixes are read."""
 from dataclasses import replace
 from contextlib import contextmanager
 import io
@@ -20,21 +20,27 @@ BASE=WindowTarget(100,100,3,4,500,'Chrome_WidgetWin_1',None,None)
 
 
 class Range:
-    def __init__(self,owner,start,end):self.owner,self.start,self.end=owner,start,end
-    def Clone(self):return Range(self.owner,self.start,self.end)
+    def __init__(self,owner,start,end,model=None):
+        self.owner,self.start,self.end=owner,start,end
+        self.model=model or owner.pattern
+    def Clone(self):return Range(self.owner,self.start,self.end,self.model)
     def CompareEndpoints(self,endpoint,other,other_endpoint):
         left=self.start if endpoint==0 else self.end
         right=other.start if other_endpoint==0 else other.end
         return 19 if left>right else -19 if left<right else 0
     def GetEnclosingElement(self):return self.owner
+    def GetChildren(self):
+        return NS(Length=sum(self.start<=self.model.origin+point<self.end for point in self.model.embedded))
+    def MoveEndpointByRange(self,endpoint,other,other_endpoint):
+        value=other.start if other_endpoint==0 else other.end
+        if endpoint==0:self.start=value;self.end=max(self.end,value)
+        else:self.end=value;self.start=min(self.start,value)
     def MoveEndpointByUnit(self,endpoint,unit,count):
-        assert unit==0
-        old=self.start if endpoint==0 else self.end
-        new=max(0,min(1_000_000,old+count))
-        if endpoint==0:self.start=new;self.end=max(self.end,new)
-        else:self.end=new;self.start=min(self.start,new)
-        return new-old
-    def GetText(self,*args):raise AssertionError('metadata must not read content')
+        raise AssertionError('target proof must not walk character units')
+    def GetText(self,limit):
+        assert 0<limit<=262145
+        text=self.model.text if self.model.text is not None else 'x'*self.model.extent
+        return text[self.start-self.model.origin:self.end-self.model.origin][:limit]
     def Select(self):raise AssertionError('metadata must not change selection')
 
 
@@ -46,13 +52,13 @@ class Ranges:
 
 class Pattern:
     SupportedTextSelection=1
-    def __init__(self,owner):self.owner=owner;self.position=7;self.origin=900;self.extent=100;self.width=0;self.after=lambda:None
+    def __init__(self,owner):self.owner=owner;self.position=7;self.origin=900;self.extent=100;self.width=0;self.after=lambda:None;self.text=None;self.embedded=()
     def QueryInterface(self,*args):return self
     def GetSelection(self):
-        selected=Range(self.owner,self.origin+self.position,self.origin+self.position+self.width)
+        selected=Range(self.owner,self.origin+self.position,self.origin+self.position+self.width,self)
         self.after();return Ranges(selected)
     @property
-    def DocumentRange(self):return Range(self.owner,self.origin,self.origin+self.extent)
+    def DocumentRange(self):return Range(self.owner,self.origin,self.origin+self.extent,self)
 
 
 class Element:
@@ -86,18 +92,144 @@ class Uia:
 
 
 class TargetContracts(unittest.TestCase):
+    def test_owned_text_end_affinity_uses_the_logical_utf16_offset(self):
+        automation=Automation();pattern=automation.focus.pattern
+        child=Element(77,automation.focus);child.CurrentControlType=50020
+        pattern.owner=child;pattern.extent=4;pattern.position=5;pattern.text='Test'
+        result=self.read(automation)
+        self.assertEqual(result.status,'target_captured')
+        self.assertEqual(result.identity.position,4)
+        self.assertEqual(result.identity.caret_id,child.GetRuntimeId())
+        pattern.position=0
+        self.assertEqual(self.read(automation).identity.position,0)
+
+    def test_utf16_offset_does_not_assume_one_character_unit_per_python_character(self):
+        automation=Automation();pattern=automation.focus.pattern
+        pattern.text='A😀e\u0301';pattern.position=4
+        result=self.read(automation)
+        self.assertEqual(result.status,'target_captured')
+        self.assertEqual(result.identity.position,5)
+
+    def test_changed_end_affinity_cannot_alias_the_frozen_offset_and_child(self):
+        automation=Automation();pattern=automation.focus.pattern;child=Element(77,automation.focus)
+        pattern.owner=child;pattern.extent=4;pattern.position=5;pattern.text='Test'
+        proof=_target_proof(automation,Uia,BASE,lambda:BASE,lambda:False)
+        pattern.position=4
+        self.assertEqual(confirm_uia_target(automation,Uia,BASE,lambda:BASE,proof).status,'target_changed')
+
+    def test_embedded_object_and_omitted_plaintext_cannot_prove_a_caret(self):
+        from unittest.mock import patch
+        automation=Automation();pattern=automation.focus.pattern
+        pattern.text='AB\ufffcCD';pattern.extent=5;pattern.position=2;pattern.embedded=(2,)
+        original=Range.GetText
+        def plain(text_range,limit):return original(text_range,limit).replace('\ufffc','')
+        with patch.object(Range,'GetText',plain):
+            self.assertEqual(self.read(automation).status,'target_unverifiable')
+            pattern.text='ABCD';pattern.extent=4;pattern.embedded=()
+            proof=_target_proof(automation,Uia,BASE,lambda:BASE,lambda:False)
+            pattern.text='AB\ufffcCD';pattern.extent=5;pattern.position=3;pattern.embedded=(2,)
+            self.assertEqual(confirm_uia_target(automation,Uia,BASE,lambda:BASE,proof).status,'target_unverifiable')
+
+    def test_unknown_embedded_children_are_rejected_before_reading_text(self):
+        from unittest.mock import patch
+        for children in (None,NS(Length=True),NS(Length=-1),NS(Length=1)):
+            with patch.object(Range,'GetChildren',return_value=children),patch.object(Range,'GetText',side_effect=AssertionError('unknown structure read')):
+                self.assertEqual(self.read(Automation()).status,'target_unverifiable')
+
+    def test_changes_during_last_warm_text_read_are_rejected(self):
+        from unittest.mock import patch
+        for kind in ('caret','readonly','disabled','child','embedded'):
+            automation=Automation();pattern=automation.focus.pattern
+            first=Element(77,automation.focus);second=Element(78,automation.focus);pattern.owner=first
+            proof=_target_proof(automation,Uia,BASE,lambda:BASE,lambda:False)
+            original=Range.GetText;calls=0
+            def read(text_range,limit):
+                nonlocal calls
+                value=original(text_range,limit);calls+=1
+                if calls==2:
+                    if kind=='caret':pattern.position+=1
+                    elif kind=='readonly':automation.focus.CurrentIsReadOnly=True
+                    elif kind=='disabled':automation.focus.CurrentIsEnabled=False
+                    elif kind=='child':pattern.owner=second
+                    else:pattern.embedded=(2,)
+                return value
+            with patch.object(Range,'GetText',read):
+                result=confirm_uia_target(automation,Uia,BASE,lambda:BASE,proof)
+            self.assertEqual(result.status,'target_unverifiable' if kind in ('readonly','disabled','embedded') else 'target_changed',kind)
+
+    def test_full_proof_rechecks_caret_child_after_last_text_read(self):
+        from unittest.mock import patch
+        automation=Automation();pattern=automation.focus.pattern
+        first=Element(77,automation.focus);second=Element(78,automation.focus);pattern.owner=first
+        original=Range.GetText;calls=0
+        def read(text_range,limit):
+            nonlocal calls
+            value=original(text_range,limit);calls+=1
+            if calls==2:pattern.owner=second
+            return value
+        with patch.object(Range,'GetText',read):self.assertEqual(self.read(automation).status,'target_changed')
+
+    def test_descendant_caret_is_owned_by_the_focused_edit(self):
+        from unittest.mock import patch
+        automation=Automation();child=Element(77,automation.focus)
+        child.CurrentControlType=50026
+        with patch.object(Range,'GetEnclosingElement',lambda selected:child):
+            proof=_target_proof(automation,Uia,BASE,lambda:BASE,lambda:False)
+            self.assertEqual(proof.identity.position,7)
+            automation.focus.pattern.origin+=4000
+            self.assertEqual(confirm_uia_target(automation,Uia,BASE,lambda:BASE,proof).status,
+                'target_captured')
+
+    def test_foreign_protected_cyclic_or_unbounded_enclosure_never_proves_a_caret(self):
+        from unittest.mock import patch
+        for kind in ('foreign','orphan','password','cycle','depth'):
+            automation=Automation();child=Element(77,automation.focus)
+            if kind=='foreign':child.parent=automation.root
+            elif kind=='orphan':child.parent=None
+            elif kind=='password':child.CurrentIsPassword=True
+            elif kind=='cycle':child.parent=child
+            else:
+                for identity in range(100,165):child=Element(identity,child)
+            with patch.object(Range,'GetEnclosingElement',lambda selected:child):
+                self.assertEqual(self.read(automation).status,'target_unverifiable',kind)
+
+    def test_same_offset_in_another_owned_child_cannot_alias_the_frozen_caret(self):
+        automation=Automation();first=Element(77,automation.focus);second=Element(78,automation.focus)
+        automation.focus.pattern.owner=first
+        proof=_target_proof(automation,Uia,BASE,lambda:BASE,lambda:False)
+        automation.focus.pattern.owner=second
+        self.assertEqual(confirm_uia_target(automation,Uia,BASE,lambda:BASE,proof).status,'target_changed')
+
+    def test_foreign_prefix_is_rejected_before_reading_its_text(self):
+        from unittest.mock import patch
+        automation=Automation()
+        def enclosing(text_range):return automation.focus if text_range.start==text_range.end else automation.root
+        with patch.object(Range,'GetEnclosingElement',enclosing),patch.object(Range,'GetText',side_effect=AssertionError('foreign prefix read')):
+            self.assertEqual(self.read(automation).status,'target_unverifiable')
+
+    def test_prefix_read_is_bounded_and_malformed_or_oversize_text_is_rejected(self):
+        from unittest.mock import patch
+        for text in (None,True,'bad\0value','\ud800','x'*262145,'😀'*131073):
+            def read(prefix,limit):
+                self.assertEqual(limit,262145)
+                return text
+            with patch.object(Range,'GetText',read):
+                self.assertEqual(self.read(Automation()).status,'target_unverifiable')
+
+    def test_prefix_provider_exception_does_not_leave_text_in_the_wire_response(self):
+        from unittest.mock import patch
+        with patch.object(Range,'GetText',side_effect=RuntimeError('private synthetic marker')):
+            result=self.read(Automation())
+        self.assertEqual(result.status,'target_probe_failed')
+        self.assertIsNone(result.identity)
+        self.assertNotIn(b'private synthetic marker',encode_target_response(result))
+
     def test_local_points_do_not_walk_before_the_edit_when_page_prefix_changes(self):
         from unittest.mock import patch
-        original=Range.MoveEndpointByUnit
         for position in (1,7,20,100):
             automation=Automation();automation.focus.pattern.position=position
             automation.focus.pattern.origin=300000
-            def local_move(selected,endpoint,unit,count):
-                start=selected.start if endpoint==0 else selected.end
-                if start+count<selected.owner.pattern.origin:
-                    raise AssertionError('movement escaped before Edit')
-                return original(selected,endpoint,unit,count)
-            with patch.object(Range,'MoveEndpointByUnit',local_move):
+            with patch.object(Range,'MoveEndpointByUnit',side_effect=AssertionError('character walk')):
                 first=self.read(automation)
                 self.assertEqual(first.status,'target_captured',position)
                 self.assertEqual(first.identity.position,position)
@@ -108,7 +240,7 @@ class TargetContracts(unittest.TestCase):
         from unittest.mock import patch
         automation=Automation();automation.focus.pattern.position=0
         automation.focus.pattern.origin=300000
-        with patch.object(Range,'MoveEndpointByUnit',side_effect=AssertionError('unrelated page walk')):
+        with patch.object(Range,'GetText',side_effect=AssertionError('Edit start must not read text')):
             proof=_target_proof(automation,Uia,BASE,lambda:BASE,lambda:False)
             self.assertEqual(proof.identity.position,0)
             automation.focus.pattern.origin+=4000
@@ -178,7 +310,7 @@ class TargetContracts(unittest.TestCase):
     def read(self,automation,native=lambda:BASE,cancelled=lambda:False):
         return read_uia_target(automation,Uia,BASE,native,cancelled)
 
-    def test_collapsed_edit_is_verifiable_without_reading_any_text(self):
+    def test_collapsed_edit_returns_only_position_and_runtime_metadata(self):
         result=self.read(Automation())
         self.assertEqual(result.status,'target_captured')
         self.assertEqual(result.identity.position,7)
@@ -233,19 +365,11 @@ class TargetContracts(unittest.TestCase):
         self.assertEqual(probe.capture_target(BASE,lambda:False).identity,identity)
         self.assertTrue(process.closed)
 
-    def test_unbounded_degraded_or_foreign_range_is_never_a_target_proof(self):
-        for change in ('limit','roundtrip','enclosing','outside'):
+    def test_unbounded_or_foreign_range_is_never_a_target_proof(self):
+        for change in ('limit','enclosing','outside'):
             automation=Automation()
             if change=='limit':
                 automation.focus.pattern.position=262145;automation.focus.pattern.extent=262145
-            elif change=='roundtrip':
-                original=Range.MoveEndpointByUnit
-                def degrade(selected,endpoint,unit,count):
-                    return original(selected,endpoint,unit,count//2 if count>0 else count)
-                from unittest.mock import patch
-                with patch.object(Range,'MoveEndpointByUnit',degrade):
-                    self.assertEqual(self.read(automation).status,'target_unverifiable')
-                continue
             elif change=='enclosing':
                 automation.focus.pattern.owner=automation.root
             else:automation.focus.pattern.position=101
@@ -263,9 +387,9 @@ class TargetContracts(unittest.TestCase):
     def test_malformed_metadata_and_text_response_cannot_be_target_identity(self):
         from hugin.windows.selection import encode_response
         identity=self.read(Automation()).identity
-        for field,bad in (('position',True),('focus_pid',0),('focus_id',[True]),('element_id',list(range(65)))):
+        for field,bad in (('position',True),('focus_pid',0),('focus_id',[True]),('element_id',list(range(65))),('caret_id',[]),('caret_id',[True]),('end_relation',True),('end_relation',2)):
             value={'focus_id':list(identity.focus_id),'root_id':list(identity.root_id),
-                'element_id':list(identity.element_id),'focus_pid':identity.focus_pid,'position':identity.position}
+                'element_id':list(identity.element_id),'focus_pid':identity.focus_pid,'position':identity.position,'caret_id':list(identity.caret_id),'end_relation':identity.end_relation}
             value[field]=bad;data=json.dumps(value).encode('ascii')
             with self.assertRaises(ValueError):decode_target_response(io.BytesIO(struct.pack('!BBI',2,0,len(data))+data))
         with self.assertRaises(ValueError):decode_target_response(io.BytesIO(encode_response('captured','not metadata')))
@@ -361,7 +485,7 @@ class OwnerCommitContracts(unittest.TestCase):
         native.user=NS(GetClipboardOwner=lambda:10,GetClipboardData=lambda identity:1)
         native.kernel=NS(GlobalSize=lambda handle:5)
         native.sequence=lambda:7;native._read_handle=lambda *args:b'owned'
-        target=replace(BASE,uia=UiaTargetIdentity((1,),(2,),(1,),9,0))
+        target=replace(BASE,uia=UiaTargetIdentity((1,),(2,),(1,),9,0,(1,),-1))
         events=[];state={'held':False,'native':BASE}
         @contextmanager
         def opened():
@@ -452,7 +576,7 @@ class LeaseProcess(FakeProcess):
 
 
 class DeliveryLeaseContracts(unittest.TestCase):
-    ID=UiaTargetIdentity((1,),(2,),(1,),9,7)
+    ID=UiaTargetIdentity((1,),(2,),(1,),9,7,(1,),-1)
     def test_confirm_waits_for_writer_close_and_response_within_same_deadline(self):
         for kind in ('success','close_failure','timeout'):
             process=LeaseProcess(self.ID);eof=threading.Event();close_return=threading.Event()

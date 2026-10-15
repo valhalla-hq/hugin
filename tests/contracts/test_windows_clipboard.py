@@ -43,6 +43,9 @@ class FakeClipboard:
     def sequence(self):
         return self.seq
 
+    def restorable_sequence(self,expected):
+        return expected if self.seq==expected else None
+
     def snapshot(self, budget):
         if self.snapshot_failure:
             raise ClipboardFailure(self.snapshot_failure)
@@ -295,6 +298,44 @@ class ClipboardContracts(unittest.TestCase):
         backend.replace({13: b'user'})
         self.assertEqual(service.recover().status, 'clipboard_changed')
         self.assertEqual(backend.data[13], b'user')
+        self.assertFalse(service.recovery_pending)
+
+    def test_pending_restore_uses_producer_owned_publication_instead_of_raw_clock(self):
+        backend,service=self.service();saved=backend.snapshot(1024)
+        backend.replace(((13,b'own staged text'),))
+        service._pending_restore=(saved,1)
+        backend.restorable_sequence=lambda expected:backend.seq
+        self.assertEqual(service.capture_selection(lambda:False).status,'clipboard_recovery_pending')
+        self.assertTrue(service.recovery_pending)
+        self.assertEqual(service.recover().status,'restored')
+        self.assertEqual(backend.data,dict(saved.formats))
+
+    def test_unknown_publication_keeps_ram_snapshot_until_recovery_is_proven(self):
+        backend,service=self.service();saved=backend.snapshot(1024)
+        backend.replace(((13,b'own staged text'),))
+        service._pending_restore=(saved,1)
+        def unknown(expected):raise ClipboardFailure('clipboard_busy')
+        backend.restorable_sequence=unknown
+        self.assertEqual(service.capture_selection(lambda:False).status,'clipboard_busy')
+        self.assertTrue(service.recovery_pending)
+        self.assertEqual(service.recover().status,'clipboard_restore_failed')
+        self.assertTrue(service.recovery_pending)
+        backend.restorable_sequence=lambda expected:backend.seq
+        self.assertEqual(service.recover().status,'restored')
+        self.assertEqual(backend.data,dict(saved.formats))
+
+    def test_user_copy_after_recovery_observation_still_wins_atomic_replace(self):
+        backend,service=self.service();saved=backend.snapshot(1024)
+        backend.replace(((13,b'own staged text'),))
+        service._pending_restore=(saved,backend.seq)
+        def observe(expected):
+            if backend.owner!=999:return None
+            observed=backend.seq
+            backend.replace(((13,b'new user copy'),));backend.owner=200
+            return observed
+        backend.restorable_sequence=observe
+        self.assertEqual(service.recover().status,'clipboard_changed')
+        self.assertEqual(backend.data,{13:b'new user copy'})
         self.assertFalse(service.recovery_pending)
 
     def test_budget_cannot_exceed_contract(self):

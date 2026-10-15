@@ -34,15 +34,19 @@ class UiaTargetIdentity:
     root_id: tuple[int, ...]
     element_id: tuple[int, ...]
     focus_pid: int
-    position: int  # Exact, roundtripped insertion point relative to the Edit provider.
+    position: int  # UTF-16 prefix length relative to the focused Edit provider.
+    caret_id: tuple[int, ...]
+    end_relation: int
 
     def __post_init__(self):
-        for parts in (self.focus_id,self.root_id,self.element_id):
+        for parts in (self.focus_id,self.root_id,self.element_id,self.caret_id):
             if type(parts) is not tuple or not 0<len(parts)<=64 or any(
                     type(part) is not int or not -(1<<31)<=part<1<<31 for part in parts):
                 raise ValueError('invalid UIA runtime identity')
         if type(self.focus_pid) is not int or not 0<self.focus_pid<1<<32 or type(self.position) is not int or not 0<=self.position<=MAX_TEXT_BYTES:
             raise ValueError('invalid UIA insertion point')
+        if type(self.end_relation) is not int or self.end_relation not in (-1,0,1):
+            raise ValueError('invalid UIA endpoint relation')
 
 
 @dataclass(frozen=True)
@@ -112,9 +116,12 @@ class ClipboardService:
 
     def _check_recovery(self, backend):
         if self._pending_restore is not None:
-            if backend.sequence() != self._pending_restore[1]:
-                self._pending_restore = None  # A later user copy has priority.
+            snapshot,sequence=self._pending_restore
+            current=backend.restorable_sequence(sequence)
+            if current is None:
+                self._pending_restore = None  # A proven later user copy has priority.
             else:
+                self._pending_restore=(snapshot,current)
                 raise ClipboardFailure('clipboard_recovery_pending')
 
     def _native(self):
@@ -182,18 +189,28 @@ class ClipboardService:
 
     def _restore(self, backend, snapshot, sequence):
         # Compare-and-replace is performed while the OS clipboard is locked.
+        current=sequence
         try:
-            backend.replace(snapshot.formats, sequence)
+            current=backend.restorable_sequence(sequence)
+            if current is None:
+                self._pending_restore=None
+                return False
+            backend.replace(snapshot.formats,current)
             self._pending_restore = None
             return True
         except ClipboardFailure as failure:
+            owned=failure.owned_sequence if failure.owned_sequence is not None else current
             if failure.status == 'clipboard_changed':
-                # Retained recovery may refer to a newer partial mutation.
-                if self._pending_restore is not None and backend.sequence() != self._pending_restore[1]:
-                    self._pending_restore = None
-                return False
-            self._pending_restore = (snapshot, failure.owned_sequence if failure.owned_sequence is not None else sequence)
-            raise ClipboardFailure('clipboard_restore_failed') from None
+                try:
+                    observed=backend.restorable_sequence(owned)
+                    if observed is None:
+                        self._pending_restore=None
+                        return False
+                    owned=observed
+                except ClipboardFailure:
+                    pass  # Unknown publication retains the original RAM snapshot.
+            self._pending_restore = (snapshot,owned)
+            raise ClipboardFailure('clipboard_restore_failed',owned_sequence=owned) from None
 
     def capture_selection(self, cancelled: Callable[[], bool]) -> ClipboardResult:
         try:
@@ -454,7 +471,11 @@ class NativeClipboard:
             family.argtypes=[W.HANDLE,ctypes.POINTER(W.UINT),W.LPWSTR]
             family.restype=W.LONG
         self.allowed = {1, 7, 8, 13, 15, 16, 17}
-        for name in ('HTML Format', 'Rich Text Format'):
+        # Chromium publishes these two provenance formats as HGLOBAL bytes.
+        # Preserve them opaquely; an arbitrary registered format may instead
+        # contain an object/stream and still must fail before materialization.
+        for name in ('HTML Format', 'Rich Text Format',
+                     'Chromium internal source RFH token', 'Chromium internal source URL'):
             identity = self.user.RegisterClipboardFormatW(name)
             if not identity:
                 raise ClipboardFailure('clipboard_failed')
@@ -521,6 +542,22 @@ class NativeClipboard:
 
     def sequence(self):
         return self.user.GetClipboardSequenceNumber()
+
+    def restorable_sequence(self,expected):
+        # Our message-only HWND is held for this backend's lifetime, and the
+        # service serializes its writers. Windows may add implicit formats on
+        # CloseClipboard without changing this owner. Never claim a later
+        # foreign sequence, or confuse an unstable observation with its loss.
+        before=self.sequence()
+        ctypes.set_last_error(0)
+        owner=self.user.GetClipboardOwner()
+        error=ctypes.get_last_error()
+        after=self.sequence()
+        if not before or before!=after or (not owner and error):
+            raise ClipboardFailure('clipboard_busy')
+        if after==expected:return after
+        if not owner:raise ClipboardFailure('clipboard_busy')
+        return after if self.hwnd and owner==self.hwnd else None
 
     def _read_handle(self, handle, size):
         pointer = self.kernel.GlobalLock(handle)
@@ -608,11 +645,18 @@ class NativeClipboard:
                         raise ClipboardFailure('clipboard_write_failed')
                     item[1] = None  # Ownership transferred only after success.
                     last_owned_sequence = self.sequence()
-                return last_owned_sequence
+            published=self.restorable_sequence(last_owned_sequence)
+            if published is None:raise ClipboardFailure('clipboard_changed')
+            return published
         except ClipboardFailure as failure:
             if mutated:
                 # Ownership is retained even when SetClipboardData partially
                 # failed. The service still owns the original full snapshot.
+                try:
+                    published=self.restorable_sequence(last_owned_sequence)
+                    if published is not None:last_owned_sequence=published
+                except ClipboardFailure:
+                    pass  # The service retains unknown own publication for retry.
                 failure.owned_sequence = last_owned_sequence
             raise
         finally:
