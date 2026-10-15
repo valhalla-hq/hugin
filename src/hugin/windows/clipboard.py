@@ -36,6 +36,7 @@ class UiaTargetIdentity:
     focus_pid: int
     position: int  # UTF-16 prefix length relative to the focused Edit provider.
     caret_id: tuple[int, ...]
+    end_relation: int
 
     def __post_init__(self):
         for parts in (self.focus_id,self.root_id,self.element_id,self.caret_id):
@@ -44,6 +45,8 @@ class UiaTargetIdentity:
                 raise ValueError('invalid UIA runtime identity')
         if type(self.focus_pid) is not int or not 0<self.focus_pid<1<<32 or type(self.position) is not int or not 0<=self.position<=MAX_TEXT_BYTES:
             raise ValueError('invalid UIA insertion point')
+        if type(self.end_relation) is not int or self.end_relation not in (-1,0,1):
+            raise ValueError('invalid UIA endpoint relation')
 
 
 @dataclass(frozen=True)

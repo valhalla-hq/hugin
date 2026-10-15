@@ -120,7 +120,7 @@ def encode_request(target: WindowTarget,*,operation='selection') -> bytes:
 
 
 def _decode_identity(value):
-    if not isinstance(value,dict) or set(value)!={'focus_id','root_id','element_id','focus_pid','position','caret_id'}:
+    if not isinstance(value,dict) or set(value)!={'focus_id','root_id','element_id','focus_pid','position','caret_id','end_relation'}:
         raise ValueError('target metadata fields')
     for name in ('focus_id','root_id','element_id','caret_id'):
         parts=value[name]

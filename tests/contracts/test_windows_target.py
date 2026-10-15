@@ -29,6 +29,8 @@ class Range:
         right=other.start if other_endpoint==0 else other.end
         return 19 if left>right else -19 if left<right else 0
     def GetEnclosingElement(self):return self.owner
+    def GetChildren(self):
+        return NS(Length=sum(self.start<=self.model.origin+point<self.end for point in self.model.embedded))
     def MoveEndpointByRange(self,endpoint,other,other_endpoint):
         value=other.start if other_endpoint==0 else other.end
         if endpoint==0:self.start=value;self.end=max(self.end,value)
@@ -50,7 +52,7 @@ class Ranges:
 
 class Pattern:
     SupportedTextSelection=1
-    def __init__(self,owner):self.owner=owner;self.position=7;self.origin=900;self.extent=100;self.width=0;self.after=lambda:None;self.text=None
+    def __init__(self,owner):self.owner=owner;self.position=7;self.origin=900;self.extent=100;self.width=0;self.after=lambda:None;self.text=None;self.embedded=()
     def QueryInterface(self,*args):return self
     def GetSelection(self):
         selected=Range(self.owner,self.origin+self.position,self.origin+self.position+self.width,self)
@@ -107,6 +109,65 @@ class TargetContracts(unittest.TestCase):
         result=self.read(automation)
         self.assertEqual(result.status,'target_captured')
         self.assertEqual(result.identity.position,5)
+
+    def test_changed_end_affinity_cannot_alias_the_frozen_offset_and_child(self):
+        automation=Automation();pattern=automation.focus.pattern;child=Element(77,automation.focus)
+        pattern.owner=child;pattern.extent=4;pattern.position=5;pattern.text='Test'
+        proof=_target_proof(automation,Uia,BASE,lambda:BASE,lambda:False)
+        pattern.position=4
+        self.assertEqual(confirm_uia_target(automation,Uia,BASE,lambda:BASE,proof).status,'target_changed')
+
+    def test_embedded_object_and_omitted_plaintext_cannot_prove_a_caret(self):
+        from unittest.mock import patch
+        automation=Automation();pattern=automation.focus.pattern
+        pattern.text='AB\ufffcCD';pattern.extent=5;pattern.position=2;pattern.embedded=(2,)
+        original=Range.GetText
+        def plain(text_range,limit):return original(text_range,limit).replace('\ufffc','')
+        with patch.object(Range,'GetText',plain):
+            self.assertEqual(self.read(automation).status,'target_unverifiable')
+            pattern.text='ABCD';pattern.extent=4;pattern.embedded=()
+            proof=_target_proof(automation,Uia,BASE,lambda:BASE,lambda:False)
+            pattern.text='AB\ufffcCD';pattern.extent=5;pattern.position=3;pattern.embedded=(2,)
+            self.assertEqual(confirm_uia_target(automation,Uia,BASE,lambda:BASE,proof).status,'target_unverifiable')
+
+    def test_unknown_embedded_children_are_rejected_before_reading_text(self):
+        from unittest.mock import patch
+        for children in (None,NS(Length=True),NS(Length=-1),NS(Length=1)):
+            with patch.object(Range,'GetChildren',return_value=children),patch.object(Range,'GetText',side_effect=AssertionError('unknown structure read')):
+                self.assertEqual(self.read(Automation()).status,'target_unverifiable')
+
+    def test_changes_during_last_warm_text_read_are_rejected(self):
+        from unittest.mock import patch
+        for kind in ('caret','readonly','disabled','child','embedded'):
+            automation=Automation();pattern=automation.focus.pattern
+            first=Element(77,automation.focus);second=Element(78,automation.focus);pattern.owner=first
+            proof=_target_proof(automation,Uia,BASE,lambda:BASE,lambda:False)
+            original=Range.GetText;calls=0
+            def read(text_range,limit):
+                nonlocal calls
+                value=original(text_range,limit);calls+=1
+                if calls==2:
+                    if kind=='caret':pattern.position+=1
+                    elif kind=='readonly':automation.focus.CurrentIsReadOnly=True
+                    elif kind=='disabled':automation.focus.CurrentIsEnabled=False
+                    elif kind=='child':pattern.owner=second
+                    else:pattern.embedded=(2,)
+                return value
+            with patch.object(Range,'GetText',read):
+                result=confirm_uia_target(automation,Uia,BASE,lambda:BASE,proof)
+            self.assertEqual(result.status,'target_unverifiable' if kind in ('readonly','disabled','embedded') else 'target_changed',kind)
+
+    def test_full_proof_rechecks_caret_child_after_last_text_read(self):
+        from unittest.mock import patch
+        automation=Automation();pattern=automation.focus.pattern
+        first=Element(77,automation.focus);second=Element(78,automation.focus);pattern.owner=first
+        original=Range.GetText;calls=0
+        def read(text_range,limit):
+            nonlocal calls
+            value=original(text_range,limit);calls+=1
+            if calls==2:pattern.owner=second
+            return value
+        with patch.object(Range,'GetText',read):self.assertEqual(self.read(automation).status,'target_changed')
 
     def test_descendant_caret_is_owned_by_the_focused_edit(self):
         from unittest.mock import patch
@@ -326,9 +387,9 @@ class TargetContracts(unittest.TestCase):
     def test_malformed_metadata_and_text_response_cannot_be_target_identity(self):
         from hugin.windows.selection import encode_response
         identity=self.read(Automation()).identity
-        for field,bad in (('position',True),('focus_pid',0),('focus_id',[True]),('element_id',list(range(65))),('caret_id',[]),('caret_id',[True])):
+        for field,bad in (('position',True),('focus_pid',0),('focus_id',[True]),('element_id',list(range(65))),('caret_id',[]),('caret_id',[True]),('end_relation',True),('end_relation',2)):
             value={'focus_id':list(identity.focus_id),'root_id':list(identity.root_id),
-                'element_id':list(identity.element_id),'focus_pid':identity.focus_pid,'position':identity.position,'caret_id':list(identity.caret_id)}
+                'element_id':list(identity.element_id),'focus_pid':identity.focus_pid,'position':identity.position,'caret_id':list(identity.caret_id),'end_relation':identity.end_relation}
             value[field]=bad;data=json.dumps(value).encode('ascii')
             with self.assertRaises(ValueError):decode_target_response(io.BytesIO(struct.pack('!BBI',2,0,len(data))+data))
         with self.assertRaises(ValueError):decode_target_response(io.BytesIO(encode_response('captured','not metadata')))
@@ -424,7 +485,7 @@ class OwnerCommitContracts(unittest.TestCase):
         native.user=NS(GetClipboardOwner=lambda:10,GetClipboardData=lambda identity:1)
         native.kernel=NS(GlobalSize=lambda handle:5)
         native.sequence=lambda:7;native._read_handle=lambda *args:b'owned'
-        target=replace(BASE,uia=UiaTargetIdentity((1,),(2,),(1,),9,0,(1,)))
+        target=replace(BASE,uia=UiaTargetIdentity((1,),(2,),(1,),9,0,(1,),-1))
         events=[];state={'held':False,'native':BASE}
         @contextmanager
         def opened():
@@ -515,7 +576,7 @@ class LeaseProcess(FakeProcess):
 
 
 class DeliveryLeaseContracts(unittest.TestCase):
-    ID=UiaTargetIdentity((1,),(2,),(1,),9,7,(1,))
+    ID=UiaTargetIdentity((1,),(2,),(1,),9,7,(1,),-1)
     def test_confirm_waits_for_writer_close_and_response_within_same_deadline(self):
         for kind in ('success','close_failure','timeout'):
             process=LeaseProcess(self.ID);eof=threading.Event();close_return=threading.Event()

@@ -130,3 +130,11 @@ Dateien oder den folgenden blockierenden Read. Die Auswahl-/Fokus-/Readonly-
 und native Identitätsprüfung sowie die50ms-Commitdeadline bleiben bestehen.
 Dies ersetzt die bisherige Annahme eines ausschließlich textfreien numerischen
 Character-Nachweises; der Datenschutzvertrag bleibt lokaler, flüchtiger RAM.
+
+UIA-Plaintext kann eingebettete Objekte auslassen. Deshalb müssen die komplette
+Edit-Range und der gelesene Präfix jeweils nachweislich keine eingebetteten
+Kinder enthalten; unbekannte Ergebnisse bleiben unprüfbar. Die geordnete
+Relation zum deklarierten Dokumentende wird zusätzlich eingefroren, damit eine
+Affinitätsänderung bei gleicher Präfixlänge nicht aliasen kann. Nach dem letzten
+potenziell blockierenden Textaufruf Auswahl, Kollaps, Kindidentität, Endrelation,
+Objektfreiheit und Editierbarkeit frisch prüfen, bevor der native Commit folgt.
