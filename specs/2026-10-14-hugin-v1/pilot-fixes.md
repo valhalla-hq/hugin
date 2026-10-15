@@ -60,7 +60,8 @@ Normale Maus-/Alt+Y-Aktivierung und vollständige Migration bleiben offen.
 - Reproduziert: der globale UIA-Character-Rundweg kann während Chat-Ausgabe
   scheitern, obwohl der lokale Einfügepunkt unverändert bleibt. Position0 ist
   durch gleiche Anfangsendpunkte direkt bewiesen; übrige Positionen werden
-  begrenzt vorwärts vom Edit-Anfang gesucht und exakt zurückgeprüft. Den
+  begrenzt vorwärts vom Edit-Anfang gesucht und wiederholt mit geordneten
+  Nachbareinheiten bestätigt. Den
   globalen Rundweg samt alter Prefixgrenze entfernen; lokale Grenze262144
   behalten. Editierbarkeit, Identität, Auswahl-/Fokus-/Token-Gegenprüfungen
   bleiben vollständig erhalten. Guard-first, dann nativ messen.
@@ -68,3 +69,22 @@ Normale Maus-/Alt+Y-Aktivierung und vollständige Migration bleiben offen.
   einzelnen Antwort-/EOF-/Cleanupzeiten messen, danach den Produzenten ändern;
   keine Freigabe allein aufgrund eines vergrößerten Timeouts. Der tatsächliche
   Paste-/Restore-/Caret-Gegenfall entscheidet über die Codex-Konfiguration.
+
+## Ergänzung aus der tatsächlichen Codex-Probe
+
+- Das aktive leere Feld liefert einen kollabierten UIA-Punkt innerhalb eines
+  Platzhalter-Kindelements. GetEnclosingElement darf laut UIA ein Kind des
+  Textproviders liefern. Zugehörigkeit zum konkreten fokussierten Edit über
+  begrenzte Elternkette beweisen; fremde, geschützte, zyklische und zu tiefe
+  Ketten bleiben unprüfbar. Keine CSS-/Klassenheuristik für die Freigabe.
+- Reproduziert: vorwärts19 Einheiten trifft den Punkt exakt; rückwärts19
+  landet vor dem ursprünglichen Edit-Anfang. Die Annahme eines symmetrischen
+  Character-Rundwegs ist an dieser Providergrenze falsch. Sie wird durch
+  wiederholte Vorwärtsmessung desselben Punktes und strikt geordnete direkte
+  Nachbareinheiten ersetzt. Kein Weg rückwärts vor den Edit, keine Erhöhung
+  der Deadline. Mehrdeutige oder instabile Abbildungen bleiben unprüfbar.
+- Guards zuerst rot, dann Source-/native Prüfung. Die manuelle Fixture darf
+  keine lokale UIA-Nullposition für ein visuell leeres Feld voraussetzen;
+  sie bestätigt den tatsächlichen synthetischen Inhalt und den RAM-Ausgangs-
+  zustand. Erst vollständiges Paste/Restore/Caret/Erhalten-Löschen aktiviert
+  ausschließlich die genaue Codex-Paket-/Klassenkonfiguration.

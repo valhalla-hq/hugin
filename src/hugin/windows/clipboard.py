@@ -34,7 +34,7 @@ class UiaTargetIdentity:
     root_id: tuple[int, ...]
     element_id: tuple[int, ...]
     focus_pid: int
-    position: int  # Exact, roundtripped insertion point relative to the Edit provider.
+    position: int  # Repeatable forward offset relative to the focused Edit provider.
 
     def __post_init__(self):
         for parts in (self.focus_id,self.root_id,self.element_id):

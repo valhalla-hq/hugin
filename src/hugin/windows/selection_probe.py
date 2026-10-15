@@ -203,21 +203,28 @@ def _local_position(document,selected,uia):
         if type(moved) is not int or not 0<moved<=count:
             raise _SelectionFailure('target_unverifiable')
         order=probe.CompareEndpoints(0,selected,0)
-        if order==0:
-            returned=probe.MoveEndpointByUnit(0,uia.TextUnit_Character,-moved)
-            if (type(returned) is not int or returned!=-moved
-                    or probe.CompareEndpoints(0,document,0)!=0):
-                raise _SelectionFailure('target_unverifiable')
-        elif order<0 and moved<count:
+        if order<0 and moved<count:
             raise _SelectionFailure('target_unverifiable')
         return order,moved
+    def verified(count):
+        order,moved=measure(count)
+        if order!=0 or moved!=count:raise _SelectionFailure('target_unverifiable')
+        if count>1:
+            before,advanced=measure(count-1)
+            if before>=0 or advanced!=count-1:raise _SelectionFailure('target_unverifiable')
+        after,advanced=measure(count+1)
+        if not (after>0 and advanced==count+1 or after==0 and advanced==count
+                and selected.CompareEndpoints(0,document,1)==0):
+            raise _SelectionFailure('target_unverifiable')
+        return count
     # CompareEndpoints promises ordering, not a character distance. Search
     # forward from the Edit's own start; never traverse the changing chat
-    # prefix. All probes and the exact reverse roundtrip remain bounded.
+    # prefix. Unit boundaries need not be symmetric on a reverse move.
+    # Prove a repeatable forward count with strictly ordered neighbors.
     lower,upper=0,1
     while True:
         order,moved=measure(upper)
-        if order==0:return moved
+        if order==0:return verified(moved)
         if order>0:
             upper=moved;break
         lower=upper
@@ -226,7 +233,7 @@ def _local_position(document,selected,uia):
     while lower+1<upper:
         middle=(lower+upper)//2
         order,moved=measure(middle)
-        if order==0:return moved
+        if order==0:return verified(moved)
         if order<0:lower=middle
         else:upper=moved
     raise _SelectionFailure('target_unverifiable')
@@ -239,8 +246,14 @@ def _insertion(automation,uia,binding):
         # endpoint is the active caret, so it is deliberately unsupported.
         raise _SelectionFailure('target_unverifiable')
     enclosing=selected.GetEnclosingElement()
-    if not enclosing or _identity(enclosing)!=binding.element_id or _flag(enclosing.CurrentIsPassword):
-        raise _SelectionFailure('target_unverifiable')
+    # GetEnclosingElement may be a descendant of the focused Text provider.
+    # Prove its ownership; a foreign ancestor or protected child is not enough.
+    for _ in range(64):
+        if not enclosing or _flag(enclosing.CurrentIsPassword):
+            raise _SelectionFailure('target_unverifiable')
+        if _identity(enclosing)==binding.element_id:break
+        enclosing=automation.RawViewWalker.GetParentElement(enclosing)
+    else:raise _SelectionFailure('target_unverifiable')
     document=binding.pattern.DocumentRange
     if (not document or selected.CompareEndpoints(0,document,0)<0
             or selected.CompareEndpoints(1,document,1)>0):
@@ -293,7 +306,7 @@ def read_uia_target(automation,uia,target,native_target,cancelled):
 
 
 def confirm_uia_target(automation,uia,target,native_target,proof):
-    """Warm, single confirmation against held COM facts; never an ancestor walk."""
+    """Warm single confirmation; no repeated walk from the Edit to its root."""
     try:
         _confirm_focus(automation,proof.binding,target,native_target)
         root=automation.ElementFromHandle(target.hwnd)

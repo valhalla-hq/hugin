@@ -86,6 +86,50 @@ class Uia:
 
 
 class TargetContracts(unittest.TestCase):
+    def test_descendant_caret_is_owned_by_the_focused_edit_without_reading_content(self):
+        from unittest.mock import patch
+        automation=Automation();child=Element(77,automation.focus)
+        child.CurrentControlType=50026
+        with patch.object(Range,'GetEnclosingElement',lambda selected:child):
+            proof=_target_proof(automation,Uia,BASE,lambda:BASE,lambda:False)
+            self.assertEqual(proof.identity.position,7)
+            automation.focus.pattern.origin+=4000
+            self.assertEqual(confirm_uia_target(automation,Uia,BASE,lambda:BASE,proof).status,
+                'target_captured')
+
+    def test_foreign_protected_cyclic_or_unbounded_enclosure_never_proves_a_caret(self):
+        from unittest.mock import patch
+        for kind in ('foreign','orphan','password','cycle','depth'):
+            automation=Automation();child=Element(77,automation.focus)
+            if kind=='foreign':child.parent=automation.root
+            elif kind=='orphan':child.parent=None
+            elif kind=='password':child.CurrentIsPassword=True
+            elif kind=='cycle':child.parent=child
+            else:
+                for identity in range(100,165):child=Element(identity,child)
+            with patch.object(Range,'GetEnclosingElement',lambda selected:child):
+                self.assertEqual(self.read(automation).status,'target_unverifiable',kind)
+
+    def test_valid_forward_point_does_not_require_a_symmetric_reverse_boundary(self):
+        from unittest.mock import patch
+        original=Range.MoveEndpointByUnit
+        def boundary_move(selected,endpoint,unit,count):
+            return original(selected,endpoint,unit,count-1 if count<0 else count)
+        with patch.object(Range,'MoveEndpointByUnit',boundary_move):
+            result=self.read(Automation())
+            self.assertEqual(result.status,'target_captured')
+            self.assertEqual(result.identity.position,7)
+
+    def test_two_forward_counts_cannot_alias_the_same_caret(self):
+        from unittest.mock import patch
+        automation=Automation();automation.focus.pattern.position=7
+        original=Range.MoveEndpointByUnit
+        def alias(selected,endpoint,unit,count):
+            original(selected,endpoint,unit,7 if count==8 else count)
+            return count
+        with patch.object(Range,'MoveEndpointByUnit',alias):
+            self.assertEqual(self.read(automation).status,'target_unverifiable')
+
     def test_local_points_do_not_walk_before_the_edit_when_page_prefix_changes(self):
         from unittest.mock import patch
         original=Range.MoveEndpointByUnit
@@ -234,11 +278,11 @@ class TargetContracts(unittest.TestCase):
         self.assertTrue(process.closed)
 
     def test_unbounded_degraded_or_foreign_range_is_never_a_target_proof(self):
-        for change in ('limit','roundtrip','enclosing','outside'):
+        for change in ('limit','partial_move','enclosing','outside'):
             automation=Automation()
             if change=='limit':
                 automation.focus.pattern.position=262145;automation.focus.pattern.extent=262145
-            elif change=='roundtrip':
+            elif change=='partial_move':
                 original=Range.MoveEndpointByUnit
                 def degrade(selected,endpoint,unit,count):
                     return original(selected,endpoint,unit,count//2 if count>0 else count)
