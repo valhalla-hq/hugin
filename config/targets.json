@@ -1,5 +1,6 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
+  "verified_edit": null,
   "delivery": [
     {
       "control_class": "Chrome_RenderWidgetHostHWND",

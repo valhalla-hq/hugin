@@ -715,6 +715,8 @@ class Application:
                 clipboard.approve_target_class(approval.control_class,approval.restore_delay_seconds,
                     package_family=approval.package_family)
             for name in approvals.capture_fallback: clipboard.approve_capture_target_class(name)
+            if approvals.verified_edit is not None:
+                clipboard.approve_verified_edits(approvals.verified_edit.restore_delay_seconds)
             controller = Controller(self.settings,inputs=inputs,
                 microphone=Microphone(self.settings.limits['capture_bytes']),
                 output=PCMOutput(buffer_ms=max(1,self.settings.limits['audio_buffer_ms']//2)),

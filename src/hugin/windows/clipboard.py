@@ -1,7 +1,7 @@
 """Serialized, bounded clipboard transactions with explicit conflict outcomes.
 
-Native capture/delivery are opt-in per proven target class. No application is approved
-by default: SendInput success does not prove that a foreign app read the text.
+Capture fallback and delivery policy are explicitly configured. Delivery may use
+verified native/UIA field capabilities; SendInput does not prove app consumption.
 """
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from contextlib import contextmanager
 import ctypes
 from ctypes import wintypes as W
 from dataclasses import dataclass, replace
+import math
 import sys
 import threading
 import time
@@ -107,6 +108,7 @@ class ClipboardService:
         self.selection_timeout = selection_timeout
         self._lock = threading.Lock()
         self._approved: dict[tuple[str,str|None], float] = {}
+        self._verified_edit_delay: float | None = None
         self._capture_approved: set[str] = set()
         self._pending_restore: tuple[ClipboardSnapshot, int] | None = None
 
@@ -139,7 +141,16 @@ class ClipboardService:
 
     def _restore_delay(self,target):
         scoped=self._approved.get((target.control_class,target.package_family))
-        return scoped if scoped is not None else self._approved.get((target.control_class,None))
+        if scoped is not None:return scoped
+        unscoped=self._approved.get((target.control_class,None))
+        if unscoped is not None:return unscoped
+        return self._verified_edit_delay if target.verifiable else None
+
+    def approve_verified_edits(self, restore_delay: float):
+        """Internal policy seam; adapters must prove the focused editable field."""
+        if type(restore_delay) not in (int,float) or not .02<=restore_delay<=2 or not math.isfinite(restore_delay):
+            raise ValueError('invalid verified edit approval')
+        self._verified_edit_delay=float(restore_delay)
 
     def approve_capture_target_class(self, control_class: str):
         """Internal pilot seam; includes the copy-response attribution limit."""
@@ -326,7 +337,7 @@ class ClipboardService:
                 return ClipboardResult('target_unverifiable')
             backend = self._native()
             self._check_recovery(backend)
-            # Class policy and cheap native identity precede clipboard mutation.
+            # Field policy and cheap native identity precede clipboard mutation.
             # The one expensive UIA refresh happens only in commit_paste.
             if self._selection_target(backend).without_uia != target.without_uia:
                 return ClipboardResult('target_changed')

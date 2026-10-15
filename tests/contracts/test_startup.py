@@ -74,7 +74,7 @@ class StartupContracts(unittest.TestCase):
             'hugin.windows.clipboard':module('hugin.windows.clipboard',ClipboardService=Owner),
             'hugin.windows.signals':module('hugin.windows.signals',WindowsSignals=Owner),
             'hugin.workers':module('hugin.workers',EnginePool=lambda *args:NS(workers={})),
-            'hugin.targets':module('hugin.targets',load_target_approvals=lambda root:NS(delivery=(),capture_fallback=())),
+            'hugin.targets':module('hugin.targets',load_target_approvals=lambda root:NS(delivery=(),capture_fallback=(),verified_edit=None)),
         }
         settings=NS(root=Path(__file__).resolve().parents[2],
             limits={'clipboard_bytes':1,'capture_bytes':2,'audio_buffer_ms':250})
