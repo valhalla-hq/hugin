@@ -17,12 +17,12 @@ def _pulse(frequency, milliseconds):
     for index in range(count):
         edge=min(index,count-1-index,fade)/fade
         envelope=math.sin(edge*math.pi/2)**2
-        samples.append(round(3600*envelope*math.sin(2*math.pi*frequency*index/24000)))
+        samples.append(round(7500*envelope*math.sin(2*math.pi*frequency*index/24000)))
     return struct.pack('<'+'h'*count,*samples)
 
 
-_START = _pulse(520,24)+bytes(24000*2*6//1000)+_pulse(660,24)
-_END = _pulse(1040,52)
+_START = _pulse(420,35)+bytes(24000*2*45//1000)+_pulse(420,35)
+_END = _pulse(1000,65)+bytes(24000*2*25//1000)+_pulse(1600,90)
 
 
 class RecordingCues:

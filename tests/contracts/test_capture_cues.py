@@ -325,7 +325,7 @@ class CueOutputContracts(unittest.TestCase):
         self.assertFalse(owner.cleanup_pending)
         owner.close()
 
-    def test_two_original_cues_are_short_soft_distinct_pcm_and_owned_until_drain(self):
+    def test_two_original_cues_are_short_bounded_distinct_pcm_and_owned_until_drain(self):
         from hugin.cues import RecordingCues
         calls=[];blocks=[]
         class PCM:
@@ -339,9 +339,9 @@ class CueOutputContracts(unittest.TestCase):
         self.assertTrue(owner.play('end','job',lambda:False))
         self.assertNotEqual(blocks[0],blocks[1])
         for pcm in blocks:
-            self.assertLessEqual(len(pcm),24000*2*.1)
+            self.assertLessEqual(len(pcm),24000*2*.2)
             samples=struct.unpack('<'+'h'*(len(pcm)//2),pcm)
-            self.assertLessEqual(max(map(abs,samples)),5000)
+            self.assertLessEqual(max(map(abs,samples)),8000)
             self.assertEqual((samples[0],samples[-1]),(0,0))
         self.assertEqual(calls.count('drain'),2)
         owner.close();self.assertTrue(owner.closed)
