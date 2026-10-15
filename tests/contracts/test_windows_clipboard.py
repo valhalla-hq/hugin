@@ -9,7 +9,7 @@ from hugin.windows.clipboard import (ClipboardService, WindowTarget, ClipboardSn
 
 class FakeClipboard:
     def __init__(self):
-        self.target = WindowTarget(100, 200, 3, 4, 500, 'Edit', (200, 1, 2, 3, 4), (2, 2))
+        self.target = WindowTarget(100, 200, 3, 4, 500, 'Edit', (200, 1, 2, 3, 4), (2, 2), native_editable=True)
         self.data = {13: 'original\0'.encode('utf-16-le'), 0xC001: b'html', 8: b'dib'}
         self.seq = 1
         self.owner = 90

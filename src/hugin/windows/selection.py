@@ -74,12 +74,12 @@ def decode_operation(data: bytes):
     value = json.loads(data, object_pairs_hook=unique)
     if not isinstance(value,dict) or type(value.get('version')) is not int:
         raise ValueError('selection request version')
-    if value['version']==1 and set(value)=={'version','target'}:operation='selection'
-    elif value['version']==2 and set(value)=={'version','operation','target'} and value['operation']=='target':operation='target'
-    elif value['version']==3 and set(value)=={'version','operation','target'} and value['operation']=='delivery':operation='delivery'
-    else:raise ValueError('selection request version')
+    if (value['version']!=4 or set(value)!={'version','operation','target'}
+            or value['operation'] not in ('selection','target','delivery')):
+        raise ValueError('selection request version')
+    operation=value['operation']
     target = value['target']
-    keys = {'hwnd', 'focus', 'pid', 'thread', 'process_created', 'control_class', 'caret', 'selection', 'editable','package_family'}
+    keys = {'hwnd', 'focus', 'pid', 'thread', 'process_created', 'control_class', 'caret', 'selection', 'native_editable','package_family'}
     if not isinstance(target, dict) or set(target) != keys:
         raise ValueError('selection target fields')
     for name in ('hwnd', 'focus', 'process_created', 'pid', 'thread'):
@@ -87,7 +87,7 @@ def decode_operation(data: bytes):
             raise ValueError('selection target identity')
     if not isinstance(target['control_class'], str) or not 0 < len(target['control_class']) <= 256 or '\0' in target['control_class']:
         raise ValueError('selection control class')
-    if type(target['editable']) is not bool:
+    if type(target['native_editable']) is not bool:
         raise ValueError('selection editability')
     family=target['package_family']
     if family is not None and (not isinstance(family,str) or not 17<=len(family)<=64 or '\0' in family):
@@ -112,7 +112,7 @@ def decode_request(data:bytes)->WindowTarget:
 def encode_request(target: WindowTarget,*,operation='selection') -> bytes:
     if not isinstance(target,WindowTarget):raise ValueError('invalid native target')
     fields=asdict(target.without_uia);fields.pop('uia')
-    envelope={'version':1,'target':fields} if operation=='selection' else {'version':3 if operation=='delivery' else 2,'operation':operation,'target':fields}
+    envelope={'version':4,'operation':operation,'target':fields}
     data = json.dumps(envelope, ensure_ascii=True,
                       separators=(',', ':')).encode('utf-8')
     decode_request(data)
@@ -120,9 +120,9 @@ def encode_request(target: WindowTarget,*,operation='selection') -> bytes:
 
 
 def _decode_identity(value):
-    if not isinstance(value,dict) or set(value)!={'focus_id','root_id','element_id','focus_pid','position','caret_id','end_relation'}:
+    if not isinstance(value,dict) or set(value)!={'focus_id','root_id','start_id','end_id','focus_pid','selection','start_relation','end_relation'}:
         raise ValueError('target metadata fields')
-    for name in ('focus_id','root_id','element_id','caret_id'):
+    for name in ('focus_id','root_id','start_id','end_id','selection'):
         parts=value[name]
         if not isinstance(parts,list):
             raise ValueError('target runtime identity')
@@ -140,13 +140,13 @@ def encode_target_response(result:TargetResult)->bytes:
     else:
         if result.identity is not None:raise ValueError('unexpected target metadata')
         data=b''
-    return HEADER.pack(2,TARGET_CODES[result.status],len(data))+data
+    return HEADER.pack(3,TARGET_CODES[result.status],len(data))+data
 
 
 def read_target_frame(stream)->TargetResult:
     version,code,length=HEADER.unpack(read_exact(stream,HEADER.size))
     codes={code:status for status,code in TARGET_CODES.items()}
-    if version!=2 or code not in codes or length>REQUEST_LIMIT or (code==0)!=(length>0):
+    if version!=3 or code not in codes or length>REQUEST_LIMIT or (code==0)!=(length>0):
         raise ValueError('invalid target frame')
     def unique(pairs):
         value={}
