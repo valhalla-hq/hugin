@@ -130,6 +130,16 @@ Lifecycle und HiddenRichEdit. Hosted-CI/neuer Pilot folgen am unveränderten
 geprüften Code. Hörurteil, reale Codex-Auswahl/Vollmatrix und Akustiknachlauf
 bleiben Nutzerabnahme im Pilot; Maus-/Alt+Y-/Autostartmigration weiter gesperrt.
 
+Brian meldet nach expliziter Wiederholung eine flüssige Sprachprobe. Die
+Aufnahme-Töne sind ihm zu leise/zu ähnlich. Daher eigener Cue-Nachtrag:
+Start115ms mit zwei tiefen420Hz-Impulsen; Ende180ms mit aufsteigenden1000/
+1600Hz-Tönen. PCM-Peak7500 statt3600 (ca.+6,4dB), sanfte Envelope erhalten;
+weiter innerhalb0,5s-Cuefrist. Source9a470aca936d3dbc885935229a7eb434d0504c86:
+82 passende Checks grün, Native Replay beider Töne bestätigt. Native Gate
+erneut bestanden:114Callbacks/15gated/31.680B/0alteADCs, Bytezählung exakt,
+beideCues/Owner geschlossen. TTS-Code/Sprachsamples unberührt; Hosted-CI
+wird für diesen Nachtrag neu gebunden. Neue Ton-Hörabnahme bleibt im Pilot.
+
 Keine Feldtexte, Diktate oder persönlichen Audioaufnahmen werden in diesen
 Nachweisen oder im Repository gespeichert. Frühere native Restorebelege und
 der dokumentierte frühere Verlust eines RAM-Clipboardstands gelten unverändert

@@ -25,5 +25,7 @@ ohne offene reproduzierte P1/P2. Native Chrome-Teilauswahl bestanden;
 Gesamtauswahl/Codex-/Win32-Delivery-Vollmatrix in IA-T07 offen. TTS: identische
 Samples, Freya9→0/Tyr8→0 leere Refills, Cancel/Familienabschluss bestätigt.
 WASAPI-Cue-Gate109Callbacks/31.040B/0alteADCs; keine Audioinhalte gespeichert.
-Hörurteil/Echo bleiben gesonderte Nutzerabnahme, nicht durch T08 als bestanden
-markiert. Details: docs/input-audio-2026-10-15.md.
+Brian meldet flüssige Sprache; gewünschte lautere/distinktere Töne inSource9a470ac
+umgesetzt,82 passendeChecks+NativeReplay/Gate erneut grün. Echo/neueTonabnahme
+bleiben gesondert offen, nicht durch T08 bestanden. Details in
+docs/input-audio-2026-10-15.md.

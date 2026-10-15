@@ -84,5 +84,8 @@ Verhaltensvergleich, keine Übernahme fremder Assets/AGPL-Implementierung.
 - Change-Spec vor Code geschrieben; Details/Messungen in plan.md und tasks.md.
 - Native Chrome-Teilauswahl und echte TTS-/Cue-Gate-Pipeline belegt;
   Details/Messgrenzen in docs/input-audio-2026-10-15.md.
-- Codex-/Browser-Vollmatrix, Cue-Echo und Hörabnahme noch offen; private
+- Brian meldet nach Wiederholung flüssige Sprache; Cue-Wunsch lauter und
+  stärker verschieden umgesetzt (115ms tiefes Doppelklopfen/180ms heller
+  aufsteigender Doppelton). Native Replay/Gate danach erneut bestanden.
+- Codex-/Browser-Vollmatrix, Cue-Echo und neue Ton-Hörabnahme noch offen; private
   Pilotintegration dient dieser Abnahme, keine Produktionsmigration.

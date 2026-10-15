@@ -42,7 +42,8 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
   Codex-Alltagspaste; neuer Auftrag: markierte Auswahl ersetzen, allgemeine
   Felder (YouTube/Chrome), zwei Aufnahme-Cues, echtes Streaming korrigieren.
 - Change-Vertrag: specs/2026-10-15-hugin-input-audio/. Gepruefter Source
-  6f4897c16cec03ce37ae014f708271b5f7332f71; Root integriert getrennte Helper-
+  Core6f4897c und Ton-Nachtrag9a470aca936d3dbc885935229a7eb434d0504c86;
+  Root integriert getrennte Helper-
   Slices. UI/Stimmen/Kuerzel/Privacy/GPU-Serialisierung/Rueckweg erhalten.
 - UIA-Intervall mit beiden geprueften Originalgrenzen; striktes IPC4/Response3.
   Verified-Edit-Profil0,25s, gemessene Codex-Overrides0,15s; keine Freigabe
@@ -65,7 +66,10 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 - Naechster Schritt: aktualisierten privaten Draft checkpointen, exakte Hosted-
   Checks und Routineintegration, danach sauberen Main FF und geprueften neuen
   Pilot mit einmaligem Supervisor starten. Root-Ownership behalten.
-- Hoerurteil/Cue-Echo und reale Auswahl-Vollmatrix sind Nutzerabnahme im Pilot;
+- Brian meldet nach Wiederholung fluessige Sprache. Auf Wunsch deutlichere/
+  lautere Töne: Start115ms tief doppelt, Ende180ms hell aufsteigend.82 passende
+  Checks und NativeReplay/Gate114Callbacks/31.680B/0alteADCs gruen.
+- Neue Tonabnahme/Cue-Echo und reale Auswahl-Vollmatrix sind Nutzerabnahme im Pilot;
   normale Maus-/Alt+Y-/Autostartmigration bleibt gesperrt. Frueherer Verlust
   eines RAM-Clipboardstands bleibt dokumentiert und ist nicht wiederhergestellt.
 

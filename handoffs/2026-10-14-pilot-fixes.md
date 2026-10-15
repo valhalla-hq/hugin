@@ -11,7 +11,7 @@
   Root C:/Users/brian/brian-projects/worktrees/hugin/hugin-pilot-fixes-mjolnir.
   Root-Ownership aktiv; spaeterer Supervisor benoetigt diesen Worktree.
 - Control e3deecae6673a024aa9015a4387737fbec04c795. Stable Main bb700f0;
-  Source vor abschliessender Metadata6f4897c16cec03ce37ae014f708271b5f7332f71.
+  CoreSource6f4897c; abschliessenderTon-Source9a470aca936d3dbc885935229a7eb434d0504c86.
   Draft https://github.com/valhalla-hq/hugin/pull/9 wird um diesen Auftrag
   aktualisiert. Routineintegration im bekannten privaten Scope autorisiert.
 
@@ -28,7 +28,7 @@
   leere Baseline bestaetigt. Warm46,482ms/Delivery0,585s, kein Enter. Spaetere
   Vollauswahl wegen wechselndem OS-Fokus unverifizierbar; kein Paste. Nativ
   unbestaetigte Vollmatrix bleibt offen, kein Erfolg daraus abgeleitet.
-- Eigene54ms-Startdoppelimpuls-/52ms-End-Cues, unabhaengiger Outputowner,
+- Eigene115ms-tiefeStartdoppelimpuls-/180ms-aufsteigendeEnd-Cues, unabhaengiger Outputowner,
   priorisierter Cancel. Mic zuerst unarmed, Cue/Drain, Geraetezeit+25ms Gate;
   Endcue nach Micclose, vor UIA/STT. Endcuefehler verliert valides PCM nicht.
 - Native Untersuchung: MME liefert42×ADC0/0B trotz fortschreitender Streamzeit.
@@ -80,7 +80,9 @@
    beweisen, CI/PR-Scope/Head/Review vor Routineintegration frisch binden.
 2. Sauberen Main nach bestaetigtem Appende FF; neuer einmaligerPilot mit
    exaktemMainhead/Receipt, sichtbaremBereit/Profilbindung starten.
-3. Hoerurteil Freya/Tyr/UnterscheidbarkeitCues, Cue-Echo sowie reale Codex-
+3. Brian meldet fluessige Sprache. Lautere/distinktereTöne aufWunsch umgesetzt;
+   82 passendeChecks+NativeReplay/Gate114Callbacks/31.680B/0alteADCs gruen.
+   NeueTonabnahme, Cue-Echo sowie reale Codex-
    /Browser-/Win32-Delivery-Vollmatrix als Nutzerabnahme weiterfuehren.
    TechnischerNativebeleg ist keine Hoer-/Produktionsgesamtabnahme.
 4. Root-Worktree/Ownership bei laufendemSupervisor behalten. HelperSource
