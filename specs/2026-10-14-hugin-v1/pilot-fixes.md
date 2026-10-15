@@ -46,11 +46,12 @@ Normale Maus-/Alt+Y-Aktivierung und vollständige Migration bleiben offen.
 - PF-003: deterministische Guards und echte Windows-Wiedergabe für beide
   Stimmen grün; menschlicher Hörvergleich noch offen.
 - PF-002/004: Controller-Guards und bestehende Ladeanzeige grün.
-- PF-001: Source-Guards/Review grün, reale Codex-Paste-/Restore-Probe noch
-  offen. Leeres aktives Nachrichtenfeld nötig; kein Entwurf wird verändert.
-  targets.json bleibt bis zu diesem Nachweis leer. Audio-/Statuskorrekturen
-  können als geprüfter Pilot bereitgestellt werden; dies erfüllt PF-001 noch
-  nicht und ist keine vollständige Abnahme.
+- PF-001: Source-Guards/Review und vollständige native Codex-Komponentenprobe
+  am Feldanfang UND Textende grün: genau ein Paste, Restore aller Formate,
+  echter Caret-Gegenfall ohne Paste, eigenes Literal gezielt entfernt,
+  Ausgangsinhalt erhalten, eigener Service geschlossen, kein Enter. Nur exakte
+  geprüfte Fokusklasse/Paketfamilie aktivieren. Nach geprüftem Neustart bleibt
+  Brians Mikrofontest im Alltag sowie die übrige Gesamtproduktabnahme offen.
 
 ## Fortsetzung 15.10.2026: echte Codex-Prüfung
 

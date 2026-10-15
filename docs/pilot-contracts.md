@@ -1,17 +1,20 @@
 # Pilot: Zielklassen und Diagnose
 
-`config/targets.json` ist agentengepflegte Konfiguration. Beide Listen sind
-anfangs leer: automatische Textübergabe und der Ctrl+C-Lesefallback sind damit
-für alle Zielklassen gesperrt. Direkte Standard-Edit-/UIA-Auswahl und das
-manuelle Kopieren eines vollständigen RAM-Diktats bleiben verfügbar.
+`config/targets.json` ist agentengepflegte Konfiguration. Die Delivery-Liste
+enthält nach vollständigen nativen Proben ausschließlich
+`Chrome_RenderWidgetHostHWND` mit Paketfamilie `OpenAI.Codex_2p2nqsd0c76g0`;
+der Ctrl+C-Lesefallback bleibt leer. Nachweis:
+[Codex-Übergabe](codex-delivery-2026-10-15.md). Direkte Standard-Edit-/UIA-Auswahl
+und manuelles Kopieren eines RAM-Diktats bleiben verfügbar.
 
-Eine Freigabe benennt die exakte `control_class` und eine vorhandene Markdown-
+Eine Freigabe benennt die exakte `control_class`, gegebenenfalls die exakt
+zugehörige `package_family`, und eine vorhandene Markdown-
 Datei im Repository als `evidence`. Für `delivery` kommt
 `restore_delay_seconds` (0,02 bis 2 Sekunden) hinzu. Ein vorhandener Dateipfad
 beweist keine Abnahme: Die Datei muss die tatsächlich geprüften Anwendungen,
 Versionen, Auswahl-/Fokus-/Caret- und Clipboard-Rennen sowie Einschränkungen
 festhalten. Eine Klassenfreigabe ist keine universelle Kompatibilitätszusage.
-Vor dem Pilot werden keine Einträge aktiviert. Doppelte Schlüssel, Wildcards,
+Ungeprüfte Einträge werden nicht aktiviert. Doppelte Schlüssel, Wildcards,
 ungültige Typen und fremde Nachweispfade führen zu einem Konfigurationsfehler.
 
 Die kopierbare Diagnose enthält ausschließlich das feste Schema aus

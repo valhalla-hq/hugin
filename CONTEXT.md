@@ -57,21 +57,23 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
   unbekannte/OLE-Formate bleiben vor Mutation gesperrt.
 - 328 Sourceprüfungen und23 Windowsprüfungen grün; zwei unabhängige Reviews,
   reproduzierte P1/P2 geschlossen. Nachweis: docs/codex-delivery-2026-10-15.md.
-- Vorstufe nativ: einmaliges Paste, Clipboard-Restore, End-Caret und echte
-  Home-Gegenprobe erfolgreich. Aktuelle vollständige Abschlussprobe samt
-  Fixture-Cleanup/Baseline-Erhalt offen; targets.json bleibt leer. Normaler
-  Accessibility-Fokus aktiviert den eindeutig gebundenen Hauptcomposer;
-  keine weitere Fokus-Rückfrage erforderlich.
+- Vollständige native Abschlussproben am Feldanfang UND echten Textende
+  bestanden: genau ein Paste, alle Clipboardformate zurück, echter Home-
+  Gegenfall abgelehnt, eigenes Literal entfernt, Baseline erhalten und eigener
+  Service geschlossen. Warm40,7/42,0ms, Delivery0,476/0,483s; kein Enter.
+- targets.json aktiviert ausschließlich Chrome_RenderWidgetHostHWND mit
+  FamilieOpenAI.Codex_2p2nqsd0c76g0 und0,15s-Restore. Ctrl+C-Fallback leer;
+  47 Target-/Profile-/Commit-/Lease-Guards grün. Mikrofontest im neuen Pilot
+  und menschliches Hörurteil bleiben separate Alltagsschritte.
 - Pilot am 15.10 geordnet beendet, Rückstart und erneute reguläre Pause der
   Altapps bestätigt. Neuer Pilot vom geprüften Main sichtbar gestartet;
   Sitzungsnachweis durch Root.runtime/current-pilot-fixes-session.txt.
   Profile und beide Startup-lnks hashidentisch. Normale Maus-/Alt+Y-Hooks
   bleiben gesperrt; Hörurteil für beide korrigierten Stimmen fehlt noch.
-- Zwischenablage inzwischen durch andere App-Kopie ersetzt; Abschlussprobe
-  stoppte vor Mutation. Frage „Test kopiert“ pending. Bei Antwort Probe sofort
-  starten, Clipboard und Ausgangstext erhalten, nur eigenes geprüftes Literal
-  entfernen. Erst bei vollem Erfolg exakte Paket-/Klassenfreigabe eintragen
-  und geprüft neu starten.
+- Nach finaler Konfigurationsprüfung/Hosted-CI PR7 am unveränderten Head
+  privat integrieren, Pilot normal beenden, Rückweg beweisen und Main danach
+  aktualisieren. Altapps normal pausieren und neuen geprüften Pilot starten.
+  Aktuelle Sitzung über exakten Pointer ermitteln; keine weitere Fokusfrage.
 - Eine frühe fehlgeschlagene Probe verlor ihren RAM-Clipboard-Ausgangsstand;
   dieser wurde nicht wiederhergestellt. Spätere Restorebelege gelten separat.
 - Draft/Fortsetzung https://github.com/valhalla-hq/hugin/pull/7.

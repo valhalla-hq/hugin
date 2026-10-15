@@ -1,8 +1,9 @@
 # Codex-Übergabe: Cursor und Clipboard-Rückweg
 
 Stand 15.10.2026; geprüfter Source ce0c1cfeb498b31db8fbafc5bf5e38e8b2001396.
-PR7 setzt die integrierten PR5/6 fort. Die vollständige native Abschlussprobe
-bleibt offen; config/targets.json enthält bis dahin keine Freigabe.
+PR7 setzt die integrierten PR5/6 fort. Beide vollständigen nativen Proben
+bestanden; config/targets.json enthält ausschließlich die dabei geprüfte
+Codex-Fokusklasse/Paketfamilie mit0,15s-Restore. Der Ctrl+C-Fallback bleibt leer.
 
 ## Ursache und endgültiger Nachweis
 
@@ -72,14 +73,23 @@ Spätere erfolgreiche Restores gelten für einen neuen Ausgangsstand.
   Vollständiger Fixture-Cleanup damals noch offen; kein Ziel dadurch aktiviert.
 - Abschlussfixture: reale Tastenauswahl, nur exakt bestätigtes eigenes Literal
   entfernen, Ausgangstext im RAM erhalten. Kein Enter/Absenden/Feldlöschen.
-  Letzte Abschlussprobe stoppte vor Mutation wegen inzwischen ersetzter
-  fremder App-Kopie. Vollständiger aktueller Abschlussbeleg fehlt noch.
+- Aktueller Sourcece0c1cf, vollständige native Probe am Feldanfang:
+  Capture0,314s, Warm40,7ms, Übergabe0,476s. Genau einmal eingesetzt, sämtliche
+  Ausgangsformate zurück, echter End-Caret erfasst/Home-Wechsel abgelehnt,
+  Gegenfall-Clipboard zurück, nur eigenes Literal entfernt, Baseline erhalten,
+  eigener Service samt Probe-Familie geschlossen. Kein Enter/Absenden.
+- Derselbe Source, vollständige native Probe mit Anhängen am echten Textende:
+  Capture0,306s, Warm42,0ms, Übergabe0,483s. Dieselben Paste-/Restore-/Caret-
+  Gegenfall-/Literal-Cleanup-/Baseline-/Servicebelege erfolgreich.
+  Dies sind zwei Einzelproben, keine p95- oder universelle Kompatibilitätszusage.
+  Keine breitere Chromium-/Chrome_WidgetWin_1-Freigabe aus früheren Teilproben.
 
 ## Pilot und offene Abnahme
 
 Sichtbarer Pilot weiterhin von sauberem Main2298f298c99e5f7491465b91b8a17eeef2575a69;
-neue Source noch nicht live. Exakte Sitzung über
+neue Source zur geprüften Integration vorbereitet. Exakte Sitzung über
 Root.runtime/current-pilot-fixes-session.txt. Strg+Alt+D/V, normaler Tray-Rückweg,
 alte Profile und Startup-lnks erhalten. Maus/Alt+Y/Gesamtmigration bleiben
-gesperrt. Vor Freigabe/Neustart fehlen die vollständige aktuelle Paste-/Restore-
-/Gegenprobe samt Baseline-Erhalt und das separate Hörurteil für Freya/Tyr.
+gesperrt. Native Codex-Komponentenabnahme bestanden; nach geprüftem Merge
+geordneten Pilot neu starten. Mikrofontest im neuen Pilot und das separate
+menschliche Hörurteil Freya/Tyr sowie die Gesamtmigration bleiben offen.

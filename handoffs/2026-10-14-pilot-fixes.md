@@ -39,10 +39,14 @@
   Zwei unabhängige Reviews, reproduzierte P1/P2 geschlossen. Zusätzlicher
   Boundaryreview110 passende Source-/Mocktests grün. Keine native Freigabe
   allein aus simulierten Prüfungen ableiten.
-- Vorstufe3fb625c nativ: einmaliges Paste, aktuelle Clipboardformate zurück,
-  End-Caret erfasst, echter Home-Wechsel mit target_changed/noSubmit abgewehrt.
-  Warm38,3ms/Delivery0,483s; Fixture-Cleanup noch nicht vollständig bestätigt.
-  Aktueller vollständiger Abschlussbeleg weiterhin offen.
+- Vollständige native Proben am Feldanfang UND echten Textende bestanden:
+  einmaliges Paste, alle Clipboardformate zurück, echter Home-Gegenfall
+  target_changed/noSubmit, eigenes Literal gezielt entfernt, Baseline erhalten,
+  Service/Familie geschlossen. Warm40,7/42,0ms, Delivery0,476/0,483s; kein Enter.
+  Root.runtime/codex-paste-proof.json und codex-paste-end-proof.json enthalten
+  nur kuratierte technische Fakten. Dies sind Einzelproben, keine p95-Zusage.
+- Exakte Freigabe Chrome_RenderWidgetHostHWND + FamilieOpenAI.Codex_2p2nqsd0c76g0,
+  .15s-Restore; capture_fallback leer.47 Profile-/Target-/Commit-/Lease-Guards grün.
 - docs/codex-delivery-2026-10-15.md ist der aktuelle kuratierte Nachweis;
   docs/pilot-fixes-2026-10-14.md hält den früheren Source-/Prüfstand fest.
 
@@ -66,27 +70,19 @@
 
 ## Offen und nächste Schritte
 
-1. PF-001 offen, targets.json leer. Letzte Abschlussprobe stoppte vor Mutation
-   wegen einer inzwischen ersetzten fremden App-Kopie. Frage „Test kopiert“
-   pending; bei Antwort sofort Root.runtime/focus_codex_probe.py starten.
-   Normaler UIA-SetFocus aktiviert den eindeutig gebundenen Hauptcomposer;
-   keine weitere Fokus-Rückfrage oder Rückfragekarte als Nachrichtenfeld.
-2. Fixture prüft Paste/Restore/End-Caret/Home-Gegenfall/Baseline. Cleanup über
-   echte Tastenauswahl, nur exakt bestätigtes eigenes Literal löschen. Kein
-   Enter/Absenden/ganze Feldlöschung. Snapshot/Ausgangstext im RAM; bei
-   Clipboard-Cleanupfehler Prozess/Owner erhalten. Gebundener Codex
-   ChatGPT.exe26.1007.9446.0, FamilieOpenAI.Codex_2p2nqsd0c76g0. Identität vor
-   jedem Lauf frisch prüfen und bei Wechsel neu binden.
-3. Nur bei vollständiger aktueller Probe exakte native Klasse/Paketfamilie und
-   .15s-Restore samt Evidence/shipped-profile Guard aktivieren. Source geprüft;
-   Konfigurationsdelta separat prüfen.
-4. Kontext/Handoff/PR aktualisieren, gepushten Head/CI prüfen, routine-privat
+1. PF-001-Komponentenprobe bestanden. Konfigurationsdelta separat reviewen,
+   finalen PR7-Head/Hosted-CI prüfen. Produktive Maus-/Alt+Y-Abnahme bleibt offen.
+2. Wiederholungen bei Bedarf über Root.runtime/focus_codex_probe.py bzw.
+   zusätzlich --at-end. Nur eigener gebundener Hauptcomposer, keine Fragekarte;
+   kein Enter/Feldlöschen. Gebundener Codex ChatGPT.exe26.1007.9446.0 mit exakter
+   Familie. Bei Identitätswechsel neu binden; RAM-Owner bei Cleanupfehler behalten.
+3. Kontext/Handoff/PR aktualisieren, gepushten Head/CI prüfen, routine-privat
    integrieren. Hugin normal beenden, Rückweg beweisen, Main FF, alte Apps
    regulär pausieren und geprüften Pilot neu starten. Exakten Receiptpfad
    wählen, kein beliebiges neuestes JSON.
-5. Menschliches Hörurteil Freya/Tyr und weitere Produktabnahme.
+4. Mikrofontest im neuen Pilot, Hörurteil Freya/Tyr und weitere Produktabnahme.
 
 Fortsetzen: Hugin AGENTS.md, CONTEXT.md, exakt diesen Handoff und pilot-fixes.md
 lesen; Preflight mit aktivem Branch, Git/PR/Ownership/Sitzung frisch prüfen.
-Dieselbe Root-Ownership weiterverwenden. Native Gesamtabnahme/Hörurteil offen
-halten, keine Freigabe aus älteren Teilproben ableiten.
+Dieselbe Root-Ownership weiterverwenden. Native Codex-Komponentenprobe ist
+abgeschlossen; Mikrofon-/Hör-/Gesamtabnahme weiter ausdrücklich offen halten.
