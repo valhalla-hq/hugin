@@ -51,3 +51,20 @@ Normale Maus-/Alt+Y-Aktivierung und vollständige Migration bleiben offen.
   targets.json bleibt bis zu diesem Nachweis leer. Audio-/Statuskorrekturen
   können als geprüfter Pilot bereitgestellt werden; dies erfüllt PF-001 noch
   nicht und ist keine vollständige Abnahme.
+
+## Fortsetzung 15.10.2026: echte Codex-Prüfung
+
+- Brian hat ein leeres aktives Nachrichtenfeld bestätigt. Die manuelle
+  Testfixture muss das aktive Composer-Feld von Rückfragefeldern unterscheiden;
+  Windows-Value allein gilt bei widersprüchlicher Leeranzeige nicht als Beweis.
+- Reproduziert: der globale UIA-Character-Rundweg kann während Chat-Ausgabe
+  scheitern, obwohl der lokale Einfügepunkt unverändert bleibt. Position0 ist
+  durch gleiche Anfangsendpunkte direkt bewiesen; übrige Positionen werden
+  begrenzt vorwärts vom Edit-Anfang gesucht und exakt zurückgeprüft. Den
+  globalen Rundweg samt alter Prefixgrenze entfernen; lokale Grenze262144
+  behalten. Editierbarkeit, Identität, Auswahl-/Fokus-/Token-Gegenprüfungen
+  bleiben vollständig erhalten. Guard-first, dann nativ messen.
+- Zwei echte warme Bestätigungen liefen bei55/62ms in das50ms-Limit. Erst die
+  einzelnen Antwort-/EOF-/Cleanupzeiten messen, danach den Produzenten ändern;
+  keine Freigabe allein aufgrund eines vergrößerten Timeouts. Der tatsächliche
+  Paste-/Restore-/Caret-Gegenfall entscheidet über die Codex-Konfiguration.

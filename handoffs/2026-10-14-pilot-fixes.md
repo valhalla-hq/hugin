@@ -60,3 +60,32 @@
 Fortsetzen: AGENTS.md, CONTEXT.md, diesen Handoff und pilot-fixes.md lesen.
 Exakten Branch-/PR-/Runtimezustand prüfen, nur eigene gehaltene Ressourcen
 bereinigen. Kein Force-Stop alter Apps oder Modellparallelbetrieb.
+
+## Aktueller Stand15.10.2026
+
+- Dieselbe Root-Ownership/Worktree bleibt aktiv. PR5 wurde integriert;
+  Basis Main46e6a40a75f9e4889efeb731c8329d76a800242e. Neuer DraftPR6:
+  https://github.com/valhalla-hq/hugin/pull/6, Sourcehead
+  c3bacfd4233eb0ab3a73dacefb6807d45cd86551. Exakten CI-/Gitstand frisch prüfen.
+- Globale UIA-Positionsrundwege durch lokale begrenzte Vorwärtssuche plus
+  exakten Rückweg ersetzt; Nullposition über Endpunktgleichheit. Zwei neue
+  Guards zuerst rot;312 Sourcechecks,29 Targetcontracts,16 ABI-Verträge und
+  eigener nativer HiddenRichEdit grün. Zwei unabhängige Reviews geschlossen.
+- Native Codex-Position0: Bestätigung35,4/50,3ms inklusive äußerem Messaufruf,
+ 50ms-Deadline unverändert; eigene EOF-/stderr-/Familienbarrieren bestätigt.
+  Ausführliche Grenzen docs/codex-delivery-2026-10-15.md.
+- Brian bestätigte „Bereit – Feld ist leer“. Die UIA-Leerrepräsentation war
+  widersprüchlich; Rootfixture erhält jetzt ihren Ausgangszustand und löscht
+  nur verifizierten synthetischen Präfix. Bislang kein Paste. Später wechselte
+  Vordergrund zu anderer App; neue Frage „Jetzt testen“ pending. Sofort nach
+  Antwort Root.runtime/codex_paste_probe.py --ready-confirmed ausführen,
+  vorausgesetzt Codex ist aktiv. Kein Absenden/keine Fremddaten löschen.
+- Whispering/PipPal am15.10 regulär pausiert, geschützte Dateien erhalten;
+  Freya und Tyr seriell über korrigierten Output abgespielt. Hörurteil offen.
+- Hugin-Pilot Main46e6a40 erneut gestartet. Exakter Sitzungsnachweis durch
+  Root.runtime/current-pilot-fixes-session.txt; Supervisor mit eigenem Job
+  und geprüftem Altstack-Rückweg. Quelle/PIDs/Handles frisch verifizieren.
+  Neue Source wird erst nach CI/Reviewintegration neu gestartet.
+- Nächster Schritt: echte Paste/Restore/Caret-Gegenprobe vollständig belegen,
+  dann ausschließlich konkrete Codex-Familie/Klasse mit gemessener Restorezeit
+  in targets.json und shipped-profile Contract aktivieren. Bis dahin leer.

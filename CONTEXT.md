@@ -37,8 +37,9 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Next Step
 
-- Main 8c64029c8068a6fe3c58d177a1ed7b0c353ca773 mit Strg+Alt+D/V läuft sichtbar;
-  geordneter Altstack-Rückstart und erneute Pause beim Kürzelwechsel bestätigt.
+- PR5 ist integriert, Main46e6a40a75f9e4889efeb731c8329d76a800242e.
+  Pilot am15.10.2026 erneut sichtbar gestartet; Strg+Alt+D/V und einmaliger
+  Rückweg erhalten. Laufzustand vor Eingriffen frisch prüfen.
 - Aktiver Task codex/hugin-pilot-fixes-mjolnir: Brian meldet fehlende Codex-
   Übergabe bei unverändertem Ziel und abgehacktes Audio bei beiden Stimmen.
   Vertrag/Plan: specs/2026-10-14-hugin-v1/pilot-fixes.md.
@@ -55,6 +56,16 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
   Altapps bestätigt. Geprüfte Aktualisierung und einmaliger Neustart folgen
   am exakten CI-geprüften Head. Der Rückweg startet nach Tray-Beenden die
   unveränderten Startup-lnks. Normale Maus-/Alt+Y-Hooks bleiben gesperrt.
+- Fortsetzung15.10: Sourcec3bacfd beseitigt die globale Prefixabhängigkeit der
+  UIA-Cursorprüfung.312 Sourcechecks und relevante Windows-/UIA-Prüfungen grün;
+  zwei unabhängige Reviews ohne konkrete Befunde. Native Position0-Bestätigung
+  erfolgreich, echte Paste/Restore noch offen. PR6 ist Draft:
+  https://github.com/valhalla-hq/hugin/pull/6. Nachweis/Grenzen:
+  docs/codex-delivery-2026-10-15.md. targets.json bleibt bis zur Probe leer.
+- Brian hat ein leeres Feld bestätigt; der nachfolgende Vordergrundwechsel
+  ließ die Probe vor Paste abbrechen. Erneute kurze Testbereitschaft pending.
+  Ausgangsinhalt vollständig erhalten, ausschließlich eigenen Testtext
+  entfernen. Kein Enter, keine privaten Feld-/Clipboardwerte persistieren.
 
 ## Active Handoff
 

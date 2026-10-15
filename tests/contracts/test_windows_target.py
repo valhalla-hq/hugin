@@ -46,13 +46,13 @@ class Ranges:
 
 class Pattern:
     SupportedTextSelection=1
-    def __init__(self,owner):self.owner=owner;self.position=7;self.origin=900;self.width=0;self.after=lambda:None
+    def __init__(self,owner):self.owner=owner;self.position=7;self.origin=900;self.extent=100;self.width=0;self.after=lambda:None
     def QueryInterface(self,*args):return self
     def GetSelection(self):
         selected=Range(self.owner,self.origin+self.position,self.origin+self.position+self.width)
         self.after();return Ranges(selected)
     @property
-    def DocumentRange(self):return Range(self.owner,self.origin,self.origin+100)
+    def DocumentRange(self):return Range(self.owner,self.origin,self.origin+self.extent)
 
 
 class Element:
@@ -86,6 +86,36 @@ class Uia:
 
 
 class TargetContracts(unittest.TestCase):
+    def test_local_points_do_not_walk_before_the_edit_when_page_prefix_changes(self):
+        from unittest.mock import patch
+        original=Range.MoveEndpointByUnit
+        for position in (1,7,20,100):
+            automation=Automation();automation.focus.pattern.position=position
+            automation.focus.pattern.origin=300000
+            def local_move(selected,endpoint,unit,count):
+                start=selected.start if endpoint==0 else selected.end
+                if start+count<selected.owner.pattern.origin:
+                    raise AssertionError('movement escaped before Edit')
+                return original(selected,endpoint,unit,count)
+            with patch.object(Range,'MoveEndpointByUnit',local_move):
+                first=self.read(automation)
+                self.assertEqual(first.status,'target_captured',position)
+                self.assertEqual(first.identity.position,position)
+                automation.focus.pattern.origin+=4000
+                self.assertEqual(self.read(automation).identity,first.identity)
+
+    def test_edit_start_is_proven_without_walking_unrelated_page_content(self):
+        from unittest.mock import patch
+        automation=Automation();automation.focus.pattern.position=0
+        automation.focus.pattern.origin=300000
+        with patch.object(Range,'MoveEndpointByUnit',side_effect=AssertionError('unrelated page walk')):
+            proof=_target_proof(automation,Uia,BASE,lambda:BASE,lambda:False)
+            self.assertEqual(proof.identity.position,0)
+            automation.focus.pattern.origin+=4000
+            result=confirm_uia_target(automation,Uia,BASE,lambda:BASE,proof)
+            self.assertEqual(result.status,'target_captured')
+            self.assertEqual(result.identity,proof.identity)
+
     def test_warm_proof_rechecks_selection_and_editability_after_measuring(self):
         for kind in ('position','edit','readonly'):
             automation=Automation();proof=_target_proof(automation,Uia,BASE,lambda:BASE,lambda:False)
@@ -206,7 +236,8 @@ class TargetContracts(unittest.TestCase):
     def test_unbounded_degraded_or_foreign_range_is_never_a_target_proof(self):
         for change in ('limit','roundtrip','enclosing','outside'):
             automation=Automation()
-            if change=='limit':automation.focus.pattern.origin=300000
+            if change=='limit':
+                automation.focus.pattern.position=262145;automation.focus.pattern.extent=262145
             elif change=='roundtrip':
                 original=Range.MoveEndpointByUnit
                 def degrade(selected,endpoint,unit,count):

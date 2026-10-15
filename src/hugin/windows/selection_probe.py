@@ -195,17 +195,41 @@ def _bind_edit(automation,uia,target):
     raise _SelectionFailure('target_changed')
 
 
-def _position(selected,endpoint,uia):
-    clone=selected.Clone()
-    moved=clone.MoveEndpointByUnit(endpoint,uia.TextUnit_Character,-MAX_TEXT_BYTES-1)
-    if type(moved) is not int or not -MAX_TEXT_BYTES<=moved<=0:
-        raise _SelectionFailure('target_unverifiable')
-    returned=clone.MoveEndpointByUnit(endpoint,uia.TextUnit_Character,-moved)
-    # Units may degrade to a coarser provider unit. Require an exact roundtrip,
-    # rather than assuming CompareEndpoints returns a character distance.
-    if type(returned) is not int or returned!=-moved or clone.CompareEndpoints(endpoint,selected,endpoint)!=0:
-        raise _SelectionFailure('target_unverifiable')
-    return -moved
+def _local_position(document,selected,uia):
+    if selected.CompareEndpoints(0,document,0)==0:return 0
+    def measure(count):
+        probe=document.Clone()
+        moved=probe.MoveEndpointByUnit(0,uia.TextUnit_Character,count)
+        if type(moved) is not int or not 0<moved<=count:
+            raise _SelectionFailure('target_unverifiable')
+        order=probe.CompareEndpoints(0,selected,0)
+        if order==0:
+            returned=probe.MoveEndpointByUnit(0,uia.TextUnit_Character,-moved)
+            if (type(returned) is not int or returned!=-moved
+                    or probe.CompareEndpoints(0,document,0)!=0):
+                raise _SelectionFailure('target_unverifiable')
+        elif order<0 and moved<count:
+            raise _SelectionFailure('target_unverifiable')
+        return order,moved
+    # CompareEndpoints promises ordering, not a character distance. Search
+    # forward from the Edit's own start; never traverse the changing chat
+    # prefix. All probes and the exact reverse roundtrip remain bounded.
+    lower,upper=0,1
+    while True:
+        order,moved=measure(upper)
+        if order==0:return moved
+        if order>0:
+            upper=moved;break
+        lower=upper
+        if upper==MAX_TEXT_BYTES:raise _SelectionFailure('target_unverifiable')
+        upper=min(MAX_TEXT_BYTES,upper*2)
+    while lower+1<upper:
+        middle=(lower+upper)//2
+        order,moved=measure(middle)
+        if order==0:return moved
+        if order<0:lower=middle
+        else:upper=moved
+    raise _SelectionFailure('target_unverifiable')
 
 
 def _insertion(automation,uia,binding):
@@ -221,13 +245,7 @@ def _insertion(automation,uia,binding):
     if (not document or selected.CompareEndpoints(0,document,0)<0
             or selected.CompareEndpoints(1,document,1)>0):
         raise _SelectionFailure('target_unverifiable')
-    # Chromium's movement can escape an Edit's DocumentRange into page text.
-    # Subtract its local origin so unrelated page output does not move the
-    # insertion point identity. No GetText, Value, Select or focus mutation.
-    origin=_position(document,0,uia)
-    position=_position(selected,0,uia)-origin
-    if not 0<=position<=MAX_TEXT_BYTES:raise _SelectionFailure('target_unverifiable')
-    return position,selected.Clone()
+    return _local_position(document,selected,uia),selected.Clone()
 
 
 @dataclass
