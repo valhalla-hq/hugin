@@ -10,6 +10,11 @@
   followed by Root-authorized local fast-forward to this exact Spec head.
 - Control/preflight e3deecae6673a024aa9015a4387737fbec04c795; main bb700f0.
 - Source commit41253ed6af45813012dd59db75504521e9441c8d, metadata separate.
+- Follow-up source/test bf67105905e30dd9d1e7c669472f50fd0c7e2942 only;
+  do not cherry-pick helper metadata. Root independently reproduced Core-P2:
+  faulty collapsed derived points1/2 could alias real selection7..10 and8..11.
+  Each derived point now must equal its original requested endpoint as well
+  as collapse. Both boundaries individually/together and warm proof guarded.
 - Ownership active on Mjolnir. No push or own PR by explicit Root instruction.
   Root remains accountable for integration, review, policy and actual pilot.
 
@@ -48,6 +53,12 @@
 - Final scoped Clipboard/Selection/Target/ABI:121 tests green,0.308s;
   Win32 calls mocked, no native input/clipboard/microphone/provider action.
 - git diff --check clean; source diff self-reviewed against bounded Spec.
+- Follow-up Core-P2 guard first red(target_captured), then122 scoped checks
+  green0.297s; diffcheck clean. Collapsed fastpath unchanged.
+- Follow-up active-branch preflight refuses missing remote task branch:
+  deliberate no-push instruction remains in effect. Clean local branch and
+  unchanged active exclusive lifecycle record were read and confirmed;
+  no tool/state override and no ownership release.
 - Root owns independent review and native Codex selection/Chrome search/HiddenEdit
   proof. New selected-range warm latency is unmeasured; logical50ms unchanged.
   Collapsed path deduplicates endpoint ownership and prefix reads; start0 reads

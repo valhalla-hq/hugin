@@ -120,6 +120,9 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
   intervals, four bounded runtime IDs, two affinities and strict new wire.
   Native editability defaults unproven; enabled/style/selection/caret must
   establish it. Direct focused UIA ComboBox needs full Text/Value proof.
+- Narrow follow-up bf67105905e30dd9d1e7c669472f50fd0c7e2942 fixes the
+  independent Core-P2: every derived endpoint must also equal the requested
+  original boundary. Red guard first, then122 scoped checks green; no native action.
 - Guard-first failures and scoped source checks documented in the exact
   helper handoff. No native UI/input/clipboard/audio/GPU action was executed.
 - No push, PR, merge or ownership release: Root explicitly requested local
