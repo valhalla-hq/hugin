@@ -4,7 +4,7 @@ import tempfile
 import unittest
 
 from hugin.errors import HuginError
-from hugin.targets import load_target_approvals, DeliveryApproval
+from hugin.targets import load_target_approvals, DeliveryApproval, VerifiedEditApproval
 
 ROOT=Path(__file__).resolve().parents[2]
 
@@ -16,6 +16,7 @@ class TargetApprovalContracts(unittest.TestCase):
             DeliveryApproval('Chrome_RenderWidgetHostHWND',.15,'OpenAI.Codex_2p2nqsd0c76g0'),
             DeliveryApproval('Chrome_WidgetWin_1',.15,'OpenAI.Codex_2p2nqsd0c76g0')))
         self.assertEqual(profile.capture_fallback,())
+        self.assertEqual(profile.verified_edit,VerifiedEditApproval(.25))
 
     def test_invalid_approval_is_not_silently_used_or_ignored(self):
         with tempfile.TemporaryDirectory() as directory:

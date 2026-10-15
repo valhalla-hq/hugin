@@ -41,11 +41,26 @@ erzeugt.
 
 - Konfigurationsschema2 trennt eine optionale Verified-Edit-Freigabe von
   gemessenen App-Verzögerungen. Codex behält seine0,15s-Overrides. Generische
-  Freigabe ist bis zur nativen Prüfung im ausgelieferten Profil deaktiviert.
-- Parser→Service-Guard zunächst rot, danach48 passende Sourceprüfungen grün:
+  Freigabe wird nach der erfolgreichen echten Chrome-Teil-Auswahlprobe mit
+  0,25s im neuen Pilotprofil aktiviert. Das live gestartete Main bleibt bis
+  zur geprüften Integration unverändert.
+- Parser→Service-Guard zunächst rot, danach49 passende Sourceprüfungen grün:
   unbekannte App mit Feldnachweis akzeptiert, Codex-Override bevorzugt,
   unbekannte Range und veränderter Fokus ohne Clipboardmutation abgewiesen.
-- Native Chrome-/Codex-Auswahlprobe, eigene Win32-Fixture, echte serielle
+- Native Chrome-/YouTube-Probe: ursprüngliches leeres Feld bestätigt, eigenes
+  synthetisches17-Zeichen-Literal gesetzt und6..11 markiert. Tatsächliche
+  Delivery über den neuen Service ohne App-Sondereintrag ersetzt exakt diesen
+  Bereich durch4Zeichen, Präfix/Suffix bleiben erhalten. Warm46,482ms,
+  Delivery0,585s, drei Clipboardformate bytegenau zurück, Service geschlossen.
+  Kein Enter/keine Suche abgesendet. Eigene Feldbasis anschließend entfernt,
+  ursprüngliches leeres Feld bestätigt. Receipt nur im ignorierten Runtimepfad.
+- Eine anschließende Gesamtauswahlprobe wurde als unverifizierbar abgewiesen;
+  kein Paste. Der Windows-Vordergrund wechselte während der Diagnose zurück
+  zu Codex. Gesamtauswahl dadurch nicht nativ bestätigt; kein Produktfehler
+  aus diesem unkontrollierten Fokuswechsel abgeleitet.
+- 30 scoped Windowsprüfungen grün, darin24 ABI-/Producerprüfungen und eigene
+  HiddenRichEdit-TextPattern-Fixture; keine Nutzerfokus-/Clipboardänderung.
+- Native Codex-Auswahl, aktive eigene Win32-Fixture, echte serielle
   Modell→Controller→Player-Proben, Cue-Gate/Echo und Hörurteil offen.
 
 Keine Feldtexte, Diktate oder persönlichen Audioaufnahmen werden in diesen
