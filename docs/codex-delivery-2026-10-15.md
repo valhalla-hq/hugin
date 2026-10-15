@@ -43,7 +43,24 @@ privaten Werte in Nachweis/Logs. Zwischenzeitlicher Vordergrundwechsel führte
 zum sicheren Abbruch vor Paste.
 
 `config/targets.json` bleibt bis zum vollständigen Nachweis leer. Erst danach
-darf die exakte Codex-Paket-/Klassenfreigabe eingetragen werden. Der aktuelle
-Hugin-Pilot stammt weiterhin von Main46e6a40; neue Source wird erst nach
-geprüfter privater Integration neu gestartet. Freya/Tyr wurden erneut seriell
-über den korrigierten Player abgespielt; ein menschliches Hörurteil fehlt.
+darf die exakte Codex-Paket-/Klassenfreigabe eingetragen werden. Freya/Tyr
+wurden erneut seriell über den korrigierten Player abgespielt; ein menschliches
+Hörurteil fehlt.
+
+## Integration und laufender Pilot
+
+PR6 wurde nach zwei unabhängigen Reviews, erfolgreichen lokalen Prüfungen und
+frischen grünen Hosted-Checks am unveränderten Head26296df integriert. Main:
+2298f298c99e5f7491465b91b8a17eeef2575a69. Der vorige Hugin-Pilot wurde normal
+über Beenden geschlossen; sein eigener Supervisor bestätigte Familienende
+und den Rückstart der unveränderten Altstack-Verknüpfungen. Whispering/PipPal
+anschließend erneut über normale Appaktionen pausiert, alter Qwen beendet.
+Profile und beide Startup-lnks blieben hashidentisch.
+
+Der neue Pilot von genau diesem sauberen Main ist sichtbar gestartet; seine
+exakte Receipt ist durch Root.runtime/current-pilot-fixes-session.txt benannt.
+Strg+Alt+D/V und der einmalige Rückweg sind erhalten. Die tatsächliche Codex-
+Pasteprobe bleibt offen: vor der Probe war Teams aktiv; eine zusätzliche
+45s-Warteprobe fand keinen aktiven Codex-Composer und sendete keine Eingabe.
+Dies ist kein weiterer Befund zur Codex-Cursorprüfung. Kein Einfügeziel wurde
+freigegeben und die vollständige Produktabnahme bleibt offen.
