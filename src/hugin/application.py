@@ -44,6 +44,11 @@ class _Failure:
 
 
 @dataclass(frozen=True)
+class _CueFailure:
+    error: HuginError
+
+
+@dataclass(frozen=True)
 class _Command:
     kind: str
     value: str | None = None
@@ -73,11 +78,12 @@ class Controller:
     """Construct and pump on one owner thread; callbacks call command/worker_event."""
     def __init__(self, settings, *, inputs, microphone, output, clipboard, pool,
                  publish, capture_executor=None, audio_executor=None, maintenance_executor=None,
-                 selection_executor=None,delivery_executor=None,signals=None):
+                 selection_executor=None,delivery_executor=None,signals=None,cues=None):
         self.settings = settings
         self.inputs,self.microphone,self.output = inputs,microphone,output
         self.clipboard,self.pool,self.publish = clipboard,pool,publish
         self.signals = signals
+        self.cues = cues
         self.run_id = uuid.uuid4()
         self.core = c.Coordinator(instance_id=str(self.run_id),now=time.monotonic(),
             stt_idle_unload_seconds=settings.stt['idle_unload_seconds'],
@@ -146,6 +152,7 @@ class Controller:
             key=(type(event),event.job,event.acknowledgement)
         elif isinstance(event,(c.RecordingStarted,c.RecordingStopped,c.DeliveryFinished)):
             key = (type(event),event.job)
+        elif isinstance(event,_CueFailure):key=(type(event),'capture_cue')
         elif isinstance(event,_Command) and event.kind == 'quit':
             key = (type(event),'quit')
         if key is not None:
@@ -168,7 +175,8 @@ class Controller:
         """Prompt invalidation before clipboard waits; no model work on input threads."""
         with self._lock:
             job = self._snapshot.job
-            invalidates = kind in ('cancel','quit','system_pause','system_resume','devices_changed') or (job is not None and job.kind == c.JobKind.READING
+            starting_stop = kind == 'dictation' and job is not None and self._snapshot.state == c.State.STARTING
+            invalidates = starting_stop or kind in ('cancel','quit','system_pause','system_resume','devices_changed') or (job is not None and job.kind == c.JobKind.READING
                 and (kind in ('dictation','read') or kind == 'voice' and value != self._snapshot.voice))
             if invalidates and job:
                 self._token(job).set()
@@ -178,6 +186,9 @@ class Controller:
         if invalidates:
             try: self.output.stop()
             except HuginError as error: self._post(_Failure(error),priority=0)
+            if self.cues is not None:
+                try:self.cues.stop()
+                except HuginError as error:self._post(_CueFailure(error),priority=0)
         self._post(_Command(kind,value),priority=-1 if kind == 'quit' else 0)
 
     def worker_event(self, event):
@@ -262,7 +273,9 @@ class Controller:
                     self._io_cleanup_failed.clear()
                     for key in tuple(self._cleanup_failed): self._close_engine(*key,retry=True)
                     self.handle(c.RetryCleanup())
-                event = mapping[event.kind]()
+                if event.kind=='dictation' and self.core.snapshot().state==c.State.STARTING:
+                    event=c.Cancel()  # No armed recording exists to transcribe yet.
+                else:event = mapping[event.kind]()
             else: return
         if isinstance(event,_Started):
             if self.core.snapshot().gpu_slot != event.operation:
@@ -293,6 +306,9 @@ class Controller:
         if isinstance(event,_Failure):
             self._runtime_error = event.error
             self.handle(c.Cancel()); return
+        if isinstance(event,_CueFailure):
+            self._runtime_error=event.error
+            self._publish();return  # A failed end cue must not discard captured speech.
         effects = self.core.dispatch(event)
         with self._lock:
             self._snapshot = self.core.snapshot()
@@ -318,11 +334,26 @@ class Controller:
 
     def _effect(self, effect, audio_ack=None):
         if isinstance(effect,c.StartRecording):
+            token=self._token(effect.job)
             def start():
                 try:
-                    self.microphone.start()
+                    if token.is_set():return
+                    if self.cues is None:self.microphone.start()
+                    else:
+                        if self.cues.cleanup_pending:
+                            raise HuginError('audio_failed','capture_cue_cleanup')
+                        self.microphone.start(armed=False)
+                        played=self.cues.play('start',effect.job,token.is_set)
+                        if token.is_set():
+                            self.microphone.cancel();return
+                        if not played:raise HuginError('audio_failed','capture_start_cue')
+                        self.microphone.arm_after(self.microphone.device_time+self.cues.tail_seconds)
+                    if token.is_set():
+                        self.microphone.cancel();return
                     self._post(c.RecordingStarted(effect.job))
                 except Exception as error:
+                    try:self.microphone.cancel()
+                    except HuginError:pass
                     if self.microphone.owned:
                         self._post(_Failure(HuginError('microphone_failed','capture_cleanup')))
                     else: self._post(c.RecordingStarted(effect.job,_safe_error(error,'capture')))
@@ -330,6 +361,11 @@ class Controller:
         elif isinstance(effect,c.StopRecording):
             target = None if effect.discard else self.clipboard.capture_native_target().target
             token = self._token(effect.job)
+            if effect.discard:
+                token.set()
+                if self.cues is not None:
+                    try:self.cues.stop(effect.job)
+                    except HuginError as error:self._post(_CueFailure(error))
             def stop():
                 data,error = None,None
                 bound_target=target
@@ -337,6 +373,11 @@ class Controller:
                     if effect.discard: self.microphone.cancel()
                     else:
                         data = self.microphone.stop()
+                        if self.cues is not None and not token.is_set():
+                            try:
+                                if not self.cues.play('end',effect.job,token.is_set) and not token.is_set():
+                                    raise HuginError('audio_failed','capture_end_cue')
+                            except Exception:self._post(_CueFailure(HuginError('audio_failed','capture_end_cue')))
                         if target is not None and not token.is_set():
                             bound_target=self.clipboard.capture_target(expected=target,cancelled=token.is_set).target
                 except Exception as cause:
@@ -582,7 +623,8 @@ class Controller:
         selection_active=snap.job is not None and snap.job.kind == c.JobKind.READING
         with self._lock:
             abandoned_io=bool((self.microphone.owned or self._capture_tasks or self._delivery_tasks) and not capture_active
-                or self._selection_tasks and not selection_active)
+                or self._selection_tasks and not selection_active
+                or self.cues is not None and self.cues.cleanup_pending)
         data = {'schema_version':1,'app':'Hugin','version':__version__,
             'state':snap.state.value,'voice':snap.voice,'input_ready':bool(self.inputs.running and not self.inputs.error),
             'profile_id':self.settings.voices[snap.voice].source_id,
@@ -646,6 +688,7 @@ class Controller:
         """Retain each failed owner; completed owners never repeat cleanup."""
         owners=[('inputs',self.inputs,self.inputs.stop),('output',self.output,self.output.close),
             ('clipboard',self.clipboard,self.clipboard.close)]
+        if self.cues is not None:owners.insert(2,('cues',self.cues,self.cues.close))
         if self.signals is not None: owners.insert(1,('signals',self.signals,self.signals.close))
         for name,owner,close in owners:
             if name in self._closed_io: continue
@@ -683,6 +726,7 @@ class Application:
 
     def run(self):
         from .audio import Microphone,PCMOutput
+        from .cues import RecordingCues
         from .ui import HuginWindow
         from .windows.input import WindowsInputs
         from .windows.instance import InstanceGuard
@@ -719,7 +763,7 @@ class Application:
                 microphone=Microphone(self.settings.limits['capture_bytes']),
                 output=PCMOutput(buffer_ms=max(1,self.settings.limits['audio_buffer_ms']//2)),
                 clipboard=clipboard,
-                pool=EnginePool(self.settings.root,event),publish=window.post,signals=signals)
+                pool=EnginePool(self.settings.root,event),publish=window.post,signals=signals,cues=RecordingCues())
             signals.start()
             inputs.start()
             thread = threading.Thread(target=controller.run,args=(window.request_stop,),name='hugin-owner',daemon=False)
