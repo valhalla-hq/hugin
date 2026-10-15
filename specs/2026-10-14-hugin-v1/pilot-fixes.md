@@ -107,3 +107,26 @@ Normale Maus-/Alt+Y-Aktivierung und vollständige Migration bleiben offen.
   Formate unverändert im bestehenden begrenzten RAM-Snapshot sichern und
   wiederherstellen; weder dekodieren noch protokollieren. Andere unbekannte
   Formate und komplexe OLE-Dateiobjekte bleiben vor jeder Mutation gesperrt.
+
+## Eindeutige lokale Cursorposition
+
+Die reale End-Taste zeigt einen weiteren Providerfall: GetSelection meldet
+einen kollabierten Punkt im Textkind des Edits, der mit keinem vorwärts
+erreichbaren Character-Endpunkt exakt vergleichbar ist. Auch RangeFromChild
+und ein Einheiten-Rundweg lösen diese Darstellungsdifferenz nicht.
+
+Die Character-Suche wird deshalb durch die UTF-16-Länge des begrenzten
+Präfixes vom gebundenen Edit-Anfang zum aktuellen kollabierten Punkt ersetzt.
+Vor jedem Lesen müssen Caret und Präfix dem konkreten, nicht geschützten Edit
+zugeordnet sein. Ein Punkt hinter der deklarierten DocumentRange benötigt
+zusätzlich ein eindeutig besitzbelegtes Kindelement. Dessen Runtimeidentität
+wird Teil des eingefrorenen Nachweises; Geschwister dürfen nicht aliasen.
+
+Am Edit-Anfang wird ohne Textlesen Position0 bestätigt. Sonst liest allein
+der isolierte Provider höchstens262145 Zeichen, akzeptiert höchstens262144
+UTF-16-Einheiten und verwirft die Zeichen sofort nach der Längenbildung.
+Kein Value, keine Ausgabe von Präfixtext und keine Übernahme in IPC, Diagnose,
+Dateien oder den folgenden blockierenden Read. Die Auswahl-/Fokus-/Readonly-
+und native Identitätsprüfung sowie die50ms-Commitdeadline bleiben bestehen.
+Dies ersetzt die bisherige Annahme eines ausschließlich textfreien numerischen
+Character-Nachweises; der Datenschutzvertrag bleibt lokaler, flüchtiger RAM.

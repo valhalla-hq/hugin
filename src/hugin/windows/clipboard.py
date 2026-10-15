@@ -34,10 +34,11 @@ class UiaTargetIdentity:
     root_id: tuple[int, ...]
     element_id: tuple[int, ...]
     focus_pid: int
-    position: int  # Repeatable forward offset relative to the focused Edit provider.
+    position: int  # UTF-16 prefix length relative to the focused Edit provider.
+    caret_id: tuple[int, ...]
 
     def __post_init__(self):
-        for parts in (self.focus_id,self.root_id,self.element_id):
+        for parts in (self.focus_id,self.root_id,self.element_id,self.caret_id):
             if type(parts) is not tuple or not 0<len(parts)<=64 or any(
                     type(part) is not int or not -(1<<31)<=part<1<<31 for part in parts):
                 raise ValueError('invalid UIA runtime identity')

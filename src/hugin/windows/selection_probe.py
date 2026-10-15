@@ -195,69 +195,54 @@ def _bind_edit(automation,uia,target):
     raise _SelectionFailure('target_changed')
 
 
-def _local_position(document,selected,uia):
-    if selected.CompareEndpoints(0,document,0)==0:return 0
-    def measure(count):
-        probe=document.Clone()
-        moved=probe.MoveEndpointByUnit(0,uia.TextUnit_Character,count)
-        if type(moved) is not int or not 0<moved<=count:
-            raise _SelectionFailure('target_unverifiable')
-        order=probe.CompareEndpoints(0,selected,0)
-        if order<0 and moved<count:
-            raise _SelectionFailure('target_unverifiable')
-        return order,moved
-    def verified(count):
-        order,moved=measure(count)
-        if order!=0 or moved!=count:raise _SelectionFailure('target_unverifiable')
-        if count>1:
-            before,advanced=measure(count-1)
-            if before>=0 or advanced!=count-1:raise _SelectionFailure('target_unverifiable')
-        after,advanced=measure(count+1)
-        if not (after>0 and advanced==count+1 or after==0 and advanced==count):
-            raise _SelectionFailure('target_unverifiable')
-        return count
-    # CompareEndpoints promises ordering, not a character distance. Search
-    # forward from the Edit's own start; never traverse the changing chat
-    # prefix. Unit boundaries need not be symmetric on a reverse move.
-    # Prove a repeatable forward count with strictly ordered neighbors.
-    lower,upper=0,1
-    while True:
-        order,moved=measure(upper)
-        if order==0:return verified(moved)
-        if order>0:
-            upper=moved;break
-        lower=upper
-        if upper==MAX_TEXT_BYTES:raise _SelectionFailure('target_unverifiable')
-        upper=min(MAX_TEXT_BYTES,upper*2)
-    while lower+1<upper:
-        middle=(lower+upper)//2
-        order,moved=measure(middle)
-        if order==0:return verified(moved)
-        if order<0:lower=middle
-        else:upper=moved
-    raise _SelectionFailure('target_unverifiable')
-
-
-def _insertion(automation,uia,binding):
-    selected=_selected(binding.pattern)
-    if selected is None or selected.CompareEndpoints(0,selected,1)!=0:
-        # Codex has no TextPattern2. A noncollapsed range cannot prove which
-        # endpoint is the active caret, so it is deliberately unsupported.
-        raise _SelectionFailure('target_unverifiable')
-    enclosing=selected.GetEnclosingElement()
-    # GetEnclosingElement may be a descendant of the focused Text provider.
-    # Prove its ownership; a foreign ancestor or protected child is not enough.
+def _edit_enclosure(automation,binding,text_range):
+    enclosing=text_range.GetEnclosingElement();origin=None
     for _ in range(64):
         if not enclosing or _flag(enclosing.CurrentIsPassword):
             raise _SelectionFailure('target_unverifiable')
-        if _identity(enclosing)==binding.element_id:break
+        identity=_identity(enclosing)
+        if origin is None:origin=identity
+        if identity==binding.element_id:return origin
         enclosing=automation.RawViewWalker.GetParentElement(enclosing)
-    else:raise _SelectionFailure('target_unverifiable')
-    document=binding.pattern.DocumentRange
-    if (not document or selected.CompareEndpoints(0,document,0)<0
-            or selected.CompareEndpoints(1,document,1)>0):
+    raise _SelectionFailure('target_unverifiable')
+
+
+def _prefix_units(prefix):
+    text=None
+    try:
+        text=prefix.GetText(MAX_TEXT_BYTES+1)
+        if not isinstance(text,str) or len(text)>MAX_TEXT_BYTES or '\0' in text:
+            raise _SelectionFailure('target_unverifiable')
+        try:units=len(text.encode('utf-16-le'))//2
+        except UnicodeError:raise _SelectionFailure('target_unverifiable') from None
+        if units>MAX_TEXT_BYTES:raise _SelectionFailure('target_unverifiable')
+        return units
+    finally:
+        text=None  # Only the integer leaves this isolated provider call.
+
+
+def _insertion(automation,binding):
+    selected=_selected(binding.pattern)
+    if selected is None or selected.CompareEndpoints(0,selected,1)!=0:
+        # A noncollapsed range cannot prove the active endpoint without
+        # TextPattern2, which Codex does not expose.
         raise _SelectionFailure('target_unverifiable')
-    return _local_position(document,selected,uia),selected.Clone()
+    caret_id=_edit_enclosure(automation,binding,selected)
+    document=binding.pattern.DocumentRange
+    if not document or selected.CompareEndpoints(0,document,0)<0:
+        raise _SelectionFailure('target_unverifiable')
+    # A text child's trailing caret may follow its parent's declared End.
+    # Only a proven descendant can establish that provider affinity.
+    if selected.CompareEndpoints(1,document,1)>0 and caret_id==binding.element_id:
+        raise _SelectionFailure('target_unverifiable')
+    if selected.CompareEndpoints(0,document,0)==0:
+        return 0,caret_id,selected.Clone()
+    prefix=document.Clone();prefix.MoveEndpointByRange(1,selected,0)
+    if (prefix.CompareEndpoints(0,document,0)!=0
+            or prefix.CompareEndpoints(1,selected,0)!=0):
+        raise _SelectionFailure('target_unverifiable')
+    _edit_enclosure(automation,binding,prefix)
+    return _prefix_units(prefix),caret_id,selected.Clone()
 
 
 @dataclass
@@ -270,13 +255,13 @@ def _target_proof(automation,uia,target,native_target,cancelled):
     if cancelled():raise _SelectionFailure('cancelled')
     if native_target()!=target:raise _SelectionFailure('target_changed')
     first=_bind_edit(automation,uia,target)
-    position,original=_insertion(automation,uia,first)
+    position,caret_id,original=_insertion(automation,first)
     if cancelled():raise _SelectionFailure('cancelled')
     _confirm_focus(automation,first,target,native_target)
     second=_bind_edit(automation,uia,target)
-    current_position,current=_insertion(automation,uia,second)
-    if ((first.focus_id,first.root_id,first.element_id,first.focus_pid,position)!=
-        (second.focus_id,second.root_id,second.element_id,second.focus_pid,current_position)
+    current_position,current_caret,current=_insertion(automation,second)
+    if ((first.focus_id,first.root_id,first.element_id,first.focus_pid,position,caret_id)!=
+        (second.focus_id,second.root_id,second.element_id,second.focus_pid,current_position,current_caret)
             or any(original.CompareEndpoints(endpoint,current,endpoint)!=0 for endpoint in (0,1))):
         raise _SelectionFailure('target_changed')
     final_focus=automation.GetFocusedElement()
@@ -288,7 +273,7 @@ def _target_proof(automation,uia,target,native_target,cancelled):
     _confirm_focus(automation,second,target,native_target)
     if cancelled():raise _SelectionFailure('cancelled')
     return _TargetProof(UiaTargetIdentity(first.focus_id,first.root_id,first.element_id,
-        first.focus_pid,position),second)
+        first.focus_pid,position,caret_id),second)
 
 
 def _target_failure(failure):
@@ -316,8 +301,8 @@ def confirm_uia_target(automation,uia,target,native_target,proof):
         pattern=_edit_pattern(focus,uia)
         binding=_Binding(proof.identity.focus_id,proof.identity.root_id,
             proof.identity.element_id,proof.identity.focus_pid,pattern)
-        position,current=_insertion(automation,uia,binding)
-        if position!=proof.identity.position:
+        position,caret_id,current=_insertion(automation,binding)
+        if (position,caret_id)!=(proof.identity.position,proof.identity.caret_id):
             return TargetResult('target_changed')
         # Provider calls above can span a user selection/editability change.
         # Reacquire the current Edit and compare a second fresh local integer,
@@ -325,8 +310,8 @@ def confirm_uia_target(automation,uia,target,native_target,proof):
         focus=automation.GetFocusedElement()
         if not focus or _identity(focus)!=proof.identity.focus_id:return TargetResult('target_changed')
         binding.pattern=_edit_pattern(focus,uia)
-        final_position,final=_insertion(automation,uia,binding)
-        if (final_position!=proof.identity.position
+        final_position,final_caret,final=_insertion(automation,binding)
+        if ((final_position,final_caret)!=(proof.identity.position,proof.identity.caret_id)
                 or any(current.CompareEndpoints(endpoint,final,endpoint)!=0 for endpoint in (0,1))):
             return TargetResult('target_changed')
         _confirm_focus(automation,proof.binding,target,native_target)
