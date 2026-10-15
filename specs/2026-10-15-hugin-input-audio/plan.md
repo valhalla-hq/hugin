@@ -16,6 +16,12 @@
    arm_after setzen und alte/überlappende ADC-Blöcke verwerfen. Kleinen
    begrenzten Akustiknachlauf nativ prüfen. Stopcue nach Mic.close, vor UIA.
    Cancel erreicht Cue.stop ohne Warten hinter FIFO; Cleanup bleibt besessen.
+   Native Untersuchung ergänzt: MME liefert42×ADC0/keine freigegebenen Samples.
+   WASAPI-Default liefert27 gültige gemeinsame Zeitstempel bei16k/Mono/Int16.
+   Native Capture-Boundary wählt deshalb das eindeutige Windows-WASAPI-
+   Standardinputgerät mit geprüfter Hostzugehörigkeit und auto_convert=True
+   (Sharedmode). Vorprüfung und RawInputStream erhalten identische Optionen;
+   injectedFactory bleibt hardwarefrei. ADC0 vor Gate-Discard als Fehler.
 4. Worker: GPU-Generator auf bisherigem Engineowner, ein separater Writer
    mit höchstens einem wartenden Providerchunk. Auch aktuellen Writer-Chunk
    und bereits erzeugten blockierten Producer-Chunk zählen: maximal drei

@@ -61,6 +61,25 @@ class _InputGate:
     fault: HuginError | None = None
 
 
+def _windows_capture_options(sd):
+    """Bind the native WASAPI default once; MME does not supply ADC clocks."""
+    apis=sd.query_hostapis()
+    if not isinstance(apis,(tuple,list)):
+        raise HuginError('microphone_failed','capture_device')
+    matches=[(index,api) for index,api in enumerate(apis)
+        if isinstance(api,dict) and api.get('name')=='Windows WASAPI']
+    if len(matches)!=1:
+        raise HuginError('microphone_failed','capture_device')
+    host,api=matches[0];device=api.get('default_input_device')
+    if type(device) is not int or not 0<=device<1<<31:
+        raise HuginError('microphone_failed','capture_device')
+    info=sd.query_devices(device)
+    if (not isinstance(info,dict) or type(info.get('hostapi')) is not int or info['hostapi']!=host
+            or type(info.get('max_input_channels')) is not int or info['max_input_channels']<1):
+        raise HuginError('microphone_failed','capture_device')
+    return dict(device=device,extra_settings=sd.WasapiSettings(auto_convert=True))
+
+
 class Microphone:
     def __init__(self, limit: int, stream_factory=None):
         self.limit = limit
@@ -87,7 +106,7 @@ class Microphone:
                 raise sd.CallbackAbort
             if gate.required:
                 adc = getattr(timing,'inputBufferAdcTime',None)
-                if type(adc) not in (int,float) or not math.isfinite(adc):
+                if type(adc) not in (int,float) or adc==0 or not math.isfinite(adc):
                     gate.fault = HuginError('microphone_failed','capture_clock')
                     raise sd.CallbackAbort
                 # A callback delivered after arming may contain old ADC data.
@@ -99,10 +118,12 @@ class Microphone:
                 raise sd.CallbackAbort
 
         try:
+            options={}
             if self._factory is None:
-                sd.check_input_settings(channels=1,dtype='int16',samplerate=16000)
+                options=_windows_capture_options(sd)
+                sd.check_input_settings(channels=1,dtype='int16',samplerate=16000,**options)
             factory = self._factory or sd.RawInputStream
-            stream = factory(samplerate=16000,channels=1,dtype='int16',callback=callback)
+            stream = factory(samplerate=16000,channels=1,dtype='int16',callback=callback,**options)
             self._stream = stream
             stream.start()
             if gate.fault or buffer.fault:

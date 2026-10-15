@@ -28,6 +28,13 @@ Reale GPU-Zeiten und ein neuer Höreindruck sind noch nicht gemessen.
   normales Aufnahmeende. Startton nicht in das Diktat aufnehmen; Endton nach
   Mikrofonabschluss, vor langsamer Zielprüfung/Transkription. Abbruch und
   Start-/Stopfehler erzeugen keinen irreführenden Erfolgston.
+  Native Ergänzung vor Produzentenkorrektur: Der bisherige MME-Default liefert
+  auf diesem Rechner ausschließlich ADC-Zeitstempel0, trotz fortschreitender
+  Streamzeit. Für das Gate deshalb den eindeutigen Windows-WASAPI-Default
+  im Sharedmode mit Systemkonvertierung auf16k verwenden. Gerät/Hostzugehörigkeit
+  prüfen, identische Optionen an Vorprüfung und Stream; keine OS-/Default-
+  Einstellung schreiben oder still auf MME zurückfallen. Unbrauchbare ADC0
+  als Clockfehler abbrechen. Reale WASAPI-Probe bestätigt kompatible Zeitbasis.
 - IA-004: Kontinuierliches TTS über echte Worker-/IPC-/Controller-Backpressure
   prüfen und verursachende Kopplung beseitigen. Ein begrenzter Worker-Vorlauf
   darf nächste Berechnung parallel zum Versand vorbereiten; genau ein Writer,
