@@ -59,6 +59,12 @@ Normale Maus-/Alt+Y-Aktivierung und vollständige Migration bleiben offen.
   Gegenfall/gezieltem Cleanup), dann exakte Codex-Familienfreigabe für beide
   vorbereiten. Profil→Service-Regression zuerst rot, danach329 Sourcechecks
   grün. Keine Source-/Deadline-/Modelländerung, kein breiter Chromiumfallback.
+- Den Reviewbefund zu mehrdeutigen End-Receipts separat schließen: beide
+  Klassen zusätzlich mit eigener synthetischer15-UTF-16-Basis, vor Paste
+  Position15/nichtleere Basis/kein Platzhalter, positiver Paste, Restore,
+  Home-Gegenfall und Entfernung BEIDER eigener Literale prüfen. Beide
+  Originalbaselines und Service-/Familienabschlüsse bestätigt. Vorherige
+  End-Navigation allein ist kein Beleg für positive Einfügeposition.
 
 ## Fortsetzung 15.10.2026: echte Codex-Prüfung
 

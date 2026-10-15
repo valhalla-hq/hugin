@@ -67,10 +67,17 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
   und UIA-Edit. Die bisherige Renderer-Einzelklasse deckte den Alltagspfad
   nicht ab. Keine pauschale Chromiumfreigabe aus diesem Befund ableiten.
 - Zwei weitere vollständige native Proben ohne SetFocus für Chrome_WidgetWin_1
-  bestanden: Feldanfang/Textende, Restore aller Formate, Home-Gegenfall,
+  bestanden: Feldanfang/End-Navigation, Restore aller Formate, Home-Gegenfall,
   eigenes Literal entfernt, Baseline/Familienabschluss bestätigt. Warm46,849/
   41,732ms; Delivery0,495/0,490s; kein Enter. Nur technische Receipts im RAM-/
   ignorierten Runtimepfad, keine Diktatinhalte im Repository.
+- Review fand eine Nachweislücke: frühere End-Receipts belegten keine positive
+  Vorabposition. Zwei zusätzliche Endproben mit eigener synthetischer Basis
+  für BEIDE Klassen bestanden: vor Paste Position15, nichtleere Basis/kein
+  Platzhalter, Restore/Home-Gegenfall und beide eigenen Literale entfernt,
+  ursprüngliche Baseline/Serviceabschluss bestätigt. Widget Warm50,809ms/
+  Delivery0,512s, Renderer44,926ms/0,503s. Protokollfrist unverändert; äußere
+  Messung enthält Fixture-/Scheduling-Overhead, keine p95-Zusage.
 - Vorbereitetes Follow-up erweitert targets.json ausschließlich um diese
   zweite Codex-Klasse, gleiche exakte Familie und0,15s-Restore; Fallback leer.
   Profil→Service-Regression zunächst rot, danach329 Source-/Integrationschecks
@@ -88,7 +95,7 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 - Eine frühe fehlgeschlagene Probe verlor ihren RAM-Clipboard-Ausgangsstand;
   dieser wurde nicht wiederhergestellt. Spätere Restorebelege gelten separat.
 - PR7 https://github.com/valhalla-hq/hugin/pull/7 integriert. Follow-up-Draft
-  nach aktuellem Checkpoint erstellen; Root-Ownership bleibt aktiv, laufender
+  https://github.com/valhalla-hq/hugin/pull/8; Root-Ownership bleibt aktiv, laufender
   Supervisor benötigt den Worktree. Mikrofonerkennung beobachtet, erfolgreiche
   Alltagsübergabe nach zweiter Freigabe und Hörurteil Freya/Tyr noch offen.
 

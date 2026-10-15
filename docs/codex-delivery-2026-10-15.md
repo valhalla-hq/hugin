@@ -1,8 +1,8 @@
 # Codex-Übergabe: Cursor und Clipboard-Rückweg
 
 Stand 15.10.2026; geprüfter Source ce0c1cfeb498b31db8fbafc5bf5e38e8b2001396.
-PR7 ist als 777c91cede02352eeb782f93488eb670824d8295 integriert. Je zwei
-vollständige native Proben für beide beobachteten Codex-Fokusklassen bestanden;
+PR7 ist als 777c91cede02352eeb782f93488eb670824d8295 integriert. Native Proben
+für beide beobachteten Codex-Fokusklassen einschließlich positivem Textende bestanden;
 config/targets.json enthält ausschließlich diese Klassen mit der genauen
 Codex-Paketfamilie und0,15s-Restore. Der Ctrl+C-Fallback bleibt leer.
 
@@ -82,24 +82,39 @@ Spätere erfolgreiche Restores gelten für einen neuen Ausgangsstand.
   Ausgangsformate zurück, echter End-Caret erfasst/Home-Wechsel abgelehnt,
   Gegenfall-Clipboard zurück, nur eigenes Literal entfernt, Baseline erhalten,
   eigener Service samt Probe-Familie geschlossen. Kein Enter/Absenden.
-- Derselbe Source, vollständige native Probe mit Anhängen am echten Textende:
+- Derselbe Source, vollständige native Probe nach End-Navigation:
   Capture0,306s, Warm42,0ms, Übergabe0,483s. Dieselben Paste-/Restore-/Caret-
   Gegenfall-/Literal-Cleanup-/Baseline-/Servicebelege erfolgreich.
-  Diese beiden Proben betreffen Chrome_RenderWidgetHostHWND.
+  Diese beiden Proben betreffen Chrome_RenderWidgetHostHWND. Der zweite
+  Receipt friert keine Vorabposition ein; allein daraus folgt kein positiver
+  Einfügepunkt hinter nichtleerem Text.
 - Zusätzliche vollständige Probe am unveränderten realen Hauptcomposer-Fokus
   ohne SetFocus: Chrome_WidgetWin_1 mit exakter Codex-Familie. Am Feldanfang
-  Capture0,317s, Warm46,849ms, Delivery0,495s; am echten Textende Capture0,316s,
+  Capture0,317s, Warm46,849ms, Delivery0,495s; nach End-Navigation Capture0,316s,
   Warm41,732ms, Delivery0,490s. Beide: genau ein Paste, alle Ausgangsformate
   wiederhergestellt, echter Home-Wechsel vor zweitem Paste abgelehnt, eigenes
   Literal entfernt, Baseline erhalten und Service-/Familiencleanup bestätigt.
   Kein Enter/Absenden, keine privaten Inhalte in den technischen Receipts.
   Root.runtime/codex-paste-widget-proof.json und codex-paste-widget-end-proof.json.
+- Separater P2-Reviewbefund geschlossen durch explizite nichtleere Endproben
+  für BEIDE Klassen: eigenen synthetischen15-UTF-16-Einheiten-Präfix einsetzen,
+  dessen exakten Inhalt/Restore bestätigen, per Ctrl+End zum Dokumentende.
+  Vor positivem Paste Position15, nichtleere/nichtblanke Basis und
+  placeholder_baseline=false bestätigen. Widget Capture0,319s, Warm50,809ms,
+  Delivery0,512s; Renderer Capture0,323s, Warm44,926ms, Delivery0,503s.
+  Jeweils genau ein zusätzlicher Paste, sämtliche Formate zurück, Home-
+  Gegenfall abgewehrt, sowohl Testliteral ALS AUCH eigene Basis entfernt,
+  ursprünglicher Feldwert erhalten und Service/Familie geschlossen. Kein Enter.
+  Receipts: Root.runtime/codex-paste-widget-seeded-end-proof.json und
+  codex-paste-seeded-end-proof.json. Die50ms-Protokollfrist wurde nicht geändert;
+  der äußerlich gemessene Bestätigungsaufruf enthält Scheduling/Fixture-Overhead.
 - Konfigurations-/Service-Regression zuerst rot: der tatsächlich verwendete
   Chrome_WidgetWin_1-Pfad wurde als target_unverified abgewiesen. Profil um
   genau diese zweite Codex-Klasse ergänzt. Beide erlaubten Klassen prüfen;
   fehlende/andere/Groß-Kleinschreibung abweichende Familien und eine dritte
   Klasse bleiben vor Snapshot, Clipboardmutation und Paste gesperrt.
-  Insgesamt vier Einzelproben, keine p95- oder universelle Kompatibilitätszusage.
+  Vier Basisproben plus zwei explizite positive Endproben; keine p95- oder
+  universelle Kompatibilitätszusage.
 
 ## Pilot und offene Abnahme
 

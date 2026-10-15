@@ -12,9 +12,9 @@
   Main/aktueller Pilot777c91cede02352eeb782f93488eb670824d8295.
   PR7 https://github.com/valhalla-hq/hugin/pull/7 am geprüften Headba5700c6 mit
   drei erfolgreichen Hosted-Checks integriert; gleicher Tree/Ancestry bewiesen.
-- Follow-up auf demselben Branch: zweite exakt geprüfte Codex-Fokusklasse,
-  Profil-/Service-Guards, kuratierte Nachweise/Kontext/Handoff. Draft nach
-  Checkpoint erstellen. Routineintegration autorisiert; keine neue Policy,
+- Follow-up https://github.com/valhalla-hq/hugin/pull/8 auf demselben Branch:
+  zweite exakt geprüfte Codex-Fokusklasse, Profil-/Service-Guards, kuratierte
+  Nachweise/Kontext/Handoff. Routineintegration autorisiert; keine neue Policy,
   Kosten, Veröffentlichung oder dauerhafte Autostartänderung.
 
 ## Umsetzung und Prüfstand
@@ -33,7 +33,7 @@
 - PR7:328 Sourcechecks und23 Windowschecks ohne Skips grün (22 ABI/Producer
   plus eigener nativer HiddenRichEdit). Zwei unabhängige Reviews; reproduzierte
   P1/P2 geschlossen. Weitere110 passende Source-/Mockchecks im Boundaryreview.
-- Reale vollständige Renderer-Proben: Anfang/Ende, genau ein Paste, alle
+- Reale vollständige Renderer-Basisproben: Anfang/End-Navigation, genau ein Paste, alle
   Clipboardformate zurück, echter Home-Gegenfall abgelehnt, eigenes Literal
   entfernt, Baseline erhalten und Service/Familie geschlossen; kein Enter.
   Warm40,7/42,0ms, Delivery0,476/0,483s.
@@ -41,10 +41,19 @@
   Codex-Nachrichtenfeld. Win32 ohne Fokusänderung: Chrome_WidgetWin_1,
   genaue Codex-Familie, UIA-Edit; Renderer-Einzelprofil lieferte keine Freigabe.
 - Zusätzliche vollständige native Widget-Proben ohne SetFocus bestanden:
-  Anfang/Ende jeweils derselbe Paste-/Restore-/Home-/gezielte Cleanup-/Baseline-
+  Anfang/End-Navigation jeweils derselbe Paste-/Restore-/Home-/gezielte Cleanup-/Baseline-
   und Serviceabschlussnachweis. Warm46,849/41,732ms, Delivery0,495/0,490s.
   Root.runtime/codex-paste-widget-proof.json und codex-paste-widget-end-proof.json.
-  Insgesamt vier Einzelproben, keine p95- oder universelle Chromium-Zusage.
+  Früherer End-Receipt allein belegt keine positive Vorabposition.
+- Separater P2-Reviewbefund: positive nichtleere Endposition zusätzlich belegen.
+  Für beide Klassen eigenen15-UTF-16-Präfix synthetisch eingesetzt, exakten
+  Inhalt/Restore bestätigt; Ctrl+End, vor positivem Paste Position15, nichtleere/
+  nichtblanke Basis und kein Platzhalter bestätigt. Widget Warm50,809ms/
+  Delivery0,512s, Renderer44,926ms/0,503s. Restore/Home-Gegenfall, Testliteral
+  UND eigene Basis entfernt, Originalbaseline/Serviceabschluss bestätigt.
+  Root.runtime/codex-paste-widget-seeded-end-proof.json und codex-paste-seeded-end-proof.json.
+  Protokollfrist unverändert; äußerer Timer enthält Fixture-/Scheduling-
+  Overhead. Vier Basis- plus zwei explizite Endproben, keine p95-Zusage.
 - Follow-up-Profil: genau Chrome_RenderWidgetHostHWND und Chrome_WidgetWin_1,
   beide FamilieOpenAI.Codex_2p2nqsd0c76g0 mit0,15s Restore; capture_fallback leer.
   Profil→Service-Regression erst rot, danach329 Sourcechecks in25,114s grün.
@@ -85,6 +94,6 @@
 
 Fortsetzen: Hugin AGENTS.md, CONTEXT.md, exakt diesen Handoff und pilot-fixes.md
 lesen; Preflight mit aktivem Branch, Git/PR/Ownership/Sitzung frisch prüfen.
-Dieselbe Root-Ownership weiterverwenden. Alle vier nativen Codex-Komponenten-
+Dieselbe Root-Ownership weiterverwenden. Alle nativen Codex-Komponenten-
 proben bestanden; zweite Klassenfreigabe integriert/gestartet erst nach frischem
 Nachweis behaupten. Alltagsübergabe/Hör-/Gesamtabnahme ausdrücklich offen halten.
