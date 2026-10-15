@@ -15,8 +15,11 @@
   faulty collapsed derived points1/2 could alias real selection7..10 and8..11.
   Each derived point now must equal its original requested endpoint as well
   as collapse. Both boundaries individually/together and warm proof guarded.
-- Ownership active on Mjolnir. No push or own PR by explicit Root instruction.
-  Root remains accountable for integration, review, policy and actual pilot.
+- Ownership active at this checkpoint on Mjolnir. Root has now explicitly
+  authorized private push of only this helper branch, ordinary workspace
+  release after exact remote/Context/handoff preservation, then removal of
+  this worktree and local branch. No own PR or merge. Root remains accountable
+  for integration, review, policy and actual pilot.
 
 ## Source scope and contracts
 
@@ -56,7 +59,7 @@
 - Follow-up Core-P2 guard first red(target_captured), then122 scoped checks
   green0.297s; diffcheck clean. Collapsed fastpath unchanged.
 - Follow-up active-branch preflight refuses missing remote task branch:
-  deliberate no-push instruction remains in effect. Clean local branch and
+  this was under the initial no-push instruction. Clean local branch and
   unchanged active exclusive lifecycle record were read and confirmed;
   no tool/state override and no ownership release.
 - Root owns independent review and native Codex selection/Chrome search/HiddenEdit
@@ -68,9 +71,12 @@
 
 No helper product/runtime started. Existing pilot/Altstack were untouched.
 Root-owned generic policy/config/application changes are not in this branch.
-Root should cherry-pick source only, integrate policy, run independent review
-and coordinated native proof. Retain this helper ownership until explicitly released.
+Root has integrated the range source and independently reproduced the narrow
+follow-up. Only source belongs in integration; helper metadata stays here.
+The ordinary workspace tool must prove release before removal. Worktree is
+clean with no ignored or untracked runtime/fixture files at cleanup precheck.
 
 Starter: Read AGENTS.md, CONTEXT.md and this exact handoff. Re-prove branch,
-clean head and active ownership; retain the explicit no-push/no-native boundary.
+clean head, remote preservation and current lifecycle ownership; retain the
+no-native boundary and do not reclaim a released/removed worktree implicitly.
 Continue only the bounded Windows range task. Do not modify Root or other helpers.

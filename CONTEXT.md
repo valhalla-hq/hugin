@@ -125,6 +125,8 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
   original boundary. Red guard first, then122 scoped checks green; no native action.
 - Guard-first failures and scoped source checks documented in the exact
   helper handoff. No native UI/input/clipboard/audio/GPU action was executed.
-- No push, PR, merge or ownership release: Root explicitly requested local
-  scope commits and active helper ownership. Helper metadata is separate
+- Root initially requested local commits without push. On 15 October Root
+  explicitly authorized this helper's private branch checkpoint, ordinary
+  workspace release after remote preservation, and removal of only its own
+  worktree/local branch. No own PR or merge. Helper metadata is separate
   from source and should not be cherry-picked into Root.
