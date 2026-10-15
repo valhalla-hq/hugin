@@ -13,9 +13,14 @@
   Basishead5a238677ce0ff915b141f313e7960434cf92ad28.
 - Sourcecommits: c2aeef69d5d10a851bc2b95412b4c82277e0b2bc (Worker/Guards),
   a8b8b479c327260532267c13b01c8d292b7991b7 (Probe/Guards).
-- Kein Push, PR oder Merge gemäß Rootauftrag. Ownership aktiv auf Mjolnir;
-  Remote-Nachweis/Freigabe steht aus. Metadatencheckpoint separat; Root soll
-  ausschließlich beide Sourcecommits übernehmen.
+- Root autorisiert am15.10 den regulären Helperabschluss: nur eigene
+  Context-/Handoff-Metadaten aktualisieren, privaten exakten Branch pushen,
+  Remotehead plus beide Blobs beweisen, WorkspaceTool-Release und danach
+  ausschließlich eigenen Worktree/lokalen Branch entfernen. Remote erhalten.
+  Kein PR/Merge und keine Root-/Deployment-/Hardwareaktion.
+- Abgeschlossener Helper; Freigabe nach Remote-Beweis vorbereitet. Maßgeblicher
+  Iststatus und ReleasedHead stehen im Lifecycle-Registry/Abschlussreceipt.
+  Metadaten bleiben getrennt von den bereits übergebenen Sourcecommits.
 
 ## Umsetzung
 
@@ -60,19 +65,37 @@
   Helpers bleiben laufen. Root besitzt App-/Altstackzustand und Hardwarefenster.
 - Reale Qwen-Chunkzeiten, Familie-CPU/PeakJobCommit, physischer RAM/GPU-Peak,
   p95 und Hörurteil nicht durch diese Sourceprüfungen belegt. Native Probe ist
-  vorbereitet und noch nicht ausgeführt. Root besitzt unabhängige Reviews.
+  von diesem Helper nicht ausgeführt. Root besitzt unabhängige Reviews und
+  bestätigt Auftragabschluss sowie erfolgreichen Neustart Main8e4ceab.
+
+## Abschlussnachweis
+
+- Preflight Control e3deecae6673a024aa9015a4387737fbec04c795, Main8e4ceabb718edb2c8d1b80e1b07b69e0f3b933bd
+  frisch current; eigener Branch nach initialem autorisiertem Push current.
+- Private Repositoryidentität valhalla-hq/hugin bestätigt. Der bislang absichtlich
+  ungepushte Checkpoint732d373 wurde normal ohne Force remote gebunden, danach
+  aktiver Branch-Preflight erfolgreich. Dieser Abschlusscommit ändert nur
+  CONTEXT.md und exakt diesen Handoff.
+- Tracked/untracked clean vor Metadatenänderung. Ignored-Inventar ausschließlich
+  sieben CPython312-Bytecodedateien unter src/hugin/__pycache__ und
+  src/hugin/workers/__pycache__. Entbehrliche generierte Testcaches; kein eigener
+  Runtime-/Modell-/Audio-/Logbestand muss vor dem beauftragten Entfernen erhalten
+  werden. Absolute Pfad-, Clean-, Registry- und Ignored-Prüfung vor Entfernen.
+- Definitiver Remotehead, beide Git-Blobs und ReleasedHead werden nach Push/
+  Release frisch gelesen und an Root gemeldet; keine Zukunftswirkung vorab
+  als erfolgt behaupten.
 
 ## Fortsetzung
 
-1. Root prüft und übernimmt genau die zwei Sourcecommits; kein Metadata-Merge.
-2. Nur Root führt nach koordinierter exklusiver Pause die vorbereitete Probe
-   mit stabilem Runtime-root aus. Erstplan ohne --run prüfen; technische
-   JSON-Fakten einschließlich cleanup_confirmed und Samplegleichheit lesen.
-3. Nach bestätigtem Abschluss eigener Ownership regulär freigeben; vorher
-   Remote-/Context-/Handoff-Nachweis und ggf. separate Pushautorisierung klären.
-   Keine Worktrees, Runtimes, Modelle oder ignorierten Caches löschen.
+1. Genau diesen eigenen Branch/Head und Context-/Handoff-Blobs remote beweisen.
+2. Regulären project_workspace.py release ausführen. Erst nach dessen
+   bestätigtem ReleasedHead eigenen absoluten Worktreepfad erneut prüfen,
+   git worktree remove und lokalen Branch entfernen. Remote erhalten.
+3. Root meldet technische Integration/Neustart Main8e4ceab als abgeschlossen.
+   Nur Root besitzt laufende Runtime und weitere Nutzer-/Hardwareabnahme.
 
 Starter: Lies Hugin AGENTS.md/CONTEXT.md, exakt diesen Handoff und
-specs/2026-10-15-hugin-input-audio/{spec,plan,tasks}. Nur dieser eigene aktive
-Helperworktree darf geändert werden. Kein Push/PR/Merge und keine Hardware-
-oder Altstackaktion; Root besitzt Integration und reale Abnahme.
+specs/2026-10-15-hugin-input-audio/{spec,plan,tasks}. Dieser Helper ist abgeschlossen.
+Registry und unveränderten Remotecheckpoint zuerst lesen; neue Arbeit benötigt
+neuen Auftrag und regulären Claim. Keine Root-/Deployment-/Hardwareaktion;
+Root besitzt Integration und reale Abnahme. Remotebranch als Archiv erhalten.

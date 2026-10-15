@@ -121,9 +121,15 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
   --run nur durch Root im exklusiven Hardwarefenster. Source/src und bestehende
   Runtime werden getrennt gebunden. Technische Traces enthalten keine Inhalte.
 - Guards zuerst rot, danach345 Contracts/Integrationstests in23,835s grün;
-  Dokumentprüfung19REQ/17AC ohne Befund. Reale Qwen-Paketzeiten, CPU/RAM-
-  Hardwaremessung und Hörurteil bleiben offen. Kein Push/PR/Merge; eigene
-  Ownership aktiv, Sourcecommits für Root-Cherry-pick, Metadaten separat.
+  Dokumentprüfung19REQ/17AC ohne Befund. Eigene Sourceprüfung bleibt von Roots
+  späterer Hardware-/Hörabnahme getrennt. Root bestätigt den abgeschlossenen
+  Auftrag und erfolgreichen Neustart des integrierten Main8e4ceab.
+- Abschlussauftrag15.10: nur eigene Metadaten, privater exakter Branchpush,
+  Remotehead/Context/Handoff-Blobs beweisen, reguläre Lifecycle-Freigabe und
+  danach eigenen Worktree/lokalen Branch entfernen. Remote erhalten, kein
+  PR/Merge und keine Root-/Deployment-/Hardwareaktion. Nur sieben entbehrliche
+  CPython-Caches ignoriert; keine Runtime, Modelle oder Aufnahmen im Worktree.
+  Maßgeblicher Freigabe-Iststatus ist der Lifecycle-Registry-Nachweis.
 
 ## Active Handoff
 
