@@ -3,13 +3,13 @@ from pathlib import Path
 import unittest
 
 from hugin.targets import load_target_approvals
-from hugin.windows.clipboard import (ClipboardService, WindowTarget, ClipboardSnapshot,
+from hugin.windows.clipboard import (ClipboardService, WindowTarget, UiaTargetIdentity, ClipboardSnapshot,
                                      ClipboardFailure, MAX_SNAPSHOT_BYTES)
 
 
 class FakeClipboard:
     def __init__(self):
-        self.target = WindowTarget(100, 200, 3, 4, 500, 'Edit', (200, 1, 2, 3, 4), (2, 2))
+        self.target = WindowTarget(100, 200, 3, 4, 500, 'Edit', (200, 1, 2, 3, 4), (2, 2), native_editable=True)
         self.data = {13: 'original\0'.encode('utf-16-le'), 0xC001: b'html', 8: b'dib'}
         self.seq = 1
         self.owner = 90
@@ -102,28 +102,38 @@ class FakeClipboard:
 
 
 class ClipboardContracts(unittest.TestCase):
-    def test_shipped_codex_profile_delivers_both_focus_classes_and_blocks_other_packages_before_snapshot(self):
+    def test_shipped_profile_delivers_proven_fields_with_codex_delay_overrides(self):
         profile=load_target_approvals(Path(__file__).resolve().parents[2])
         family='OpenAI.Codex_2p2nqsd0c76g0'
         for control in ('Chrome_RenderWidgetHostHWND','Chrome_WidgetWin_1','Chrome_WidgetWin_2'):
             for package in (family,None,'Unrelated.Browser_2p2nqsd0c76g0',family.lower()):
                 with self.subTest(control=control,package=package):
                     backend=FakeClipboard()
-                    backend.target=replace(backend.target,control_class=control,package_family=package)
+                    backend.target=replace(backend.target,control_class=control,package_family=package,
+                        native_editable=False,uia=UiaTargetIdentity((1,),(2,),(3,),(3,),3,(2,2),-1,-1))
                     saved=backend.data.copy();snapshots=[];snapshot=backend.snapshot
                     backend.snapshot=lambda budget:snapshots.append(budget) or snapshot(budget)
+                    delays=[];backend.sleep=delays.append
                     service=ClipboardService(backend=backend)
                     for approval in profile.delivery:
                         service.approve_target_class(approval.control_class,approval.restore_delay_seconds,
                             package_family=approval.package_family)
+                    service.approve_verified_edits(profile.verified_edit.restore_delay_seconds)
                     result=service.deliver('synthetic',backend.target,lambda:True)
-                    approved=control!='Chrome_WidgetWin_2' and package==family
+                    override=control!='Chrome_WidgetWin_2' and package==family
                     self.assertEqual((result.status,result.submitted,result.restored),
-                        ('submitted',True,True) if approved else ('target_unverified',False,False))
-                    self.assertEqual(backend.pastes,int(approved))
-                    self.assertEqual(len(snapshots),int(approved))
-                    self.assertEqual(backend.mutations,2 if approved else 0)
+                        ('submitted',True,True))
+                    self.assertEqual(delays,[.15 if override else .25])
+                    self.assertEqual((backend.pastes,len(snapshots),backend.mutations),(1,1,2))
                     self.assertEqual(backend.data,saved)
+
+    def test_shipped_generic_policy_does_not_approve_missing_field_proof(self):
+        profile=load_target_approvals(Path(__file__).resolve().parents[2])
+        backend=FakeClipboard();backend.target=replace(backend.target,native_editable=False)
+        service=ClipboardService(backend=backend)
+        service.approve_verified_edits(profile.verified_edit.restore_delay_seconds)
+        result=service.deliver('synthetic',backend.target,lambda:True)
+        self.assertEqual((result.status,backend.pastes,backend.mutations),('target_unverifiable',0,0))
 
     def service(self):
         backend = FakeClipboard()

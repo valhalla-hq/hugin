@@ -32,6 +32,7 @@ class WorkerServer:
         self.cancelled = False
         self.credit = False
         self.stopping = False
+        self._audio_writer = None
 
     def send(self, kind, identity, **fields):
         with self.output_lock:
@@ -106,11 +107,11 @@ class WorkerServer:
         with self.condition:
             return self.cancelled or self.stopping
 
-    def _wait_credit(self):
+    def _wait_credit(self, abort=None):
         with self.condition:
-            while not self.credit and not self.cancelled and not self.stopping:
+            while not self.credit and not self.cancelled and not self.stopping and not (abort and abort.is_set()):
                 self.condition.wait()
-            if self.cancelled or self.stopping:
+            if self.cancelled or self.stopping or (abort and abort.is_set()):
                 return False
             self.credit = False
             return True
@@ -134,6 +135,120 @@ class WorkerServer:
                 or frame.offset != len(draft) or len(draft) + len(frame.data) > length):
             raise invalid()
         draft.extend(frame.data)  # The frame scope ends before the next read.
+
+    def _write_audio_chunk(self, pcm, identity, packet, outcome):
+        # Only this writer owns the framing stream. Its chunk scope ends before
+        # the next blocking queue wait, including cancellation and failures.
+        for index in range(0, len(pcm), packet):
+            if not self._wait_credit(outcome['abort']):
+                return
+            with self.data_lock:
+                part = pcm[index:index+packet]
+                write_frame(self.data_out, Frame('pcm', identity,
+                    outcome['audio_bytes'], part))
+                outcome['audio_bytes'] += len(part)
+
+    def _synthesize(self, backend, text, voice, language, identity):
+        """One queued provider chunk; generation stays on the engine owner.
+
+        The writer's current chunk, one queue slot and one produced chunk
+        waiting for that slot retain at most 3 * 1,440,000 PCM bytes. Existing
+        frame/client/player credit bounds are unchanged. No inference runs on
+        the writer, and only its confirmed exit permits a normal terminal.
+        """
+        pending = None
+        producer_done = False
+        outcome = dict(audio_bytes=0, fault=None, writer_failed=False,
+                       abort=threading.Event())
+        packet = min(self.settings.limits['frame_bytes'],
+                     self.settings.limits['audio_buffer_ms'] * 24, 6000)
+        packet -= packet % 2
+
+        def write():
+            nonlocal pending
+            try:
+                while True:
+                    with self.condition:
+                        while pending is None and not producer_done and not self.cancelled and not self.stopping and not outcome['abort'].is_set():
+                            self.condition.wait()
+                        if self.cancelled or self.stopping or outcome['abort'].is_set():
+                            pending = None
+                            return
+                        if pending is None:
+                            return
+                        pcm, pending = pending, None
+                        self.condition.notify_all()
+                    try:
+                        self._write_audio_chunk(pcm, identity, packet, outcome)
+                    finally:
+                        del pcm
+            except Exception:
+                with self.condition:
+                    outcome['fault'] = outcome['fault'] or 'worker_failed'
+                    outcome['writer_failed'] = True
+                    outcome['abort'].set()
+            finally:
+                with self.condition:
+                    pending = None
+                    self.condition.notify_all()
+
+        stream = backend.synthesize(text, voice, language,
+            lambda:self.is_cancelled() or outcome['abort'].is_set())
+        writer = None
+        started = False
+        terminal_safe = True
+        try:
+            writer = threading.Thread(target=write, daemon=True, name='hugin-audio-writer')
+            self._audio_writer = writer
+            writer.start()
+            started = True
+            for pcm in stream:
+                if not isinstance(pcm, bytes) or len(pcm) % 2 or len(pcm) > 1440000:
+                    raise invalid()
+                with self.condition:
+                    while pending is not None and outcome['fault'] is None and not self.cancelled and not self.stopping:
+                        self.condition.wait()
+                    if outcome['fault'] is not None or self.cancelled or self.stopping:
+                        break
+                    pending = pcm
+                    self.condition.notify_all()
+                del pcm  # The queue owns this chunk before next(generator).
+        except Exception as error:
+            with self.condition:
+                outcome['fault'] = outcome['fault'] or (
+                    error.code if isinstance(error, HuginError) else 'worker_failed')
+                outcome['abort'].set()
+                self.condition.notify_all()
+        finally:
+            # Close the generator on its original GPU owner, even if the writer
+            # fails or cancellation wakes a producer blocked at the queue slot.
+            try:
+                stream.close()
+            except Exception:
+                with self.condition:
+                    outcome['fault'] = outcome['fault'] or 'worker_failed'
+                    outcome['abort'].set()
+                terminal_safe = False
+            with self.condition:
+                producer_done = True
+                self.condition.notify_all()
+            if started:
+                timeout = self.settings.limits['cancel_seconds'] if self.is_cancelled() or outcome['abort'].is_set() else self.settings.limits['ready_seconds']
+                writer.join(timeout)
+                if writer.is_alive():
+                    # Keep the held writer reachable. Family exit, rather than
+                    # a terminal, is the remaining cleanup proof.
+                    outcome['fault'] = outcome['fault'] or 'worker_failed'
+                    terminal_safe = False
+                else:
+                    self._audio_writer = None
+            else:
+                self._audio_writer = None
+            if outcome['writer_failed']:
+                terminal_safe = False  # A partial frame requires EOF/restart.
+            with self.condition:
+                pending = None
+        return outcome['fault'], outcome['audio_bytes'], terminal_safe
 
     def _operate(self,backend,command,identity):
         # All inference text/PCM/stream locals belong to this one operation.
@@ -167,34 +282,18 @@ class WorkerServer:
                 if (not isinstance(text, str) or not text.strip() or len(text) > 600
                         or not isinstance(voice, str) or voice not in self.settings.voices or language not in ('German','English')):
                     raise invalid()
-                stream = backend.synthesize(text, voice, language, self.is_cancelled)
-                packet = min(self.settings.limits['frame_bytes'],
-                             self.settings.limits['audio_buffer_ms'] * 24, 6000)
-                packet -= packet % 2
-                try:
-                    for pcm in stream:
-                        if not isinstance(pcm, bytes) or len(pcm) % 2 or len(pcm) > 1440000:
-                            raise invalid()
-                        for index in range(0, len(pcm), packet):
-                            if not self._wait_credit():
-                                break
-                            with self.data_lock:
-                                part = pcm[index:index+packet]
-                                write_frame(self.data_out, Frame('pcm', identity, audio_bytes, part))
-                                audio_bytes += len(part)
-                        if self.is_cancelled():
-                            break
-                finally:
-                    stream.close()
+                code,audio_bytes,terminal_safe = self._synthesize(
+                    backend,text,voice,language,identity)
             else:
                 raise invalid()
         except Exception as exc:
             code = exc.code if isinstance(exc, HuginError) else 'worker_failed'
-            self.send('fault', identity, code=code, phase=kind, retry='later')
             if kind == 'initialize':
                 terminal_safe = False
         finally:
             command.clear()  # Queue transfer ends here, including every failure.
+        if code:
+            self.send('fault', identity, code=code, phase=kind, retry='later')
         return code,audio_bytes,terminal_safe
 
     def run(self):

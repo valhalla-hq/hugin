@@ -86,29 +86,151 @@ class Automation:
 
 
 class Uia:
-    UIA_EditControlTypeId=50004;UIA_IsTextPatternAvailablePropertyId=30040
+    UIA_EditControlTypeId=50004;UIA_ComboBoxControlTypeId=50003;UIA_IsTextPatternAvailablePropertyId=30040
     UIA_IsValuePatternAvailablePropertyId=30043;UIA_TextPatternId=10014;UIA_ValuePatternId=10002
     IUIAutomationTextPattern=object();IUIAutomationValuePattern=object();TextUnit_Character=0
 
 
 class TargetContracts(unittest.TestCase):
+    def test_contiguous_selection_is_captured_and_last_read_end_change_is_rejected(self):
+        from unittest.mock import patch
+        automation=Automation();pattern=automation.focus.pattern;pattern.width=3
+        result=self.read(automation)
+        self.assertEqual(result.status,'target_captured')
+        self.assertEqual(result.identity.selection,(7,10))
+        proof=_target_proof(automation,Uia,BASE,lambda:BASE,lambda:False)
+        original=Range.GetText;calls=0
+        def read(text_range,limit):
+            nonlocal calls
+            value=original(text_range,limit);calls+=1
+            if calls==4:pattern.width=4
+            return value
+        with patch.object(Range,'GetText',read):
+            self.assertEqual(confirm_uia_target(automation,Uia,BASE,lambda:BASE,proof).status,'target_changed')
+
+    def test_default_native_target_does_not_claim_editability(self):
+        target=WindowTarget(100,200,3,4,500,'Edit',(200,0,0,1,1),(7,10))
+        self.assertFalse(target.verifiable)
+
+    def test_derived_endpoint_must_equal_its_original_selection_boundary(self):
+        from unittest.mock import patch
+        original=Range.MoveEndpointByRange
+        for changed_endpoint in (None,0,1):
+            automation=Automation();automation.focus.pattern.width=3
+            proof=_target_proof(automation,Uia,BASE,lambda:BASE,lambda:False)
+            def wrong(point,endpoint,selected,selected_endpoint):
+                if (selected.CompareEndpoints(0,selected,1)!=0
+                        and changed_endpoint in (None,selected_endpoint)):
+                    point.start=point.end=selected.model.origin+(1 if selected_endpoint==0 else 2)
+                else:original(point,endpoint,selected,selected_endpoint)
+            with patch.object(Range,'MoveEndpointByRange',wrong):
+                self.assertEqual(self.read(automation).status,'target_unverifiable',changed_endpoint)
+                automation.focus.pattern.position=8
+                self.assertEqual(confirm_uia_target(automation,Uia,BASE,lambda:BASE,proof).status,
+                    'target_unverifiable',changed_endpoint)
+
+    def test_focused_combo_supplies_complete_field_proof(self):
+        automation=Automation();automation.focus.CurrentControlType=Uia.UIA_ComboBoxControlTypeId
+        self.assertEqual(self.read(automation).status,'target_captured')
+
+    def test_combo_value_only_ancestor_or_multiple_ranges_are_not_field_proofs(self):
+        for kind in ('value_only','ancestor','multiple'):
+            automation=Automation();automation.focus.CurrentControlType=Uia.UIA_ComboBoxControlTypeId
+            if kind=='value_only':
+                automation.focus.GetCurrentPropertyValue=lambda identity:identity!=Uia.UIA_IsTextPatternAvailablePropertyId
+            elif kind=='ancestor':
+                automation.focus.GetCurrentPropertyValue=lambda identity:False
+            else:
+                automation.focus.pattern.GetSelection=lambda:NS(Length=2)
+            self.assertEqual(self.read(automation).status,'target_unverifiable',kind)
+
+    def test_last_noncollapsed_read_rechecks_both_ends_editability_and_children(self):
+        from unittest.mock import patch
+        for kind in ('start','end','readonly','disabled','start_child','end_child','embedded'):
+            automation=Automation();pattern=automation.focus.pattern;pattern.width=3
+            start_child=Element(77,automation.focus);end_child=Element(78,automation.focus)
+            children={'start':start_child,'end':end_child}
+            def enclosure(text_range):
+                if text_range.start==text_range.end:
+                    return children['start' if text_range.start==pattern.origin+pattern.position else 'end']
+                return automation.focus
+            original=Range.GetText;calls=0
+            def read(text_range,limit):
+                nonlocal calls
+                value=original(text_range,limit);calls+=1
+                if calls==4:
+                    if kind=='start':pattern.position+=1;pattern.width-=1
+                    elif kind=='end':pattern.width+=1
+                    elif kind=='readonly':automation.focus.CurrentIsReadOnly=True
+                    elif kind=='disabled':automation.focus.CurrentIsEnabled=False
+                    elif kind=='start_child':children['start']=Element(79,automation.focus)
+                    elif kind=='end_child':children['end']=Element(80,automation.focus)
+                    else:pattern.embedded=(8,)
+                return value
+            with patch.object(Range,'GetEnclosingElement',enclosure):
+                proof=_target_proof(automation,Uia,BASE,lambda:BASE,lambda:False)
+                self.assertNotEqual(proof.identity.start_id,proof.identity.end_id)
+                with patch.object(Range,'GetText',read):
+                    result=confirm_uia_target(automation,Uia,BASE,lambda:BASE,proof)
+            self.assertEqual(result.status,'target_unverifiable' if kind in ('readonly','disabled','embedded') else 'target_changed',kind)
+
+    def test_noncollapsed_utf16_limits_and_invisible_span_fail_closed(self):
+        automation=Automation();pattern=automation.focus.pattern
+        pattern.text='A😀e\u0301Z';pattern.position=1;pattern.width=3
+        self.assertEqual(self.read(automation).identity.selection,(1,5))
+        pattern.text='';pattern.position=1;pattern.width=1
+        self.assertEqual(self.read(automation).status,'target_unverifiable')
+        pattern.text=None;pattern.position=262144;pattern.width=1;pattern.extent=262145
+        self.assertEqual(self.read(automation).status,'target_unverifiable')
+
+    def test_wire_versions_shapes_and_largest_identity_are_strict(self):
+        from dataclasses import asdict
+        identity=UiaTargetIdentity(*(((-2147483648,)*64,)*4),4294967295,(262144,262144),-1,-1)
+        frame=encode_target_response(TargetResult('target_captured',identity))
+        self.assertLessEqual(len(frame)-6,4092)
+        self.assertEqual(decode_target_response(io.BytesIO(frame)).identity,identity)
+        with self.assertRaises(ValueError):decode_target_response(io.BytesIO(bytes((2,))+frame[1:]))
+        shape=asdict(identity);shape['element_id']=shape.pop('start_id')
+        data=json.dumps(shape).encode('ascii')
+        with self.assertRaises(ValueError):decode_target_response(io.BytesIO(struct.pack('!BBI',3,0,len(data))+data))
+        for operation in ('selection','target','delivery'):
+            value=json.loads(encode_request(BASE,operation=operation)[4:])
+            self.assertEqual((value['version'],decode_operation(json.dumps(value).encode())[0]),(4,operation))
+            for version in (1,2,3):
+                old=dict(value,version=version)
+                with self.assertRaises(ValueError):decode_operation(json.dumps(old).encode())
+            value['target']['editable']=value['target'].pop('native_editable')
+            with self.assertRaises(ValueError):decode_operation(json.dumps(value).encode())
+
+    def test_collapsed_fast_path_reads_one_prefix_per_measurement_and_zero_at_start(self):
+        from unittest.mock import patch
+        for position,expected in ((7,2),(0,0)):
+            automation=Automation();automation.focus.pattern.position=position
+            original=Range.GetText;calls=[]
+            def read(text_range,limit):calls.append(limit);return original(text_range,limit)
+            with patch.object(Range,'GetText',read):
+                proof=_target_proof(automation,Uia,BASE,lambda:BASE,lambda:False)
+                self.assertEqual(len(calls),expected);calls.clear()
+                self.assertEqual(confirm_uia_target(automation,Uia,BASE,lambda:BASE,proof).status,'target_captured')
+                self.assertEqual(len(calls),expected)
+
     def test_owned_text_end_affinity_uses_the_logical_utf16_offset(self):
         automation=Automation();pattern=automation.focus.pattern
         child=Element(77,automation.focus);child.CurrentControlType=50020
         pattern.owner=child;pattern.extent=4;pattern.position=5;pattern.text='Test'
         result=self.read(automation)
         self.assertEqual(result.status,'target_captured')
-        self.assertEqual(result.identity.position,4)
-        self.assertEqual(result.identity.caret_id,child.GetRuntimeId())
+        self.assertEqual(result.identity.selection,(4,4))
+        self.assertEqual((result.identity.start_id,result.identity.end_id),(child.GetRuntimeId(),)*2)
         pattern.position=0
-        self.assertEqual(self.read(automation).identity.position,0)
+        self.assertEqual(self.read(automation).identity.selection,(0,0))
 
     def test_utf16_offset_does_not_assume_one_character_unit_per_python_character(self):
         automation=Automation();pattern=automation.focus.pattern
         pattern.text='A😀e\u0301';pattern.position=4
         result=self.read(automation)
         self.assertEqual(result.status,'target_captured')
-        self.assertEqual(result.identity.position,5)
+        self.assertEqual(result.identity.selection,(5,5))
 
     def test_changed_end_affinity_cannot_alias_the_frozen_offset_and_child(self):
         automation=Automation();pattern=automation.focus.pattern;child=Element(77,automation.focus)
@@ -175,7 +297,7 @@ class TargetContracts(unittest.TestCase):
         child.CurrentControlType=50026
         with patch.object(Range,'GetEnclosingElement',lambda selected:child):
             proof=_target_proof(automation,Uia,BASE,lambda:BASE,lambda:False)
-            self.assertEqual(proof.identity.position,7)
+            self.assertEqual(proof.identity.selection,(7,7))
             automation.focus.pattern.origin+=4000
             self.assertEqual(confirm_uia_target(automation,Uia,BASE,lambda:BASE,proof).status,
                 'target_captured')
@@ -232,7 +354,7 @@ class TargetContracts(unittest.TestCase):
             with patch.object(Range,'MoveEndpointByUnit',side_effect=AssertionError('character walk')):
                 first=self.read(automation)
                 self.assertEqual(first.status,'target_captured',position)
-                self.assertEqual(first.identity.position,position)
+                self.assertEqual(first.identity.selection,(position,position))
                 automation.focus.pattern.origin+=4000
                 self.assertEqual(self.read(automation).identity,first.identity)
 
@@ -242,7 +364,7 @@ class TargetContracts(unittest.TestCase):
         automation.focus.pattern.origin=300000
         with patch.object(Range,'GetText',side_effect=AssertionError('Edit start must not read text')):
             proof=_target_proof(automation,Uia,BASE,lambda:BASE,lambda:False)
-            self.assertEqual(proof.identity.position,0)
+            self.assertEqual(proof.identity.selection,(0,0))
             automation.focus.pattern.origin+=4000
             result=confirm_uia_target(automation,Uia,BASE,lambda:BASE,proof)
             self.assertEqual(result.status,'target_captured')
@@ -313,7 +435,7 @@ class TargetContracts(unittest.TestCase):
     def test_collapsed_edit_returns_only_position_and_runtime_metadata(self):
         result=self.read(Automation())
         self.assertEqual(result.status,'target_captured')
-        self.assertEqual(result.identity.position,7)
+        self.assertEqual(result.identity.selection,(7,7))
         self.assertFalse(BASE.verifiable)
         self.assertTrue(replace(BASE,uia=result.identity).verifiable)
         self.assertEqual(replace(BASE,uia=result.identity).without_uia,BASE)
@@ -330,11 +452,10 @@ class TargetContracts(unittest.TestCase):
         automation.focus.identity=3
         self.assertNotEqual(self.read(automation).identity,first.identity)
 
-    def test_noncollapsed_protected_readonly_disabled_and_nonedit_fail_closed(self):
-        for change in ('selection','password','readonly','disabled','document'):
+    def test_protected_readonly_disabled_and_nonfield_fail_closed(self):
+        for change in ('password','readonly','disabled','document'):
             automation=Automation()
-            if change=='selection':automation.focus.pattern.width=1
-            elif change=='password':automation.focus.CurrentIsPassword=True
+            if change=='password':automation.focus.CurrentIsPassword=True
             elif change=='readonly':automation.focus.CurrentIsReadOnly=True
             elif change=='disabled':automation.focus.CurrentIsEnabled=False
             else:automation.focus.CurrentControlType=50030
@@ -387,13 +508,13 @@ class TargetContracts(unittest.TestCase):
     def test_malformed_metadata_and_text_response_cannot_be_target_identity(self):
         from hugin.windows.selection import encode_response
         identity=self.read(Automation()).identity
-        for field,bad in (('position',True),('focus_pid',0),('focus_id',[True]),('element_id',list(range(65))),('caret_id',[]),('caret_id',[True]),('end_relation',True),('end_relation',2)):
-            value={'focus_id':list(identity.focus_id),'root_id':list(identity.root_id),
-                'element_id':list(identity.element_id),'focus_pid':identity.focus_pid,'position':identity.position,'caret_id':list(identity.caret_id),'end_relation':identity.end_relation}
+        from dataclasses import asdict
+        for field,bad in (('selection',True),('selection',[7,6]),('selection',[True,7]),('focus_pid',0),('focus_id',[True]),('start_id',list(range(65))),('end_id',[]),('end_id',[True]),('start_relation',True),('end_relation',2)):
+            value=asdict(identity)
             value[field]=bad;data=json.dumps(value).encode('ascii')
-            with self.assertRaises(ValueError):decode_target_response(io.BytesIO(struct.pack('!BBI',2,0,len(data))+data))
+            with self.assertRaises(ValueError):decode_target_response(io.BytesIO(struct.pack('!BBI',3,0,len(data))+data))
         with self.assertRaises(ValueError):decode_target_response(io.BytesIO(encode_response('captured','not metadata')))
-        with self.assertRaises(ValueError):decode_target_response(io.BytesIO(struct.pack('!BBI',2,0,4093)))
+        with self.assertRaises(ValueError):decode_target_response(io.BytesIO(struct.pack('!BBI',3,0,4093)))
 
     def test_full_native_capture_binds_basis_without_recursing_into_full_probe(self):
         identity=self.read(Automation()).identity
@@ -437,7 +558,7 @@ class OwnerCommitContracts(unittest.TestCase):
             native,target,events,state=self.backend();state['uia']=target
             native.capture_target=lambda **kwargs:state['uia']
             def commit(transaction,fast):
-                changed=replace(target.uia,position=target.uia.position+1) if kind=='position' else replace(target.uia,focus_id=(99,),element_id=(99,))
+                changed=replace(target.uia,selection=tuple(point+1 for point in target.uia.selection)) if kind=='position' else replace(target.uia,focus_id=(99,))
                 state['uia']=replace(target,uia=changed)
                 fast()
             with self.assertRaises(ClipboardFailure) as failure:
@@ -485,7 +606,7 @@ class OwnerCommitContracts(unittest.TestCase):
         native.user=NS(GetClipboardOwner=lambda:10,GetClipboardData=lambda identity:1)
         native.kernel=NS(GlobalSize=lambda handle:5)
         native.sequence=lambda:7;native._read_handle=lambda *args:b'owned'
-        target=replace(BASE,uia=UiaTargetIdentity((1,),(2,),(1,),9,0,(1,),-1))
+        target=replace(BASE,uia=UiaTargetIdentity((1,),(2,),(1,),(1,),9,(0,0),-1,-1))
         events=[];state={'held':False,'native':BASE}
         @contextmanager
         def opened():
@@ -576,7 +697,7 @@ class LeaseProcess(FakeProcess):
 
 
 class DeliveryLeaseContracts(unittest.TestCase):
-    ID=UiaTargetIdentity((1,),(2,),(1,),9,7,(1,),-1)
+    ID=UiaTargetIdentity((1,),(2,),(1,),(1,),9,(7,7),-1,-1)
     def test_confirm_waits_for_writer_close_and_response_within_same_deadline(self):
         for kind in ('success','close_failure','timeout'):
             process=LeaseProcess(self.ID);eof=threading.Event();close_return=threading.Event()
@@ -648,8 +769,8 @@ class DeliveryLeaseContracts(unittest.TestCase):
             lease=probe.begin_delivery(BASE,lambda:False)
             try:
                 self.assertEqual(lease.result.identity,self.ID)
-                if change=='position':process.identity=replace(self.ID,position=8)
-                if change=='edit':process.identity=replace(self.ID,focus_id=(99,),element_id=(99,))
+                if change=='position':process.identity=replace(self.ID,selection=(8,8))
+                if change=='edit':process.identity=replace(self.ID,focus_id=(99,))
                 self.assertEqual(lease.confirm().status,'target_captured' if change=='same' else 'target_changed')
                 self.assertEqual(lease.confirm().status,'commit_rejected')
             finally:lease.close()

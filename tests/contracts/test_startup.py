@@ -50,7 +50,7 @@ class StartupContracts(unittest.TestCase):
             def __init__(self,settings,**kwargs):
                 controllers.append(self)
                 self._closed=False
-                self.owners=[kwargs[name] for name in ('inputs','signals','output','clipboard')]
+                self.owners=[kwargs[name] for name in ('inputs','signals','output','clipboard','cues')]
                 self.capture_executor=self.audio_executor=self.maintenance_executor=self.selection_executor=self.delivery_executor=Executor()
             def finish_io(self):
                 if cleanup_failure: return False
@@ -68,13 +68,14 @@ class StartupContracts(unittest.TestCase):
                 controllers[0]._closed=controllers[0].finish_io()
         fakes={
             'hugin.audio':module('hugin.audio',Microphone=lambda *args:NS(),PCMOutput=Owner),
+            'hugin.cues':module('hugin.cues',RecordingCues=Owner),
             'hugin.ui':module('hugin.ui',HuginWindow=Window),
             'hugin.windows.input':module('hugin.windows.input',WindowsInputs=Owner),
             'hugin.windows.instance':module('hugin.windows.instance',InstanceGuard=Guard),
             'hugin.windows.clipboard':module('hugin.windows.clipboard',ClipboardService=Owner),
             'hugin.windows.signals':module('hugin.windows.signals',WindowsSignals=Owner),
             'hugin.workers':module('hugin.workers',EnginePool=lambda *args:NS(workers={})),
-            'hugin.targets':module('hugin.targets',load_target_approvals=lambda root:NS(delivery=(),capture_fallback=())),
+            'hugin.targets':module('hugin.targets',load_target_approvals=lambda root:NS(delivery=(),capture_fallback=(),verified_edit=None)),
         }
         settings=NS(root=Path(__file__).resolve().parents[2],
             limits={'clipboard_bytes':1,'capture_bytes':2,'audio_buffer_ms':250})

@@ -15,18 +15,40 @@ class DeliveryApproval:
 
 
 @dataclass(frozen=True)
+class VerifiedEditApproval:
+    restore_delay_seconds: float
+
+
+@dataclass(frozen=True)
 class TargetApprovals:
     delivery: tuple[DeliveryApproval,...]
     capture_fallback: tuple[str,...]
+    verified_edit: VerifiedEditApproval | None
+
+
+def _proof(root, evidence):
+    if not isinstance(evidence,str) or not evidence or Path(evidence).is_absolute():raise ValueError
+    proof=(root/evidence).resolve()
+    if not proof.is_relative_to(root.resolve()) or proof.suffix!='.md' or not proof.is_file():raise ValueError
+
+
+def _delay(value):
+    if type(value) not in (int,float) or not .02<=value<=2 or not math.isfinite(value):raise ValueError
+    return float(value)
 
 
 def load_target_approvals(root: Path) -> TargetApprovals:
     try:
         path=root/'config/targets.json'
         data=read_json_object(path)
-        if not isinstance(data,dict) or set(data)!={'schema_version','delivery','capture_fallback'}:
+        if not isinstance(data,dict) or set(data)!={'schema_version','delivery','capture_fallback','verified_edit'}:
             raise ValueError
-        if type(data['schema_version']) is not int or data['schema_version']!=1: raise ValueError
+        if type(data['schema_version']) is not int or data['schema_version']!=2: raise ValueError
+        generic=data['verified_edit']
+        if generic is not None:
+            if not isinstance(generic,dict) or set(generic)!={'restore_delay_seconds','evidence'}:raise ValueError
+            _proof(root,generic['evidence'])
+            generic=VerifiedEditApproval(_delay(generic['restore_delay_seconds']))
         groups={}
         for kind in ('delivery','capture_fallback'):
             records=data[kind]
@@ -40,18 +62,14 @@ def load_target_approvals(root: Path) -> TargetApprovals:
                 if not isinstance(name,str) or not name or len(name)>256 or '\0' in name or '*' in name or name in seen:
                     raise ValueError
                 seen.add(name)
-                if not isinstance(evidence,str) or not evidence or Path(evidence).is_absolute(): raise ValueError
-                proof=(root/evidence).resolve()
-                if not proof.is_relative_to(root.resolve()) or proof.suffix!='.md' or not proof.is_file(): raise ValueError
+                _proof(root,evidence)
                 if kind=='delivery':
                     family=record.get('package_family')
                     if 'package_family' in record and (not isinstance(family,str)
                             or not 17<=len(family)<=64 or '\0' in family or '*' in family):raise ValueError
-                    delay=record['restore_delay_seconds']
-                    if type(delay) not in (int,float) or not math.isfinite(delay) or not .02<=delay<=2: raise ValueError
-                    result.append(DeliveryApproval(name,float(delay),family))
+                    result.append(DeliveryApproval(name,_delay(record['restore_delay_seconds']),family))
                 else: result.append(name)
             groups[kind]=tuple(result)
-        return TargetApprovals(groups['delivery'],groups['capture_fallback'])
+        return TargetApprovals(groups['delivery'],groups['capture_fallback'],generic)
     except (OSError,ValueError,TypeError,KeyError):
         raise HuginError('config_invalid','target_approvals') from None

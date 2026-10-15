@@ -164,7 +164,7 @@ def read_uia_selection(automation, uia, target, native_target, cancelled, limit)
 def _edit_pattern(focus,uia):
     if not focus or not _flag(focus.CurrentHasKeyboardFocus):
         raise _SelectionFailure('target_changed')
-    if (focus.CurrentControlType!=uia.UIA_EditControlTypeId or not _flag(focus.CurrentIsEnabled)
+    if (focus.CurrentControlType not in (uia.UIA_EditControlTypeId,uia.UIA_ComboBoxControlTypeId) or not _flag(focus.CurrentIsEnabled)
             or _flag(focus.CurrentIsPassword)):
         raise _SelectionFailure('target_unverifiable')
     for identity in (uia.UIA_IsTextPatternAvailablePropertyId,uia.UIA_IsValuePatternAvailablePropertyId):
@@ -179,7 +179,7 @@ def _edit_pattern(focus,uia):
 
 
 def _bind_edit(automation,uia,target):
-    """A focused editable Edit, never a document ancestor or class whitelist."""
+    """A focused Edit/ComboBox provider, never an ancestor or class whitelist."""
     focus=automation.GetFocusedElement();root=automation.ElementFromHandle(target.hwnd)
     if not root:raise _SelectionFailure('target_changed')
     pattern=_edit_pattern(focus,uia)
@@ -228,38 +228,78 @@ def _plain_range(text_range):
         raise _SelectionFailure('target_unverifiable')
 
 
-def _caret_snapshot(automation,binding):
+def _endpoint(selected,endpoint):
+    point=selected.Clone()
+    point.MoveEndpointByRange(1-endpoint,selected,endpoint)
+    if (point.CompareEndpoints(0,point,1)!=0
+            or point.CompareEndpoints(0,selected,endpoint)!=0):
+        raise _SelectionFailure('target_unverifiable')
+    return point
+
+
+def _range_snapshot(automation,binding):
     selected=_selected(binding.pattern)
-    if selected is None or selected.CompareEndpoints(0,selected,1)!=0:
-        # A noncollapsed range cannot prove the active endpoint without
-        # TextPattern2, which Codex does not expose.
+    if selected is None:
         raise _SelectionFailure('target_unverifiable')
-    caret_id=_edit_enclosure(automation,binding,selected)
+    ordering=selected.CompareEndpoints(0,selected,1)
+    if ordering>0:
+        raise _SelectionFailure('target_unverifiable')
     document=binding.pattern.DocumentRange
-    if not document or selected.CompareEndpoints(0,document,0)<0:
-        raise _SelectionFailure('target_unverifiable')
-    # A text child's trailing caret may follow its parent's declared End.
-    # Only a proven descendant can establish that provider affinity.
-    relation=selected.CompareEndpoints(1,document,1)
-    relation=(relation>0)-(relation<0)
-    if relation>0 and caret_id==binding.element_id:
-        raise _SelectionFailure('target_unverifiable')
+    if not document:raise _SelectionFailure('target_unverifiable')
     _edit_enclosure(automation,binding,document)
     _plain_range(document)
-    return selected.Clone(),caret_id,relation,document
+    start=selected.Clone() if ordering==0 else _endpoint(selected,0)
+    end=start if ordering==0 else _endpoint(selected,1)
+    ids=[];relations=[]
+    for index,point in enumerate((start,end)):
+        if index and point is start:
+            ids.append(ids[0]);relations.append(relations[0]);continue
+        if point.CompareEndpoints(0,document,0)<0:
+            raise _SelectionFailure('target_unverifiable')
+        identity=_edit_enclosure(automation,binding,point)
+        # A proven descendant may expose its trailing boundary beyond the
+        # focused provider's structural End. Preserve that affinity per end.
+        relation=point.CompareEndpoints(0,document,1)
+        relation=(relation>0)-(relation<0)
+        if relation>0 and identity==binding.element_id:
+            raise _SelectionFailure('target_unverifiable')
+        ids.append(identity);relations.append(relation)
+    return (start if ordering==0 else selected.Clone()),tuple(ids),tuple(relations),document,(start,end)
 
 
-def _insertion(automation,binding):
-    selected,caret_id,relation,document=_caret_snapshot(automation,binding)
-    if selected.CompareEndpoints(0,document,0)==0:
-        return 0,caret_id,relation,selected
-    prefix=document.Clone();prefix.MoveEndpointByRange(1,selected,0)
-    if (prefix.CompareEndpoints(0,document,0)!=0
-            or prefix.CompareEndpoints(1,selected,0)!=0):
+def _measure_range(automation,binding):
+    selected,ids,relations,document,points=_range_snapshot(automation,binding)
+    positions=[]
+    for index,point in enumerate(points):
+        if index and point is points[0]:positions.append(positions[0]);continue
+        if point.CompareEndpoints(0,document,0)==0:positions.append(0);continue
+        prefix=document.Clone();prefix.MoveEndpointByRange(1,point,0)
+        if (prefix.CompareEndpoints(0,document,0)!=0
+                or prefix.CompareEndpoints(1,point,0)!=0):
+            raise _SelectionFailure('target_unverifiable')
+        _edit_enclosure(automation,binding,prefix)
+        _plain_range(prefix)
+        positions.append(_prefix_units(prefix))
+    if (positions[0]>positions[1]
+            or (positions[0]==positions[1] and selected.CompareEndpoints(0,selected,1)!=0)):
+        # Plain text cannot prove an invisible/non-injective selected span.
         raise _SelectionFailure('target_unverifiable')
-    _edit_enclosure(automation,binding,prefix)
-    _plain_range(prefix)
-    return _prefix_units(prefix),caret_id,relation,selected
+    identity=UiaTargetIdentity(binding.focus_id,binding.root_id,*ids,binding.focus_pid,
+        tuple(positions),*relations)
+    return identity,selected
+
+
+def _confirm_range(automation,uia,binding,identity,measured):
+    """Fresh selection/editability after the final GetText; no further text."""
+    focus=automation.GetFocusedElement()
+    if not focus or _identity(focus)!=identity.focus_id:
+        raise _SelectionFailure('target_changed')
+    binding.pattern=_edit_pattern(focus,uia)
+    final,ids,relations,_,_=_range_snapshot(automation,binding)
+    if (ids!=(identity.start_id,identity.end_id)
+            or relations!=(identity.start_relation,identity.end_relation)
+            or any(measured.CompareEndpoints(endpoint,final,endpoint)!=0 for endpoint in (0,1))):
+        raise _SelectionFailure('target_changed')
 
 
 @dataclass
@@ -272,27 +312,18 @@ def _target_proof(automation,uia,target,native_target,cancelled):
     if cancelled():raise _SelectionFailure('cancelled')
     if native_target()!=target:raise _SelectionFailure('target_changed')
     first=_bind_edit(automation,uia,target)
-    position,caret_id,relation,original=_insertion(automation,first)
+    identity,original=_measure_range(automation,first)
     if cancelled():raise _SelectionFailure('cancelled')
     _confirm_focus(automation,first,target,native_target)
     second=_bind_edit(automation,uia,target)
-    current_position,current_caret,current_relation,current=_insertion(automation,second)
-    if ((first.focus_id,first.root_id,first.element_id,first.focus_pid,position,caret_id,relation)!=
-        (second.focus_id,second.root_id,second.element_id,second.focus_pid,current_position,current_caret,current_relation)
+    current_identity,current=_measure_range(automation,second)
+    if (identity!=current_identity
             or any(original.CompareEndpoints(endpoint,current,endpoint)!=0 for endpoint in (0,1))):
         raise _SelectionFailure('target_changed')
-    final_focus=automation.GetFocusedElement()
-    if not final_focus or _identity(final_focus)!=first.focus_id:
-        raise _SelectionFailure('target_changed')
-    second.pattern=_edit_pattern(final_focus,uia)
-    final,final_caret,final_relation,_=_caret_snapshot(automation,second)
-    if ((final_caret,final_relation)!=(caret_id,relation)
-            or any(original.CompareEndpoints(endpoint,final,endpoint)!=0 for endpoint in (0,1))):
-        raise _SelectionFailure('target_changed')
+    _confirm_range(automation,uia,second,identity,current)
     _confirm_focus(automation,second,target,native_target)
     if cancelled():raise _SelectionFailure('cancelled')
-    return _TargetProof(UiaTargetIdentity(first.focus_id,first.root_id,first.element_id,
-        first.focus_pid,position,caret_id,relation),second)
+    return _TargetProof(identity,second)
 
 
 def _target_failure(failure):
@@ -313,16 +344,15 @@ def confirm_uia_target(automation,uia,target,native_target,proof):
     try:
         _confirm_focus(automation,proof.binding,target,native_target)
         root=automation.ElementFromHandle(target.hwnd)
-        if not root or _identity(root)!=proof.identity.root_id:
+        if not root or _identity(root)!=proof.identity.root_id or root.CurrentProcessId!=target.pid:
             return TargetResult('target_changed')
         focus=automation.GetFocusedElement()
         if not focus or _identity(focus)!=proof.identity.focus_id:return TargetResult('target_changed')
         pattern=_edit_pattern(focus,uia)
         binding=_Binding(proof.identity.focus_id,proof.identity.root_id,
-            proof.identity.element_id,proof.identity.focus_pid,pattern)
-        position,caret_id,relation,current=_insertion(automation,binding)
-        expected=(proof.identity.position,proof.identity.caret_id,proof.identity.end_relation)
-        if (position,caret_id,relation)!=expected:
+            proof.identity.focus_id,proof.identity.focus_pid,pattern)
+        identity,current=_measure_range(automation,binding)
+        if identity!=proof.identity:
             return TargetResult('target_changed')
         # Provider calls above can span a user selection/editability change.
         # Reacquire the current Edit and compare a second fresh local integer,
@@ -330,19 +360,13 @@ def confirm_uia_target(automation,uia,target,native_target,proof):
         focus=automation.GetFocusedElement()
         if not focus or _identity(focus)!=proof.identity.focus_id:return TargetResult('target_changed')
         binding.pattern=_edit_pattern(focus,uia)
-        final_position,final_caret,final_relation,measured=_insertion(automation,binding)
-        if ((final_position,final_caret,final_relation)!=expected
+        final_identity,measured=_measure_range(automation,binding)
+        if (final_identity!=proof.identity
                 or any(current.CompareEndpoints(endpoint,measured,endpoint)!=0 for endpoint in (0,1))):
             return TargetResult('target_changed')
         # GetText can block while selection or editability changes. Reacquire
         # these facts after the last text read, without reading further text.
-        focus=automation.GetFocusedElement()
-        if not focus or _identity(focus)!=proof.identity.focus_id:return TargetResult('target_changed')
-        binding.pattern=_edit_pattern(focus,uia)
-        final,final_caret,final_relation,_=_caret_snapshot(automation,binding)
-        if ((final_caret,final_relation)!=(proof.identity.caret_id,proof.identity.end_relation)
-                or any(measured.CompareEndpoints(endpoint,final,endpoint)!=0 for endpoint in (0,1))):
-            return TargetResult('target_changed')
+        _confirm_range(automation,uia,binding,proof.identity,measured)
         _confirm_focus(automation,proof.binding,target,native_target)
         return TargetResult('target_captured',proof.identity)
     except _SelectionFailure as failure:return _target_failure(failure)
