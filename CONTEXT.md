@@ -37,75 +37,37 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Next Step
 
-- Aktiver Task codex/hugin-pilot-fixes-mjolnir: Brian meldet fehlende Codex-
-  Übergabe bei unverändertem Ziel und abgehacktes Audio bei beiden Stimmen.
-  Vertrag/Plan: specs/2026-10-14-hugin-v1/pilot-fixes.md.
-- PR5 bis PR8 sind integriert. Geprüfter Main und aktuell gestarteter Pilot:
-  bb700f0469dd3f75007041c430058c5bae368b47. Strg+Alt+D/V und einmaliger
-  Rückweg erhalten. Laufzustand vor Eingriffen frisch prüfen.
-- Audiofix für beide Stimmen nativ bestätigt: Freya48/Tyr47 leere Refills
-  vorher, beide0 nachher, PCM vollständig identisch, alle eigenen Header/
-  Handles geschlossen. Modellladen und Übergabeablehnungen werden präzise
-  angezeigt. Kuratierte Nachweise: docs/pilot-fixes-2026-10-14.md.
-- Source ce0c1cfeb498b31db8fbafc5bf5e38e8b2001396 ersetzt die frühere
-  Character-Suche durch begrenzte lokale UTF-16-Präfixlänge, Caret-Kind-ID
-  und Endrelation. Präfixzeichen nur kurz im isolierten RAM; keine Inhalte
-  im IPC/Diagnose/Git. Objektgrenzen/Unklarheit vor Lesen ablehnen, Auswahl/
-  Editierbarkeit nach letztem Textaufruf frisch prüfen.
-- Clipboard-Veröffentlichung nach Close normalisiert; unbekannter Owner
-  behält den RAM-Snapshot. Zwei exakte Chromium-Herkunftsformate opak sichern;
-  unbekannte/OLE-Formate bleiben vor Mutation gesperrt.
-- 328 Sourceprüfungen und23 Windowsprüfungen grün; zwei unabhängige Reviews,
-  reproduzierte P1/P2 geschlossen. Nachweis: docs/codex-delivery-2026-10-15.md.
-- Vollständige native Abschlussproben am Feldanfang UND echten Textende
-  bestanden: genau ein Paste, alle Clipboardformate zurück, echter Home-
-  Gegenfall abgelehnt, eigenes Literal entfernt, Baseline erhalten und eigener
-  Service geschlossen. Warm40,7/42,0ms, Delivery0,476/0,483s; kein Enter.
-- Der erste PR7-Pilot erkannte ein reales Diktat, wies Codex aber erneut als
-  target_unverified ab. Brian bestätigt das Codex-Nachrichtenfeld. Win32-
-  Messung ohne Fokusänderung: Chrome_WidgetWin_1 mit exakter Codex-Familie
-  und UIA-Edit. Die bisherige Renderer-Einzelklasse deckte den Alltagspfad
-  nicht ab. Keine pauschale Chromiumfreigabe aus diesem Befund ableiten.
-- Zwei weitere vollständige native Proben ohne SetFocus für Chrome_WidgetWin_1
-  bestanden: Feldanfang/End-Navigation, Restore aller Formate, Home-Gegenfall,
-  eigenes Literal entfernt, Baseline/Familienabschluss bestätigt. Warm46,849/
-  41,732ms; Delivery0,495/0,490s; kein Enter. Nur technische Receipts im RAM-/
-  ignorierten Runtimepfad, keine Diktatinhalte im Repository.
-- Review fand eine Nachweislücke: frühere End-Receipts belegten keine positive
-  Vorabposition. Zwei zusätzliche Endproben mit eigener synthetischer Basis
-  für BEIDE Klassen bestanden: vor Paste Position15, nichtleere Basis/kein
-  Platzhalter, Restore/Home-Gegenfall und beide eigenen Literale entfernt,
-  ursprüngliche Baseline/Serviceabschluss bestätigt. Widget Warm50,809ms/
-  Delivery0,512s, Renderer44,926ms/0,503s. Protokollfrist unverändert; äußere
-  Messung enthält Fixture-/Scheduling-Overhead, keine p95-Zusage.
-- Integriertes Follow-up PR8 erweitert targets.json ausschließlich um diese
-  zweite Codex-Klasse, gleiche exakte Familie und0,15s-Restore; Fallback leer.
-  Profil→Service-Regression zunächst rot, danach329 Source-/Integrationschecks
-  in25,114s grün. Fremde/fehlende/case-abweichende Familien und dritte Klasse
-  bleiben vor Snapshot/Mutation/Paste gesperrt. Source ce0c1cf unverändert.
-- PR7-Pilot am 15.10 geordnet beendet, Rückstart und erneute reguläre Pause der
-  Altapps bestätigt. Neuer Pilot vom geprüften Main777c91c sichtbar gestartet;
-  Sitzungsnachweis durch Root.runtime/current-pilot-fixes-session.txt.
-  Profile und beide Startup-lnks hashidentisch. Normale Maus-/Alt+Y-Hooks
-  bleiben gesperrt; Hörurteil für beide korrigierten Stimmen fehlt noch.
-- PR8 am unveränderten Head3f4efaaf323c005038d6e2cc5e093ea7b9f1b964 nach zwei
-  unabhängigen Reviews/drei erfolgreichen Hosted-Checks privat integriert;
-  Merge bb700f0, identischer Tree/Ancestry remote bestätigt. Pilot normal
-  beendet, eigener Familienabschluss und Altstack-Rückstart bewiesen; Main
-  danach FF, alte Apps/Qwen regulär beendet und neuer geprüfter Pilot gestartet.
-  Sichtbares Fenster536x679, Statussymbol Bereit, beide exakten Codex-Klassen,
-  Profil/Links hashidentisch. Exakter Pointer zuletzt pilot-session-2b3d2475-
-  04da-4175-87c1-a49e7825c86e.json; Supervisor41728/Launcher16868/App26056.
-  Nachweis Root.runtime/pilot-rollout-final-2026-10-15.json. Vor Wirkung frisch
-  binden. Erfolgreiche Alltagsübergabe über echtes Kürzel und Hörurteil offen.
-- Eine frühe fehlgeschlagene Probe verlor ihren RAM-Clipboard-Ausgangsstand;
-  dieser wurde nicht wiederhergestellt. Spätere Restorebelege gelten separat.
-- PR7 https://github.com/valhalla-hq/hugin/pull/7 und PR8
-  https://github.com/valhalla-hq/hugin/pull/8 integriert. Laufstand-Checkpoint
-  https://github.com/valhalla-hq/hugin/pull/9 auf demselben Branch;
-  Root-Ownership bleibt aktiv, laufender
-  Supervisor benötigt den Worktree. Mikrofonerkennung beobachtet, erfolgreiche
-  Alltagsübergabe nach zweiter Freigabe und Hörurteil Freya/Tyr noch offen.
+- Aktiver Task codex/hugin-pilot-fixes-mjolnir, Draft PR9:
+  https://github.com/valhalla-hq/hugin/pull/9. User bestaetigt normalen
+  Codex-Alltagspaste; neuer Auftrag: markierte Auswahl ersetzen, allgemeine
+  Felder (YouTube/Chrome), zwei Aufnahme-Cues, echtes Streaming korrigieren.
+- Change-Vertrag: specs/2026-10-15-hugin-input-audio/. Gepruefter Source
+  6f4897c16cec03ce37ae014f708271b5f7332f71; Root integriert getrennte Helper-
+  Slices. UI/Stimmen/Kuerzel/Privacy/GPU-Serialisierung/Rueckweg erhalten.
+- UIA-Intervall mit beiden geprueften Originalgrenzen; striktes IPC4/Response3.
+  Verified-Edit-Profil0,25s, gemessene Codex-Overrides0,15s; keine Freigabe
+  allein durch Appnamen. Native Chrome-Teilreplacement inkl. Clipboardrestore
+  und leerer Baseline bestanden. Keine Suche/Enter. Codex-/Vollmatrix offen.
+- Zwei eigene Cues + ADC-Gate. MME liefert nativ ADC0: Produzent auf eindeutig
+  geprueften Windows-WASAPI-Default/Shared-Konvertierung korrigiert. Native
+  Cue-Gate-Probe109Callbacks/31.040B/0alteADCs, Owner geschlossen; kein Audio
+  gespeichert. Keine globale/OS-Geraeteeinstellung geaendert.
+- Ein Worker-Writer + ein wartender Providerchunk, GPU-Owner unveraendert.
+  Reale Kontrollmessung alter Server9/8 leere Refills Freya/Tyr, neu beide0,
+  alle PCM-Hashes/Bytes identisch. Cancel und Familienabschluss belegt.
+- 390 Source-/Integrationschecks und56 Windowschecks ohne Skips gruen.
+  Unabhaengige Spec-/Standards-Paesse; reproduzierter Endpoint-P2 geschlossen.
+  Kuratierte Nachweise/Kosten/Grenzen: docs/input-audio-2026-10-15.md.
+- Pilotbb700f0 durch Nutzer normal beendet; Supervisorreceipt bestaetigt
+  eigenen Familienabschluss und Altstack-Rueckstart. Nutzer hat Whispering/
+  PipPal danach normal beendet; frisch keine alten Apps/Qwen beobachtet,
+  Profil/Startup-lnks hashidentisch. Alter STT-HTTP-Standby unveraendert.
+- Naechster Schritt: aktualisierten privaten Draft checkpointen, exakte Hosted-
+  Checks und Routineintegration, danach sauberen Main FF und geprueften neuen
+  Pilot mit einmaligem Supervisor starten. Root-Ownership behalten.
+- Hoerurteil/Cue-Echo und reale Auswahl-Vollmatrix sind Nutzerabnahme im Pilot;
+  normale Maus-/Alt+Y-/Autostartmigration bleibt gesperrt. Frueherer Verlust
+  eines RAM-Clipboardstands bleibt dokumentiert und ist nicht wiederhergestellt.
 
 ## Active Handoff
 

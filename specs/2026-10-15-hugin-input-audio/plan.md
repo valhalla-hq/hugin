@@ -42,3 +42,9 @@
 
 Rollback: unveränderte alte Profile/Startup-lnks; einmaliger Supervisor und
 bestehende normale Beenden-Rückkehr. Keine dauerhaften Autostarts ändern.
+
+Pilot-Grenze: Der geprüfte private Zwischenstand darf nach Source-/Windows-
+Checks, nativer Chrome-Teilauswahl, echter Audio-/Cue-Gate-Probe und Review
+für Alltagstests integriert werden. IAC-001/002-Vollmatrix und Hör-/Echoabnahme
+bleiben offen; keine Erfolgsbehauptung für ungetestete native Ziele.
+Produktive Maus-/Alt+Y-/Autostartmigration weiter gesperrt.

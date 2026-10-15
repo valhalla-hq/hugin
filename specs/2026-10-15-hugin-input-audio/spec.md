@@ -73,12 +73,16 @@ Cue-Owner und Writer-Barrieren; Kosten: begrenzter zusätzlicher Worker-RAM,
 kein größerer nativer Playerpuffer. Entscheidung: implement-now in bestehendem
 Pilot, normale Maus-/Alt+Y-/Autostartmigration bleibt separat offen.
 
-Whispering v7.11.0/a6b15c28: Desktop-Textservice delegiert an write_text,
-Soundservice spielt getrennte vorhandene Audios ab. Nur Verhaltensvergleich,
-keine Übernahme fremder Soundassets oder AGPL-Implementierung. Nativer
-write_text-Mechanismus wird separat an der Rust-Grenze nachgelesen.
+Whispering v7.11.0/a6b15c28: Desktop-Textservice delegiert an write_text;
+Rust sichert Clipboardtext, stellt Diktat bereit, simuliert Strg+V und
+restauriert verfügbaren Clipboardtext nach Verzögerungen. Keine spezielle
+Feldsuche. Soundservice spielt getrennte vorhandene Audios ab. Nur
+Verhaltensvergleich, keine Übernahme fremder Assets/AGPL-Implementierung.
 
 ## Prüfstand
 
 - Change-Spec vor Code geschrieben; Details/Messungen in plan.md und tasks.md.
-- Reale Chrome-Feldfähigkeiten, GPU-Paketzeiten, Cue-Echo und Hörabnahme offen.
+- Native Chrome-Teilauswahl und echte TTS-/Cue-Gate-Pipeline belegt;
+  Details/Messgrenzen in docs/input-audio-2026-10-15.md.
+- Codex-/Browser-Vollmatrix, Cue-Echo und Hörabnahme noch offen; private
+  Pilotintegration dient dieser Abnahme, keine Produktionsmigration.
