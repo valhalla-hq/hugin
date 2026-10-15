@@ -109,4 +109,16 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Active Handoff
 
-- `handoffs/2026-10-14-pilot-fixes.md`
+- `handoffs/2026-10-15-cues-helper.md`
+
+## Bounded Cue Helper Checkpoint
+
+- Only this helper branch: codex/hugin-cues-20261015-mjolnir, Mjolnir ownership
+  active. Accountable root retains integration and the running pilot.
+- IA-003/005 source commit ac942eb6280792435e6e19c3d68528c86ea7a917, based on
+  the committed change spec5a238677ce0ff915b141f313e7960434cf92ad28.
+- Owned original capture cues, device-time ADC gate, cancellation and cleanup
+  implemented;351 source/integration checks and final75 scoped checks green.
+  Native hearing, acoustic tail/echo and hardware acceptance remain open.
+- Explicit helper instruction: local commit only; no push, PR, merge, ownership
+  release, device/GPU/input action or pilot restart. Exact state in the handoff.
