@@ -40,8 +40,8 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 - Aktiver Task codex/hugin-pilot-fixes-mjolnir: Brian meldet fehlende Codex-
   Übergabe bei unverändertem Ziel und abgehacktes Audio bei beiden Stimmen.
   Vertrag/Plan: specs/2026-10-14-hugin-v1/pilot-fixes.md.
-- PR5, PR6 und PR7 sind integriert. Geprüfter Main und aktuell gestarteter Pilot:
-  777c91cede02352eeb782f93488eb670824d8295. Strg+Alt+D/V und einmaliger
+- PR5 bis PR8 sind integriert. Geprüfter Main und aktuell gestarteter Pilot:
+  bb700f0469dd3f75007041c430058c5bae368b47. Strg+Alt+D/V und einmaliger
   Rückweg erhalten. Laufzustand vor Eingriffen frisch prüfen.
 - Audiofix für beide Stimmen nativ bestätigt: Freya48/Tyr47 leere Refills
   vorher, beide0 nachher, PCM vollständig identisch, alle eigenen Header/
@@ -78,7 +78,7 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
   ursprüngliche Baseline/Serviceabschluss bestätigt. Widget Warm50,809ms/
   Delivery0,512s, Renderer44,926ms/0,503s. Protokollfrist unverändert; äußere
   Messung enthält Fixture-/Scheduling-Overhead, keine p95-Zusage.
-- Vorbereitetes Follow-up erweitert targets.json ausschließlich um diese
+- Integriertes Follow-up PR8 erweitert targets.json ausschließlich um diese
   zweite Codex-Klasse, gleiche exakte Familie und0,15s-Restore; Fallback leer.
   Profil→Service-Regression zunächst rot, danach329 Source-/Integrationschecks
   in25,114s grün. Fremde/fehlende/case-abweichende Familien und dritte Klasse
@@ -88,14 +88,21 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
   Sitzungsnachweis durch Root.runtime/current-pilot-fixes-session.txt.
   Profile und beide Startup-lnks hashidentisch. Normale Maus-/Alt+Y-Hooks
   bleiben gesperrt; Hörurteil für beide korrigierten Stimmen fehlt noch.
-- Nach finaler Konfigurationsprüfung/Hosted-CI Follow-up am unveränderten Head
-  privat integrieren, Pilot normal beenden, Rückweg beweisen und Main danach
-  aktualisieren. Altapps normal pausieren und neuen geprüften Pilot starten.
-  Aktuelle Sitzung über exakten Pointer ermitteln; keine weitere Fokusfrage.
+- PR8 am unveränderten Head3f4efaaf323c005038d6e2cc5e093ea7b9f1b964 nach zwei
+  unabhängigen Reviews/drei erfolgreichen Hosted-Checks privat integriert;
+  Merge bb700f0, identischer Tree/Ancestry remote bestätigt. Pilot normal
+  beendet, eigener Familienabschluss und Altstack-Rückstart bewiesen; Main
+  danach FF, alte Apps/Qwen regulär beendet und neuer geprüfter Pilot gestartet.
+  Sichtbares Fenster536x679, Statussymbol Bereit, beide exakten Codex-Klassen,
+  Profil/Links hashidentisch. Exakter Pointer zuletzt pilot-session-2b3d2475-
+  04da-4175-87c1-a49e7825c86e.json; Supervisor41728/Launcher16868/App26056.
+  Nachweis Root.runtime/pilot-rollout-final-2026-10-15.json. Vor Wirkung frisch
+  binden. Erfolgreiche Alltagsübergabe über echtes Kürzel und Hörurteil offen.
 - Eine frühe fehlgeschlagene Probe verlor ihren RAM-Clipboard-Ausgangsstand;
   dieser wurde nicht wiederhergestellt. Spätere Restorebelege gelten separat.
-- PR7 https://github.com/valhalla-hq/hugin/pull/7 integriert. Follow-up-Draft
-  https://github.com/valhalla-hq/hugin/pull/8; Root-Ownership bleibt aktiv, laufender
+- PR7 https://github.com/valhalla-hq/hugin/pull/7 und PR8
+  https://github.com/valhalla-hq/hugin/pull/8 integriert. Laufstand-Checkpoint
+  auf demselben Branch; Root-Ownership bleibt aktiv, laufender
   Supervisor benötigt den Worktree. Mikrofonerkennung beobachtet, erfolgreiche
   Alltagsübergabe nach zweiter Freigabe und Hörurteil Freya/Tyr noch offen.
 

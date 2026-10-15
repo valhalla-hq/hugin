@@ -123,10 +123,18 @@ ba5700c6cae9c29d1b6ed56bbfc9bb140ce9a62f integriert. Main777c91c wurde erst nach
 normalem Hugin-Ende/Familienabschluss aktualisiert. Beide alten Startup-lnks
 starteten Whispering/PipPal; beide Apps danach normal erneut beendet. Profil
 und Links hashidentisch, alter Qwen beendet, STT-HTTP-Standby unverändert.
-Pilot vom sauberen Main777c91c sichtbar gestartet (536x679), aktuelle Sitzung
+PR7-Pilot vom sauberen Main777c91c sichtbar gestartet (536x679), Sitzung damals
 über Root.runtime/current-pilot-fixes-session.txt. Ein danach erkanntes reales
 Diktat wurde wegen der zweiten Fokusklasse abgewiesen; Mikrofon/Erkennung
 damit beobachtet, alltägliche Übergabe nach zweiter Klassenfreigabe noch offen.
-Nach geprüftem Konfigurationsmerge erneut geordnet starten. Strg+Alt+D/V und
-einmaliger Rückweg erhalten. Maus/Alt+Y/Gesamtmigration sowie das separate
-menschliche Hörurteil Freya/Tyr bleiben offen.
+PR8 inzwischen am unveränderten Head3f4efaaf323c005038d6e2cc5e093ea7b9f1b964 mit
+zwei geschlossenen Reviews/drei erfolgreichen Hosted-Checks integriert;
+Merge bb700f0469dd3f75007041c430058c5bae368b47 mit gleichem Tree remote belegt.
+Erneuter normaler Quit/Familienabschluss, alter Rückstart und reguläre Pause
+bestätigt; Main erst danach FF. Neuer Pilot vom sauberen Mainbb700f0 sichtbar
+536x679, Statussymbol Bereit, beide exakten Codex-Klassen beim Start geladen.
+Aktuelle Sitzung über Root.runtime/current-pilot-fixes-session.txt und kuratierten
+pilot-rollout-final-2026-10-15.json. Profil/Startup-lnks weiterhin hashidentisch,
+alter Qwen abwesend, STT-HTTP-Standby unverändert. Strg+Alt+D/V und einmaliger
+Rückweg erhalten. Alltagsübergabe über echtes Kürzel nach diesem Neustart,
+Maus/Alt+Y/Gesamtmigration und menschliches Hörurteil Freya/Tyr bleiben offen.

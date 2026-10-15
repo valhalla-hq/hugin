@@ -8,14 +8,18 @@
   Root-Worktree C:/Users/brian/brian-projects/worktrees/hugin/hugin-pilot-fixes-mjolnir.
   Root-Ownership aktiv auf Mjolnir; einmaliger Supervisor braucht den Worktree.
   Keine fremde Helper-Ownership übernehmen.
-- Control e3deecae6673a024aa9015a4387737fbec04c795. PR5/6/7 integriert;
-  Main/aktueller Pilot777c91cede02352eeb782f93488eb670824d8295.
+- Control e3deecae6673a024aa9015a4387737fbec04c795. PR5/6/7/8 integriert;
+  Main/aktueller Pilotbb700f0469dd3f75007041c430058c5bae368b47.
   PR7 https://github.com/valhalla-hq/hugin/pull/7 am geprüften Headba5700c6 mit
   drei erfolgreichen Hosted-Checks integriert; gleicher Tree/Ancestry bewiesen.
-- Follow-up https://github.com/valhalla-hq/hugin/pull/8 auf demselben Branch:
+- Follow-up https://github.com/valhalla-hq/hugin/pull/8 integriert:
   zweite exakt geprüfte Codex-Fokusklasse, Profil-/Service-Guards, kuratierte
   Nachweise/Kontext/Handoff. Routineintegration autorisiert; keine neue Policy,
   Kosten, Veröffentlichung oder dauerhafte Autostartänderung.
+- PR8 am unveränderten Head3f4efaaf323c005038d6e2cc5e093ea7b9f1b964 nach zwei
+  unabhängigen Reviews/drei grünen Hosted-Checks integriert. Remote-Merge
+  bb700f0 enthält denselben Tree/Head. Dieser neue Draft-Checkpoint hält nur
+  den geprüften Laufstand und offene menschliche Abnahme fest.
 
 ## Umsetzung und Prüfstand
 
@@ -63,10 +67,10 @@
 
 ## Laufzustand und Daten
 
-- C:/Users/brian/Hugin zeigt auf sauberen Mainclone777c91c. Exakte Sitzung über
+- C:/Users/brian/Hugin zeigt auf sauberen Mainclonebb700f0. Exakte Sitzung über
   Root.runtime/current-pilot-fixes-session.txt: zuletzt
-  pilot-session-bd483b23-53f1-40db-a6d7-72b7c3c63269.json,
-  Supervisor41872/App-Launcher31072/tatsächliche App30592. Vor Wirkung frisch
+  pilot-session-2b3d2475-04da-4175-87c1-a49e7825c86e.json,
+  Supervisor41728/App-Launcher16868/tatsächliche App26056. Vor Wirkung frisch
   an Image/Creation/lebendem Handle binden; PIDs allein sind keine Autorität.
 - Einmaliger Supervisor Root.runtime/pilot_session.pyw. Normaler Tray-Beenden-
   Pfad wartet eigenes Familienende ab und startet beide unveränderten alten
@@ -74,26 +78,30 @@
 - PR7-Rollout: eigener Familienabschluss und Rückstart/erneute reguläre Pause
   Whispering/PipPal bestätigt. Profil/Links hashidentisch. Alter Qwen beendet,
   STT-HTTP-Standby unverändert. Keine fremden Killaktionen/parallele GPU.
-- Neue App sichtbar536x679. Mikrofon/Erkennung eines realen Diktats beobachtet,
-  Übergabe wegen zweiter Klasse abgewiesen; erfolgreiche Alltagsübergabe nach
-  Follow-up weiterhin offen. Strg+Alt+D/V aktiv; Maus/Alt+Y/Gesamtmigration offen.
+- PR8-Rollout: Main777c91c-Pilot normal beendet, eigener Familienabschluss,
+  Altstack-Rückstart und reguläre erneute Pause belegt. Alter Qwen danach
+  abwesend, Profil und Links hashidentisch. Main erst nach Familienende FF.
+- Neuer Pilotbb700f0 sichtbar536x679, Statussymbol Bereit, beide exakten
+  Codex-Klassen beim Start geladen. Kuratierter lokaler Nachweis:
+  Root.runtime/pilot-rollout-final-2026-10-15.json. Keine dauerhaften Autostarts.
+- Mikrofon/Erkennung im vorherigen777c91c-Pilot beobachtet, Übergabe dort wegen
+  zweiter Klasse abgewiesen. Erfolgreiche Alltagsübergabe im neuen Pilot bleibt
+  offen. Strg+Alt+D/V aktiv; Maus/Alt+Y/Gesamtmigration und Hörurteil offen.
 - Eine frühe fehlgeschlagene Probe verlor ihren RAM-Clipboard-Ausgangsstand.
   Nicht wiederhergestellt; nur eigenes geprüftes Testartefakt entfernt. Spätere
   Restorebelege gelten separat. Keine Rohinhalte im Repository.
 
 ## Nächste Schritte
 
-1. Follow-up-Konfigurationsdelta unabhängig reviewen, exakten Head/Hosted-CI
-   prüfen, privat integrieren. Keine Sourceänderung für diesen Profilbefund nötig.
-2. Hugin normal beenden, Rückweg beweisen, Main FF; alte Apps regulär pausieren
-   und geprüften Pilot starten. Exakten Receiptpointer aktualisieren.
-3. Übergabe über echtes Kürzel im Codex-Feld und Hörurteil Freya/Tyr; weitere
+1. Technische Integration/Neustart abgeschlossen. Laufstand vor Eingriffen
+   frisch prüfen; aktuellen Pilot nicht für bereits bestandene Proben neu starten.
+2. Übergabe über echtes Kürzel im Codex-Feld und Hörurteil Freya/Tyr; weitere
    Produktabnahme. Keine weiteren Fokus-/Clipboard-Rückfragen für alte Proben.
-4. Kontext/Handoff remote sichern. Root-Ownership/Worktree behalten, solange
+3. Root-Ownership/Worktree behalten, solange
    laufender Supervisor und offene Pilotabnahme sie benötigen.
 
 Fortsetzen: Hugin AGENTS.md, CONTEXT.md, exakt diesen Handoff und pilot-fixes.md
 lesen; Preflight mit aktivem Branch, Git/PR/Ownership/Sitzung frisch prüfen.
 Dieselbe Root-Ownership weiterverwenden. Alle nativen Codex-Komponenten-
-proben bestanden; zweite Klassenfreigabe integriert/gestartet erst nach frischem
-Nachweis behaupten. Alltagsübergabe/Hör-/Gesamtabnahme ausdrücklich offen halten.
+proben und zweite Klassenfreigabe/Neustart bestanden. Alltagsübergabe/Hör-/
+Gesamtabnahme ausdrücklich offen halten; keine private Testaufnahme speichern.
