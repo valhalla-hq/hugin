@@ -100,6 +100,51 @@ class WindowsAbiContracts(unittest.TestCase):
             backend.snapshot(1024)
         self.assertEqual(failure.exception.status, 'format_unsupported')
 
+    def test_browser_text_preserves_opaque_source_metadata_and_rejects_unknown_formats(self):
+        names={'HTML Format':49152,'Rich Text Format':49153,
+            'Chromium internal source RFH token':49154,
+            'Chromium internal source URL':49155,
+            'Hugin.Private.ClipboardTransaction.v1':49156}
+        library=Library()
+        library.functions['RegisterClipboardFormatW']=lambda name:names[name]
+        with patch.object(ctypes,'WinDLL',return_value=library):
+            backend=NativeClipboard()
+        original={13:b'T\0\0\0',49152:b'<b>T</b>',
+            49154:b'\x00\xff\x01\x80',49155:b'\x00https://example.invalid/\xff'}
+        class ClipboardOS:
+            current=4
+            data=dict(original)
+            def EnumClipboardFormats(self,previous):
+                order=list(self.data)
+                index=order.index(previous)+1 if previous else 0
+                return order[index] if index<len(order) else 0
+            def GetClipboardSequenceNumber(self):return self.current
+            def GetClipboardOwner(self):return 100
+            def GetClipboardData(self,identity):return identity
+            def EmptyClipboard(self):self.data={};self.current+=1;return 1
+            def SetClipboardData(self,identity,handle):
+                self.data[identity]=allocations[handle];self.current+=1;return handle
+        class MemoryOS:
+            def GlobalSize(self,handle):return len(backend.user.data[handle])
+        @contextmanager
+        def opened(**_):yield
+        backend.user,backend.kernel=ClipboardOS(),MemoryOS()
+        backend._opened,backend.hwnd=opened,100
+        backend._read_handle=lambda handle,size:backend.user.data[handle][:size]
+        allocations={}
+        def allocate(data):
+            handle=len(allocations)+1000;allocations[handle]=data;return handle
+        backend._allocate=allocate
+        saved=backend.snapshot(1024)
+        self.assertEqual(dict(saved.formats),original)
+        backend.replace(saved.formats,saved.sequence)
+        self.assertEqual(backend.user.data,original)
+        backend.user.data[49199]=b'unknown format'
+        backend._read_handle=lambda *_:self.fail('unknown format must reject before byte copy')
+        with self.assertRaises(ClipboardFailure) as failure:backend.snapshot(1024)
+        self.assertEqual(failure.exception.status,'format_unsupported')
+        self.assertEqual(backend.user.data,{**original,49199:b'unknown format'})
+
     def test_native_snapshot_accounts_all_sizes_before_copying(self):
         backend = object.__new__(NativeClipboard)
         @contextmanager

@@ -102,3 +102,8 @@ Normale Maus-/Alt+Y-Aktivierung und vollständige Migration bleiben offen.
   Vorwärtsschritt denselben Punkt mit derselben tatsächlich bewegten
   Einheitenzahl melden, auch vor einer äußeren strukturellen Range-Grenze;
   verschiedene vollständig bewegte Einheitenzahlen bleiben verboten.
+- Browserkopien enthalten zusätzlich `Chromium internal source RFH token`
+  und `Chromium internal source URL`. Diese beiden dokumentierten HGLOBAL-
+  Formate unverändert im bestehenden begrenzten RAM-Snapshot sichern und
+  wiederherstellen; weder dekodieren noch protokollieren. Andere unbekannte
+  Formate und komplexe OLE-Dateiobjekte bleiben vor jeder Mutation gesperrt.

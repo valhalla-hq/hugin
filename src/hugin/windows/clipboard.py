@@ -467,7 +467,11 @@ class NativeClipboard:
             family.argtypes=[W.HANDLE,ctypes.POINTER(W.UINT),W.LPWSTR]
             family.restype=W.LONG
         self.allowed = {1, 7, 8, 13, 15, 16, 17}
-        for name in ('HTML Format', 'Rich Text Format'):
+        # Chromium publishes these two provenance formats as HGLOBAL bytes.
+        # Preserve them opaquely; an arbitrary registered format may instead
+        # contain an object/stream and still must fail before materialization.
+        for name in ('HTML Format', 'Rich Text Format',
+                     'Chromium internal source RFH token', 'Chromium internal source URL'):
             identity = self.user.RegisterClipboardFormatW(name)
             if not identity:
                 raise ClipboardFailure('clipboard_failed')
