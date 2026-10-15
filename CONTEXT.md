@@ -107,6 +107,24 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
   Supervisor benötigt den Worktree. Mikrofonerkennung beobachtet, erfolgreiche
   Alltagsübergabe nach zweiter Freigabe und Hörurteil Freya/Tyr noch offen.
 
+## Stream-Helper 15.10.2026
+
+- Ausschließlich eigener Task codex/hugin-stream-20261015-mjolnir ab
+  Change-Spec5a238677. Root besitzt Integration und sämtliche Hardware-/
+  Pilotaktionen; dieser Helper hat keine GPU-/Audio-/Mikrofon-/UI-Aktion ausgeführt.
+- Lokaler Workerfix c2aeef69d5d10a851bc2b95412b4c82277e0b2bc:
+  Generator auf bisherigem Owner, ein IPC-Writer und ein wartender Providerchunk.
+  Writer/Queue/blockierter Producer höchstens3×1.440.000B PCM; bisherige
+  Frame-/Client-/native Playerbudgets unverändert. Kein Sample/Silence verändert.
+- Lokale Probe a8b8b479c327260532267c13b01c8d292b7991b7:
+  tools/probe_live_audio.py plant standardmäßig read-only mit explizitem --root;
+  --run nur durch Root im exklusiven Hardwarefenster. Source/src und bestehende
+  Runtime werden getrennt gebunden. Technische Traces enthalten keine Inhalte.
+- Guards zuerst rot, danach345 Contracts/Integrationstests in23,835s grün;
+  Dokumentprüfung19REQ/17AC ohne Befund. Reale Qwen-Paketzeiten, CPU/RAM-
+  Hardwaremessung und Hörurteil bleiben offen. Kein Push/PR/Merge; eigene
+  Ownership aktiv, Sourcecommits für Root-Cherry-pick, Metadaten separat.
+
 ## Active Handoff
 
-- `handoffs/2026-10-14-pilot-fixes.md`
+- `handoffs/2026-10-15-stream-helper.md`
