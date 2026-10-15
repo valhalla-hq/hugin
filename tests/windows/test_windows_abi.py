@@ -226,9 +226,10 @@ class WindowsAbiContracts(unittest.TestCase):
         backend = object.__new__(NativeClipboard)
         backend._unfreed = set()
         class ClipboardOS:
-            sequence = 1
+            sequence = 1;owner=99
             def GetClipboardSequenceNumber(self):
                 return self.sequence
+            def GetClipboardOwner(self):return self.owner
             def EmptyClipboard(self):
                 self.sequence = 2
                 return True
@@ -239,12 +240,70 @@ class WindowsAbiContracts(unittest.TestCase):
         def opened(**_):
             yield
             backend.user.sequence = 77  # user copy after the clipboard lock
+            backend.user.owner=200
             raise ClipboardFailure('clipboard_failed')
         backend.user = ClipboardOS()
+        backend.hwnd=99
         backend._opened, backend._allocate = opened, lambda _: 100
         with self.assertRaises(ClipboardFailure) as failure:
             backend.replace(((13, b'text'),), 1)
         self.assertEqual(failure.exception.owned_sequence, 3)
+
+    def publication_fixture(self,*,foreign=False,partial=False):
+        backend=object.__new__(NativeClipboard)
+        backend.hwnd=99;backend._unfreed=set()
+        class ClipboardOS:
+            current=1;owner=99
+            def GetClipboardSequenceNumber(self):return self.current
+            def GetClipboardOwner(self):return self.owner
+            def EmptyClipboard(self):self.current=2;return True
+            def SetClipboardData(self,identity,handle):
+                if partial and identity==49152:return 0
+                self.current=3;return handle
+        class MemoryOS:
+            def GlobalFree(self,handle):return 0
+        @contextmanager
+        def opened(write=False):
+            try:yield
+            finally:
+                if write:
+                    # Windows adds its implicit text formats on CloseClipboard.
+                    backend.user.current=77 if foreign else 6
+                    backend.user.owner=200 if foreign else 99
+        backend.user,backend.kernel=ClipboardOS(),MemoryOS()
+        backend._opened=opened;backend._allocate=lambda _:100
+        return backend
+
+    def test_complete_write_reports_own_sequence_after_implicit_format_publication(self):
+        backend=self.publication_fixture()
+        self.assertEqual(backend.replace(((13,b'text'),),1),6)
+
+    def test_user_copy_at_publication_is_not_claimed_as_an_owned_sequence(self):
+        backend=self.publication_fixture(foreign=True)
+        with self.assertRaises(ClipboardFailure) as failure:
+            backend.replace(((13,b'text'),),1)
+        self.assertEqual(failure.exception.status,'clipboard_changed')
+        self.assertEqual(failure.exception.owned_sequence,3)
+        self.assertEqual(backend.user.current,77)
+
+    def test_partial_write_retains_the_published_own_sequence_for_restore(self):
+        backend=self.publication_fixture(partial=True)
+        with self.assertRaises(ClipboardFailure) as failure:
+            backend.replace(((13,b'text'),(49152,b'nonce')),1)
+        self.assertEqual(failure.exception.status,'clipboard_write_failed')
+        self.assertEqual(failure.exception.owned_sequence,6)
+
+    def test_unstable_zero_or_failed_owner_observation_is_unknown_not_foreign(self):
+        for kind in ('unstable','zero','owner_error'):
+            backend=self.publication_fixture()
+            sequence=iter((5,6) if kind=='unstable' else (0,0) if kind=='zero' else (6,6))
+            backend.user.GetClipboardSequenceNumber=lambda:next(sequence)
+            if kind=='owner_error':
+                def owner_error():ctypes.set_last_error(5);return 0
+                backend.user.GetClipboardOwner=owner_error
+            with self.assertRaises(ClipboardFailure) as failure:
+                backend.restorable_sequence(3)
+            self.assertEqual(failure.exception.status,'clipboard_busy',kind)
 
     def test_direct_edit_selection_uses_utf16_offsets_without_clipboard(self):
         backend = object.__new__(NativeClipboard)

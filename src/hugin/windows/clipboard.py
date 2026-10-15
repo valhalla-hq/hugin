@@ -112,10 +112,19 @@ class ClipboardService:
 
     def _check_recovery(self, backend):
         if self._pending_restore is not None:
-            if backend.sequence() != self._pending_restore[1]:
-                self._pending_restore = None  # A later user copy has priority.
+            snapshot,sequence=self._pending_restore
+            current=self._restorable_sequence(backend,sequence)
+            if current is None:
+                self._pending_restore = None  # A proven later user copy has priority.
             else:
+                self._pending_restore=(snapshot,current)
                 raise ClipboardFailure('clipboard_recovery_pending')
+
+    @staticmethod
+    def _restorable_sequence(backend,expected):
+        observe=getattr(backend,'restorable_sequence',None)
+        if observe is not None:return observe(expected)
+        return expected if backend.sequence()==expected else None
 
     def _native(self):
         if self.backend is None:
@@ -182,18 +191,28 @@ class ClipboardService:
 
     def _restore(self, backend, snapshot, sequence):
         # Compare-and-replace is performed while the OS clipboard is locked.
+        current=sequence
         try:
-            backend.replace(snapshot.formats, sequence)
+            current=self._restorable_sequence(backend,sequence)
+            if current is None:
+                self._pending_restore=None
+                return False
+            backend.replace(snapshot.formats,current)
             self._pending_restore = None
             return True
         except ClipboardFailure as failure:
+            owned=failure.owned_sequence if failure.owned_sequence is not None else current
             if failure.status == 'clipboard_changed':
-                # Retained recovery may refer to a newer partial mutation.
-                if self._pending_restore is not None and backend.sequence() != self._pending_restore[1]:
-                    self._pending_restore = None
-                return False
-            self._pending_restore = (snapshot, failure.owned_sequence if failure.owned_sequence is not None else sequence)
-            raise ClipboardFailure('clipboard_restore_failed') from None
+                try:
+                    observed=self._restorable_sequence(backend,owned)
+                    if observed is None:
+                        self._pending_restore=None
+                        return False
+                    owned=observed
+                except ClipboardFailure:
+                    pass  # Unknown publication retains the original RAM snapshot.
+            self._pending_restore = (snapshot,owned)
+            raise ClipboardFailure('clipboard_restore_failed',owned_sequence=owned) from None
 
     def capture_selection(self, cancelled: Callable[[], bool]) -> ClipboardResult:
         try:
@@ -522,6 +541,21 @@ class NativeClipboard:
     def sequence(self):
         return self.user.GetClipboardSequenceNumber()
 
+    def restorable_sequence(self,expected):
+        # Our message-only HWND is held for this backend's lifetime, and the
+        # service serializes its writers. Windows may add implicit formats on
+        # CloseClipboard without changing this owner. Never claim a later
+        # foreign sequence, or confuse an unstable observation with its loss.
+        before=self.sequence()
+        ctypes.set_last_error(0)
+        owner=self.user.GetClipboardOwner()
+        error=ctypes.get_last_error()
+        after=self.sequence()
+        if not before or before!=after or (not owner and error):
+            raise ClipboardFailure('clipboard_busy')
+        if after==expected:return after
+        return after if self.hwnd and owner==self.hwnd else None
+
     def _read_handle(self, handle, size):
         pointer = self.kernel.GlobalLock(handle)
         if not pointer:
@@ -608,11 +642,18 @@ class NativeClipboard:
                         raise ClipboardFailure('clipboard_write_failed')
                     item[1] = None  # Ownership transferred only after success.
                     last_owned_sequence = self.sequence()
-                return last_owned_sequence
+            published=self.restorable_sequence(last_owned_sequence)
+            if published is None:raise ClipboardFailure('clipboard_changed')
+            return published
         except ClipboardFailure as failure:
             if mutated:
                 # Ownership is retained even when SetClipboardData partially
                 # failed. The service still owns the original full snapshot.
+                try:
+                    published=self.restorable_sequence(last_owned_sequence)
+                    if published is not None:last_owned_sequence=published
+                except ClipboardFailure:
+                    pass  # The service retains unknown own publication for retry.
                 failure.owned_sequence = last_owned_sequence
             raise
         finally:

@@ -88,3 +88,11 @@ Normale Maus-/Alt+Y-Aktivierung und vollständige Migration bleiben offen.
   sie bestätigt den tatsächlichen synthetischen Inhalt und den RAM-Ausgangs-
   zustand. Erst vollständiges Paste/Restore/Caret/Erhalten-Löschen aktiviert
   ausschließlich die genaue Codex-Paket-/Klassenkonfiguration.
+- Native Reproduktion am Clipboard-Produzenten: nach Close ergänzt Windows
+  seine Textformate; zurückgegebene Sequenz9 war bereits Sequenz12, während
+  eigenes HWND und Nonce unverändert waren. Veröffentlichung erst danach
+  über stabilen Sequenz-/Owner-/Sequenz-Nachweis normalisieren. Kein bloßes
+  Übernehmen eines beliebigen späteren Zählers. Teilfehler ebenfalls behandeln;
+  unklare eigene Veröffentlichung hält den Originalsnapshot im RAM, bestätigte
+  fremde Nutzerkopien haben Vorrang. Alle Recovery-Verbraucher verwenden diese
+  Produzentenfakten statt eine Zählerabweichung selbst als Besitzverlust zu deuten.
