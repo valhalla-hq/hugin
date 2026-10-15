@@ -5,7 +5,7 @@ import sys
 import unittest
 from unittest.mock import patch
 
-from hugin.windows.clipboard import (NativeClipboard, ClipboardFailure, _Input,
+from hugin.windows.clipboard import (NativeClipboard, ClipboardFailure,ClipboardService,ClipboardSnapshot, _Input,
                                      _GuiThreadInfo, _KeyInput, _MouseInput, WindowTarget)
 from hugin.windows.process import (NativeProcess, _StartupInfo, _StartupInfoEx,
                                    _ProcessInformation, _ExtendedLimits)
@@ -304,6 +304,15 @@ class WindowsAbiContracts(unittest.TestCase):
             with self.assertRaises(ClipboardFailure) as failure:
                 backend.restorable_sequence(3)
             self.assertEqual(failure.exception.status,'clipboard_busy',kind)
+
+    def test_changed_sequence_with_null_owner_retains_the_original_recovery_snapshot(self):
+        backend=self.publication_fixture();backend.user.current=6;backend.user.owner=0
+        saved=ClipboardSnapshot(1,((13,b'original'),))
+        service=ClipboardService(backend=backend);service._pending_restore=(saved,3)
+        self.assertEqual(service.recover().status,'clipboard_restore_failed')
+        self.assertTrue(service.recovery_pending)
+        self.assertIs(service._pending_restore[0],saved)
+        self.assertEqual(backend.restorable_sequence(6),6)
 
     def test_direct_edit_selection_uses_utf16_offsets_without_clipboard(self):
         backend = object.__new__(NativeClipboard)

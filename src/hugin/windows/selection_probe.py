@@ -213,8 +213,7 @@ def _local_position(document,selected,uia):
             before,advanced=measure(count-1)
             if before>=0 or advanced!=count-1:raise _SelectionFailure('target_unverifiable')
         after,advanced=measure(count+1)
-        if not (after>0 and advanced==count+1 or after==0 and advanced==count
-                and selected.CompareEndpoints(0,document,1)==0):
+        if not (after>0 and advanced==count+1 or after==0 and advanced==count):
             raise _SelectionFailure('target_unverifiable')
         return count
     # CompareEndpoints promises ordering, not a character distance. Search

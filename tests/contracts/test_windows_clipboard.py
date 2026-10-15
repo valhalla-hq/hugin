@@ -43,6 +43,9 @@ class FakeClipboard:
     def sequence(self):
         return self.seq
 
+    def restorable_sequence(self,expected):
+        return expected if self.seq==expected else None
+
     def snapshot(self, budget):
         if self.snapshot_failure:
             raise ClipboardFailure(self.snapshot_failure)

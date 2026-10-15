@@ -113,18 +113,12 @@ class ClipboardService:
     def _check_recovery(self, backend):
         if self._pending_restore is not None:
             snapshot,sequence=self._pending_restore
-            current=self._restorable_sequence(backend,sequence)
+            current=backend.restorable_sequence(sequence)
             if current is None:
                 self._pending_restore = None  # A proven later user copy has priority.
             else:
                 self._pending_restore=(snapshot,current)
                 raise ClipboardFailure('clipboard_recovery_pending')
-
-    @staticmethod
-    def _restorable_sequence(backend,expected):
-        observe=getattr(backend,'restorable_sequence',None)
-        if observe is not None:return observe(expected)
-        return expected if backend.sequence()==expected else None
 
     def _native(self):
         if self.backend is None:
@@ -193,7 +187,7 @@ class ClipboardService:
         # Compare-and-replace is performed while the OS clipboard is locked.
         current=sequence
         try:
-            current=self._restorable_sequence(backend,sequence)
+            current=backend.restorable_sequence(sequence)
             if current is None:
                 self._pending_restore=None
                 return False
@@ -204,7 +198,7 @@ class ClipboardService:
             owned=failure.owned_sequence if failure.owned_sequence is not None else current
             if failure.status == 'clipboard_changed':
                 try:
-                    observed=self._restorable_sequence(backend,owned)
+                    observed=backend.restorable_sequence(owned)
                     if observed is None:
                         self._pending_restore=None
                         return False
@@ -554,6 +548,7 @@ class NativeClipboard:
         if not before or before!=after or (not owner and error):
             raise ClipboardFailure('clipboard_busy')
         if after==expected:return after
+        if not owner:raise ClipboardFailure('clipboard_busy')
         return after if self.hwnd and owner==self.hwnd else None
 
     def _read_handle(self, handle, size):

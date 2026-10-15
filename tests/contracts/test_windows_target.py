@@ -130,6 +130,22 @@ class TargetContracts(unittest.TestCase):
         with patch.object(Range,'MoveEndpointByUnit',alias):
             self.assertEqual(self.read(automation).status,'target_unverifiable')
 
+    def test_last_character_boundary_can_precede_the_structural_document_end(self):
+        from unittest.mock import patch
+        automation=Automation();pattern=automation.focus.pattern
+        pattern.position=20;pattern.extent=21
+        original=Range.MoveEndpointByUnit
+        def text_boundary(selected,endpoint,unit,count):
+            start=selected.start if endpoint==0 else selected.end
+            actual=min(count,pattern.origin+20-start) if count>0 else count
+            return original(selected,endpoint,unit,actual)
+        with patch.object(Range,'MoveEndpointByUnit',text_boundary):
+            proof=_target_proof(automation,Uia,BASE,lambda:BASE,lambda:False)
+            self.assertEqual(proof.identity.position,20)
+            pattern.position=0
+            self.assertEqual(confirm_uia_target(automation,Uia,BASE,lambda:BASE,proof).status,
+                'target_changed')
+
     def test_local_points_do_not_walk_before_the_edit_when_page_prefix_changes(self):
         from unittest.mock import patch
         original=Range.MoveEndpointByUnit

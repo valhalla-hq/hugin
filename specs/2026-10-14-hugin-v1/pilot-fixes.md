@@ -96,3 +96,9 @@ Normale Maus-/Alt+Y-Aktivierung und vollständige Migration bleiben offen.
   unklare eigene Veröffentlichung hält den Originalsnapshot im RAM, bestätigte
   fremde Nutzerkopien haben Vorrang. Alle Recovery-Verbraucher verwenden diese
   Produzentenfakten statt eine Zählerabweichung selbst als Besitzverlust zu deuten.
+- Eine geänderte Sequenz mit NULL-Owner bleibt ausdrücklich unbekannt und
+  hält den RAM-Snapshot. Die Produzenten-API ist verbindlich, ohne alten
+  Raw-Sequence-Fallback im Consumer. Beim Cursor darf ein erschöpfter
+  Vorwärtsschritt denselben Punkt mit derselben tatsächlich bewegten
+  Einheitenzahl melden, auch vor einer äußeren strukturellen Range-Grenze;
+  verschiedene vollständig bewegte Einheitenzahlen bleiben verboten.
