@@ -79,8 +79,10 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 - Dokumentarischer Rolloutcheckpoint: Draft PR10,
   https://github.com/valhalla-hq/hugin/pull/10. Er aendert nur Context, exakten
   Handoff und Aufgabenstatus. Naechster Schritt: Alltagstest mit neuem Pilot;
-  Root-Ownership bleibt wegen laufendem Supervisor aktiv. Helperworktrees nach
-  bewiesenem eigenen Remotecheckpoint regulaer freigeben.
+  Root-Ownership bleibt wegen laufendem Supervisor aktiv. Alle drei Helper
+  haben ihren eigenen Remotecheckpoint und exakten Handoff bewiesen, Ownership
+  regulaer freigegeben und nur eigenen Worktree/lokalen Branch entfernt.
+  Ihre privaten Remotebranches bleiben erhalten.
 - Brian meldet nach Wiederholung fluessige Sprache. Auf Wunsch deutlichere/
   lautere Töne: Start115ms tief doppelt, Ende180ms hell aufsteigend.82 passende
   Checks und NativeReplay/Gate114Callbacks/31.680B/0alteADCs gruen.

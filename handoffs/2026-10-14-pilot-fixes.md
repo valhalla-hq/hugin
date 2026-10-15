@@ -103,9 +103,13 @@
    NeueTonabnahme, Cue-Echo sowie reale Codex-
    /Browser-/Win32-Delivery-Vollmatrix als Nutzerabnahme weiterfuehren.
    TechnischerNativebeleg ist keine Hoer-/Produktionsgesamtabnahme.
-4. Root-Worktree/Ownership bei laufendemSupervisor behalten. HelperSource
-   ist separat integriert; derenOwnership nur ueber regulaerenLifecycle
-   nach eigenemRemotecheckpoint freigeben, keine fremdenStateeingriffe.
+4. Root-Worktree/Ownership bei laufendem Supervisor behalten. Alle drei Helper
+   sind nach bewiesenem eigenem Remotehead und Context-/Handoffblobs regulaer
+   freigegeben; eigene Worktrees und lokale Branches entfernt, Remotes erhalten:
+   Cues2f045e9fd4e6ba830a843c15bd5b74c35ba4d5a8,
+   Range0a534632abdf19de98ee037fbe49ead234c6891d,
+   Stream0cccf901d5f70040757f5b065d4680bfb3b3f4e0.
+   Keine fremden Stateeingriffe; lokale Abschlussbelege in ihren Release-Receipts.
 
 Starter: Hugin AGENTS.md, CONTEXT.md und genau diesen Handoff lesen; zentralen
 Lifecycle/Preflight mit aktivemBranch, Git/PR/Ownership und Runtime frisch
