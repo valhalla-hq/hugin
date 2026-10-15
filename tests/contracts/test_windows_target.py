@@ -112,6 +112,23 @@ class TargetContracts(unittest.TestCase):
         target=WindowTarget(100,200,3,4,500,'Edit',(200,0,0,1,1),(7,10))
         self.assertFalse(target.verifiable)
 
+    def test_derived_endpoint_must_equal_its_original_selection_boundary(self):
+        from unittest.mock import patch
+        original=Range.MoveEndpointByRange
+        for changed_endpoint in (None,0,1):
+            automation=Automation();automation.focus.pattern.width=3
+            proof=_target_proof(automation,Uia,BASE,lambda:BASE,lambda:False)
+            def wrong(point,endpoint,selected,selected_endpoint):
+                if (selected.CompareEndpoints(0,selected,1)!=0
+                        and changed_endpoint in (None,selected_endpoint)):
+                    point.start=point.end=selected.model.origin+(1 if selected_endpoint==0 else 2)
+                else:original(point,endpoint,selected,selected_endpoint)
+            with patch.object(Range,'MoveEndpointByRange',wrong):
+                self.assertEqual(self.read(automation).status,'target_unverifiable',changed_endpoint)
+                automation.focus.pattern.position=8
+                self.assertEqual(confirm_uia_target(automation,Uia,BASE,lambda:BASE,proof).status,
+                    'target_unverifiable',changed_endpoint)
+
     def test_focused_combo_supplies_complete_field_proof(self):
         automation=Automation();automation.focus.CurrentControlType=Uia.UIA_ComboBoxControlTypeId
         self.assertEqual(self.read(automation).status,'target_captured')

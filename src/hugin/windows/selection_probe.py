@@ -231,7 +231,8 @@ def _plain_range(text_range):
 def _endpoint(selected,endpoint):
     point=selected.Clone()
     point.MoveEndpointByRange(1-endpoint,selected,endpoint)
-    if point.CompareEndpoints(0,point,1)!=0:
+    if (point.CompareEndpoints(0,point,1)!=0
+            or point.CompareEndpoints(0,selected,endpoint)!=0):
         raise _SelectionFailure('target_unverifiable')
     return point
 
