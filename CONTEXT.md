@@ -40,8 +40,8 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 - Aktiver Task codex/hugin-pilot-fixes-mjolnir: Brian meldet fehlende Codex-
   Übergabe bei unverändertem Ziel und abgehacktes Audio bei beiden Stimmen.
   Vertrag/Plan: specs/2026-10-14-hugin-v1/pilot-fixes.md.
-- PR5 und PR6 sind integriert. Geprüfter Main und aktuell gestarteter Pilot:
-  2298f298c99e5f7491465b91b8a17eeef2575a69. Strg+Alt+D/V und einmaliger
+- PR5, PR6 und PR7 sind integriert. Geprüfter Main und aktuell gestarteter Pilot:
+  777c91cede02352eeb782f93488eb670824d8295. Strg+Alt+D/V und einmaliger
   Rückweg erhalten. Laufzustand vor Eingriffen frisch prüfen.
 - Audiofix für beide Stimmen nativ bestätigt: Freya48/Tyr47 leere Refills
   vorher, beide0 nachher, PCM vollständig identisch, alle eigenen Header/
@@ -61,23 +61,36 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
   bestanden: genau ein Paste, alle Clipboardformate zurück, echter Home-
   Gegenfall abgelehnt, eigenes Literal entfernt, Baseline erhalten und eigener
   Service geschlossen. Warm40,7/42,0ms, Delivery0,476/0,483s; kein Enter.
-- targets.json aktiviert ausschließlich Chrome_RenderWidgetHostHWND mit
-  FamilieOpenAI.Codex_2p2nqsd0c76g0 und0,15s-Restore. Ctrl+C-Fallback leer;
-  47 Target-/Profile-/Commit-/Lease-Guards grün. Mikrofontest im neuen Pilot
-  und menschliches Hörurteil bleiben separate Alltagsschritte.
-- Pilot am 15.10 geordnet beendet, Rückstart und erneute reguläre Pause der
-  Altapps bestätigt. Neuer Pilot vom geprüften Main sichtbar gestartet;
+- Der erste PR7-Pilot erkannte ein reales Diktat, wies Codex aber erneut als
+  target_unverified ab. Brian bestätigt das Codex-Nachrichtenfeld. Win32-
+  Messung ohne Fokusänderung: Chrome_WidgetWin_1 mit exakter Codex-Familie
+  und UIA-Edit. Die bisherige Renderer-Einzelklasse deckte den Alltagspfad
+  nicht ab. Keine pauschale Chromiumfreigabe aus diesem Befund ableiten.
+- Zwei weitere vollständige native Proben ohne SetFocus für Chrome_WidgetWin_1
+  bestanden: Feldanfang/Textende, Restore aller Formate, Home-Gegenfall,
+  eigenes Literal entfernt, Baseline/Familienabschluss bestätigt. Warm46,849/
+  41,732ms; Delivery0,495/0,490s; kein Enter. Nur technische Receipts im RAM-/
+  ignorierten Runtimepfad, keine Diktatinhalte im Repository.
+- Vorbereitetes Follow-up erweitert targets.json ausschließlich um diese
+  zweite Codex-Klasse, gleiche exakte Familie und0,15s-Restore; Fallback leer.
+  Profil→Service-Regression zunächst rot, danach329 Source-/Integrationschecks
+  in25,114s grün. Fremde/fehlende/case-abweichende Familien und dritte Klasse
+  bleiben vor Snapshot/Mutation/Paste gesperrt. Source ce0c1cf unverändert.
+- PR7-Pilot am 15.10 geordnet beendet, Rückstart und erneute reguläre Pause der
+  Altapps bestätigt. Neuer Pilot vom geprüften Main777c91c sichtbar gestartet;
   Sitzungsnachweis durch Root.runtime/current-pilot-fixes-session.txt.
   Profile und beide Startup-lnks hashidentisch. Normale Maus-/Alt+Y-Hooks
   bleiben gesperrt; Hörurteil für beide korrigierten Stimmen fehlt noch.
-- Nach finaler Konfigurationsprüfung/Hosted-CI PR7 am unveränderten Head
+- Nach finaler Konfigurationsprüfung/Hosted-CI Follow-up am unveränderten Head
   privat integrieren, Pilot normal beenden, Rückweg beweisen und Main danach
   aktualisieren. Altapps normal pausieren und neuen geprüften Pilot starten.
   Aktuelle Sitzung über exakten Pointer ermitteln; keine weitere Fokusfrage.
 - Eine frühe fehlgeschlagene Probe verlor ihren RAM-Clipboard-Ausgangsstand;
   dieser wurde nicht wiederhergestellt. Spätere Restorebelege gelten separat.
-- Draft/Fortsetzung https://github.com/valhalla-hq/hugin/pull/7.
-  Root-Ownership bleibt aktiv; laufender Supervisor benötigt den Worktree.
+- PR7 https://github.com/valhalla-hq/hugin/pull/7 integriert. Follow-up-Draft
+  nach aktuellem Checkpoint erstellen; Root-Ownership bleibt aktiv, laufender
+  Supervisor benötigt den Worktree. Mikrofonerkennung beobachtet, erfolgreiche
+  Alltagsübergabe nach zweiter Freigabe und Hörurteil Freya/Tyr noch offen.
 
 ## Active Handoff
 

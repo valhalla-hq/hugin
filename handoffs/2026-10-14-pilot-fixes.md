@@ -6,83 +6,85 @@
   anzeigen. Vertrag: specs/2026-10-14-hugin-v1/pilot-fixes.md.
 - Repository valhalla-hq/hugin; Branch codex/hugin-pilot-fixes-mjolnir.
   Root-Worktree C:/Users/brian/brian-projects/worktrees/hugin/hugin-pilot-fixes-mjolnir.
-  Ownership aktiv auf Mjolnir; einmaliger Supervisor braucht diesen Worktree.
+  Root-Ownership aktiv auf Mjolnir; einmaliger Supervisor braucht den Worktree.
   Keine fremde Helper-Ownership übernehmen.
-- Control e3deecae6673a024aa9015a4387737fbec04c795. PR5/6 integriert;
-  Main/aktuell laufender Pilot2298f298c99e5f7491465b91b8a17eeef2575a69.
-- Geprüfter Source ce0c1cfeb498b31db8fbafc5bf5e38e8b2001396,
-  Draft/Fortsetzung https://github.com/valhalla-hq/hugin/pull/7.
-  Routineintegration unter zentralem Lifecycle autorisiert; keine neue Policy,
+- Control e3deecae6673a024aa9015a4387737fbec04c795. PR5/6/7 integriert;
+  Main/aktueller Pilot777c91cede02352eeb782f93488eb670824d8295.
+  PR7 https://github.com/valhalla-hq/hugin/pull/7 am geprüften Headba5700c6 mit
+  drei erfolgreichen Hosted-Checks integriert; gleicher Tree/Ancestry bewiesen.
+- Follow-up auf demselben Branch: zweite exakt geprüfte Codex-Fokusklasse,
+  Profil-/Service-Guards, kuratierte Nachweise/Kontext/Handoff. Draft nach
+  Checkpoint erstellen. Routineintegration autorisiert; keine neue Policy,
   Kosten, Veröffentlichung oder dauerhafte Autostartänderung.
 
 ## Umsetzung und Prüfstand
 
 - Audiofix/Ladeanzeige/präzise Meldungen integriert. Freya48/Tyr47 leere Refills
-  vorher, beide0 nachher; PCM-Bytes/Hashes identisch. Native Laufzeiten6,905→
-  6,084s /6,697→5,921s, Stoppguard grün. Menschliches Hörurteil beider offen.
-- Character-Suche entfernt: reale Codex-Endaffinität war damit nicht exakt
-  darstellbar. Lokale UTF-16-Präfixlänge, Caret-Kind-ID und Endrelation bilden
-  jetzt den Nachweis. Höchstens262145 Zeichen lesen/262144 UTF-16-Einheiten
-  akzeptieren; nur kurz im isolierten RAM, kein Value/Inhalt in IPC/Diagnose/
-  Dateien. Position0 ohne Textlesen. Die frühere Aussage eines vollständig
-  textfreien produktiven Metadatenpfads ist ausdrücklich ersetzt.
-- Edit-Range und Präfix müssen GetChildren.Length0 beweisen; Objekte/unknown
-  vor Lesen sperren. Nach letztem GetText Auswahl/Kind/Endrelation/Struktur/
-  Editierbarkeit frisch prüfen.50ms-Deadline unverändert.
-- Windows ergänzt Formate beim Close: veröffentlichte Sequenz am Produzenten
-  einmal mit stabilem Sequenz-/Owner-Nachweis normalisieren. NULL-Owner bleibt
-  unknown, RAM-Snapshot erhalten; belegte fremde Nutzerkopie gewinnt.
-- Zwei exakte Chromium-Herkunftsformate opak als HGLOBAL erhalten. Andere
-  unbekannte/OLE-/verzögerte Formate bleiben vor Clipboardmutation gesperrt.
-- 328 Sourcechecks in19,016s und23 Windowschecks in0,341s grün, keine Skips.
-  Windowsumfang22 ABI-/Producerguards + eigener nativer HiddenRichEdit.
-  Zwei unabhängige Reviews, reproduzierte P1/P2 geschlossen. Zusätzlicher
-  Boundaryreview110 passende Source-/Mocktests grün. Keine native Freigabe
-  allein aus simulierten Prüfungen ableiten.
-- Vollständige native Proben am Feldanfang UND echten Textende bestanden:
-  einmaliges Paste, alle Clipboardformate zurück, echter Home-Gegenfall
-  target_changed/noSubmit, eigenes Literal gezielt entfernt, Baseline erhalten,
-  Service/Familie geschlossen. Warm40,7/42,0ms, Delivery0,476/0,483s; kein Enter.
-  Root.runtime/codex-paste-proof.json und codex-paste-end-proof.json enthalten
-  nur kuratierte technische Fakten. Dies sind Einzelproben, keine p95-Zusage.
-- Exakte Freigabe Chrome_RenderWidgetHostHWND + FamilieOpenAI.Codex_2p2nqsd0c76g0,
-  .15s-Restore; capture_fallback leer.47 Profile-/Target-/Commit-/Lease-Guards grün.
-- docs/codex-delivery-2026-10-15.md ist der aktuelle kuratierte Nachweis;
-  docs/pilot-fixes-2026-10-14.md hält den früheren Source-/Prüfstand fest.
+  vorher, beide0 nachher; PCM-Bytes/Hashes identisch. Stoppguard grün.
+  Menschliches Hörurteil beider offen.
+- Sourcece0c1cfeb498b31db8fbafc5bf5e38e8b2001396 unverändert. Lokale UTF-16-
+  Präfixposition, Caret-Kind-ID und Endrelation ersetzen die Character-Suche.
+  Präfixzeichen kurz im isolierten RAM; kein Value/globaler Chatinhalt in
+  IPC/Diagnose/Git. Objektgrenzen/unknown vor Lesen sperren, Auswahl/Identität/
+  Struktur/Editierbarkeit nach letztem Lesen erneut prüfen.50ms unverändert.
+- Clipboard-Close normalisiert nur belegte eigene Veröffentlichung; NULL-
+  Owner/unknown behält RAM-Snapshot. Zwei exakte Chromium-Herkunftsformate
+  opak erhalten; unbekannte/OLE-/verzögerte Formate sperren vor Mutation.
+- PR7:328 Sourcechecks und23 Windowschecks ohne Skips grün (22 ABI/Producer
+  plus eigener nativer HiddenRichEdit). Zwei unabhängige Reviews; reproduzierte
+  P1/P2 geschlossen. Weitere110 passende Source-/Mockchecks im Boundaryreview.
+- Reale vollständige Renderer-Proben: Anfang/Ende, genau ein Paste, alle
+  Clipboardformate zurück, echter Home-Gegenfall abgelehnt, eigenes Literal
+  entfernt, Baseline erhalten und Service/Familie geschlossen; kein Enter.
+  Warm40,7/42,0ms, Delivery0,476/0,483s.
+- Nach PR7-Neustart bestätigte Brian ein weiteres abgewiesenes Diktat im
+  Codex-Nachrichtenfeld. Win32 ohne Fokusänderung: Chrome_WidgetWin_1,
+  genaue Codex-Familie, UIA-Edit; Renderer-Einzelprofil lieferte keine Freigabe.
+- Zusätzliche vollständige native Widget-Proben ohne SetFocus bestanden:
+  Anfang/Ende jeweils derselbe Paste-/Restore-/Home-/gezielte Cleanup-/Baseline-
+  und Serviceabschlussnachweis. Warm46,849/41,732ms, Delivery0,495/0,490s.
+  Root.runtime/codex-paste-widget-proof.json und codex-paste-widget-end-proof.json.
+  Insgesamt vier Einzelproben, keine p95- oder universelle Chromium-Zusage.
+- Follow-up-Profil: genau Chrome_RenderWidgetHostHWND und Chrome_WidgetWin_1,
+  beide FamilieOpenAI.Codex_2p2nqsd0c76g0 mit0,15s Restore; capture_fallback leer.
+  Profil→Service-Regression erst rot, danach329 Sourcechecks in25,114s grün.
+  Fehlende/fremde/case-abweichende Familien und dritte Klasse bleiben vor
+  Snapshot/Mutation/Paste gesperrt. Dokumentcheck19 Anforderungen/17 AC grün.
+- Aktueller kuratierter Nachweis: docs/codex-delivery-2026-10-15.md.
 
 ## Laufzustand und Daten
 
-- C:/Users/brian/Hugin zeigt auf sauberen Mainclone. Exakte Sitzung über
-  Root.runtime/current-pilot-fixes-session.txt frisch lesen; zuletzt
-  pilot-session-b758c2ec-768c-42bf-8b42-310597fcfd23.json,
-  Supervisor5232/App-Launcher21684/tatsächliche App14688. Vor Wirkung frisch
-  binden; PIDs allein sind keine Autorität.
+- C:/Users/brian/Hugin zeigt auf sauberen Mainclone777c91c. Exakte Sitzung über
+  Root.runtime/current-pilot-fixes-session.txt: zuletzt
+  pilot-session-bd483b23-53f1-40db-a6d7-72b7c3c63269.json,
+  Supervisor41872/App-Launcher31072/tatsächliche App30592. Vor Wirkung frisch
+  an Image/Creation/lebendem Handle binden; PIDs allein sind keine Autorität.
 - Einmaliger Supervisor Root.runtime/pilot_session.pyw. Normaler Tray-Beenden-
   Pfad wartet eigenes Familienende ab und startet beide unveränderten alten
   Startup-lnks. Main erst nach Appende aktualisieren; kein Live-Source-Mix.
-- Whispering/PipPal und alter Qwen regulär pausiert, alter STT-HTTP-Standby
-  unverändert. Profil/Startup-lnks hashidentisch. Alte Apps nur regulär
-  beenden; keine fremden Killaktionen oder parallele GPU.
-- Strg+Alt+D/V aktiv; Maus/Alt+Y/Gesamtmigration gesperrt.
-- Eine frühe fehlgeschlagene Testprobe verlor den RAM-Clipboard-Ausgangsstand
-  bei Prozessende. Dieser wurde nicht wiederhergestellt; nur eigenes geprüftes
-  Testartefakt entfernt. Spätere Restores gelten separat. Keine Rohinhalte in Git.
+- PR7-Rollout: eigener Familienabschluss und Rückstart/erneute reguläre Pause
+  Whispering/PipPal bestätigt. Profil/Links hashidentisch. Alter Qwen beendet,
+  STT-HTTP-Standby unverändert. Keine fremden Killaktionen/parallele GPU.
+- Neue App sichtbar536x679. Mikrofon/Erkennung eines realen Diktats beobachtet,
+  Übergabe wegen zweiter Klasse abgewiesen; erfolgreiche Alltagsübergabe nach
+  Follow-up weiterhin offen. Strg+Alt+D/V aktiv; Maus/Alt+Y/Gesamtmigration offen.
+- Eine frühe fehlgeschlagene Probe verlor ihren RAM-Clipboard-Ausgangsstand.
+  Nicht wiederhergestellt; nur eigenes geprüftes Testartefakt entfernt. Spätere
+  Restorebelege gelten separat. Keine Rohinhalte im Repository.
 
-## Offen und nächste Schritte
+## Nächste Schritte
 
-1. PF-001-Komponentenprobe bestanden. Konfigurationsdelta separat reviewen,
-   finalen PR7-Head/Hosted-CI prüfen. Produktive Maus-/Alt+Y-Abnahme bleibt offen.
-2. Wiederholungen bei Bedarf über Root.runtime/focus_codex_probe.py bzw.
-   zusätzlich --at-end. Nur eigener gebundener Hauptcomposer, keine Fragekarte;
-   kein Enter/Feldlöschen. Gebundener Codex ChatGPT.exe26.1007.9446.0 mit exakter
-   Familie. Bei Identitätswechsel neu binden; RAM-Owner bei Cleanupfehler behalten.
-3. Kontext/Handoff/PR aktualisieren, gepushten Head/CI prüfen, routine-privat
-   integrieren. Hugin normal beenden, Rückweg beweisen, Main FF, alte Apps
-   regulär pausieren und geprüften Pilot neu starten. Exakten Receiptpfad
-   wählen, kein beliebiges neuestes JSON.
-4. Mikrofontest im neuen Pilot, Hörurteil Freya/Tyr und weitere Produktabnahme.
+1. Follow-up-Konfigurationsdelta unabhängig reviewen, exakten Head/Hosted-CI
+   prüfen, privat integrieren. Keine Sourceänderung für diesen Profilbefund nötig.
+2. Hugin normal beenden, Rückweg beweisen, Main FF; alte Apps regulär pausieren
+   und geprüften Pilot starten. Exakten Receiptpointer aktualisieren.
+3. Übergabe über echtes Kürzel im Codex-Feld und Hörurteil Freya/Tyr; weitere
+   Produktabnahme. Keine weiteren Fokus-/Clipboard-Rückfragen für alte Proben.
+4. Kontext/Handoff remote sichern. Root-Ownership/Worktree behalten, solange
+   laufender Supervisor und offene Pilotabnahme sie benötigen.
 
 Fortsetzen: Hugin AGENTS.md, CONTEXT.md, exakt diesen Handoff und pilot-fixes.md
 lesen; Preflight mit aktivem Branch, Git/PR/Ownership/Sitzung frisch prüfen.
-Dieselbe Root-Ownership weiterverwenden. Native Codex-Komponentenprobe ist
-abgeschlossen; Mikrofon-/Hör-/Gesamtabnahme weiter ausdrücklich offen halten.
+Dieselbe Root-Ownership weiterverwenden. Alle vier nativen Codex-Komponenten-
+proben bestanden; zweite Klassenfreigabe integriert/gestartet erst nach frischem
+Nachweis behaupten. Alltagsübergabe/Hör-/Gesamtabnahme ausdrücklich offen halten.

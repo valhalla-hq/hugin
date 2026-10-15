@@ -10,10 +10,11 @@ ROOT=Path(__file__).resolve().parents[2]
 
 
 class TargetApprovalContracts(unittest.TestCase):
-    def test_shipped_profile_approves_only_the_verified_codex_target(self):
+    def test_shipped_profile_approves_only_the_two_verified_codex_focus_classes(self):
         profile=load_target_approvals(ROOT)
         self.assertEqual(profile.delivery,(
-            DeliveryApproval('Chrome_RenderWidgetHostHWND',.15,'OpenAI.Codex_2p2nqsd0c76g0'),))
+            DeliveryApproval('Chrome_RenderWidgetHostHWND',.15,'OpenAI.Codex_2p2nqsd0c76g0'),
+            DeliveryApproval('Chrome_WidgetWin_1',.15,'OpenAI.Codex_2p2nqsd0c76g0')))
         self.assertEqual(profile.capture_fallback,())
 
     def test_invalid_approval_is_not_silently_used_or_ignored(self):

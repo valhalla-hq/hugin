@@ -1,17 +1,21 @@
 # Codex-Übergabe: Cursor und Clipboard-Rückweg
 
 Stand 15.10.2026; geprüfter Source ce0c1cfeb498b31db8fbafc5bf5e38e8b2001396.
-PR7 setzt die integrierten PR5/6 fort. Beide vollständigen nativen Proben
-bestanden; config/targets.json enthält ausschließlich die dabei geprüfte
-Codex-Fokusklasse/Paketfamilie mit0,15s-Restore. Der Ctrl+C-Fallback bleibt leer.
+PR7 ist als 777c91cede02352eeb782f93488eb670824d8295 integriert. Je zwei
+vollständige native Proben für beide beobachteten Codex-Fokusklassen bestanden;
+config/targets.json enthält ausschließlich diese Klassen mit der genauen
+Codex-Paketfamilie und0,15s-Restore. Der Ctrl+C-Fallback bleibt leer.
 
 ## Ursache und endgültiger Nachweis
 
 Codex 26.1007.9446.0 läuft als ChatGPT.exe, Familie
-OpenAI.Codex_2p2nqsd0c76g0. Beim normalen Accessibility-Fokus wurde die native
-Fokusklasse Chrome_RenderWidgetHostHWND beobachtet; zuvor auch
-Chrome_WidgetWin_1. Nur tatsächlich geprüfte Klasse und genaue Paketfamilie
-kommen für eine Freigabe infrage.
+OpenAI.Codex_2p2nqsd0c76g0. Die gesteuerte Accessibility-Probe lieferte die native
+Fokusklasse Chrome_RenderWidgetHostHWND. Nach dem ersten geprüften Neustart
+meldete Brian erneut target_unverified beim Diktieren im Codex-Nachrichtenfeld.
+Der reale Fokus lieferte Chrome_WidgetWin_1 mit derselben Paketfamilie, einem
+UIA-Edit und fehlender Profilfreigabe. Die bisherige Einzelklassenfreigabe
+erklärte daher nicht den alltäglichen Eingabepfad. Beide konkreten Klassen
+benötigen ihren eigenen vollständigen Nachweis; keine generelle Chromiumfreigabe.
 
 Das leere Eingabefeld kann einen Caret im Platzhalterkind melden. Am Textende
 liegt ein besitzbelegter Textkind-Punkt teils hinter der Parent-DocumentRange;
@@ -81,15 +85,33 @@ Spätere erfolgreiche Restores gelten für einen neuen Ausgangsstand.
 - Derselbe Source, vollständige native Probe mit Anhängen am echten Textende:
   Capture0,306s, Warm42,0ms, Übergabe0,483s. Dieselben Paste-/Restore-/Caret-
   Gegenfall-/Literal-Cleanup-/Baseline-/Servicebelege erfolgreich.
-  Dies sind zwei Einzelproben, keine p95- oder universelle Kompatibilitätszusage.
-  Keine breitere Chromium-/Chrome_WidgetWin_1-Freigabe aus früheren Teilproben.
+  Diese beiden Proben betreffen Chrome_RenderWidgetHostHWND.
+- Zusätzliche vollständige Probe am unveränderten realen Hauptcomposer-Fokus
+  ohne SetFocus: Chrome_WidgetWin_1 mit exakter Codex-Familie. Am Feldanfang
+  Capture0,317s, Warm46,849ms, Delivery0,495s; am echten Textende Capture0,316s,
+  Warm41,732ms, Delivery0,490s. Beide: genau ein Paste, alle Ausgangsformate
+  wiederhergestellt, echter Home-Wechsel vor zweitem Paste abgelehnt, eigenes
+  Literal entfernt, Baseline erhalten und Service-/Familiencleanup bestätigt.
+  Kein Enter/Absenden, keine privaten Inhalte in den technischen Receipts.
+  Root.runtime/codex-paste-widget-proof.json und codex-paste-widget-end-proof.json.
+- Konfigurations-/Service-Regression zuerst rot: der tatsächlich verwendete
+  Chrome_WidgetWin_1-Pfad wurde als target_unverified abgewiesen. Profil um
+  genau diese zweite Codex-Klasse ergänzt. Beide erlaubten Klassen prüfen;
+  fehlende/andere/Groß-Kleinschreibung abweichende Familien und eine dritte
+  Klasse bleiben vor Snapshot, Clipboardmutation und Paste gesperrt.
+  Insgesamt vier Einzelproben, keine p95- oder universelle Kompatibilitätszusage.
 
 ## Pilot und offene Abnahme
 
-Sichtbarer Pilot weiterhin von sauberem Main2298f298c99e5f7491465b91b8a17eeef2575a69;
-neue Source zur geprüften Integration vorbereitet. Exakte Sitzung über
-Root.runtime/current-pilot-fixes-session.txt. Strg+Alt+D/V, normaler Tray-Rückweg,
-alte Profile und Startup-lnks erhalten. Maus/Alt+Y/Gesamtmigration bleiben
-gesperrt. Native Codex-Komponentenabnahme bestanden; nach geprüftem Merge
-geordneten Pilot neu starten. Mikrofontest im neuen Pilot und das separate
-menschliche Hörurteil Freya/Tyr sowie die Gesamtmigration bleiben offen.
+PR7 wurde mit drei erfolgreichen Hosted-Checks am unveränderten Head
+ba5700c6cae9c29d1b6ed56bbfc9bb140ce9a62f integriert. Main777c91c wurde erst nach
+normalem Hugin-Ende/Familienabschluss aktualisiert. Beide alten Startup-lnks
+starteten Whispering/PipPal; beide Apps danach normal erneut beendet. Profil
+und Links hashidentisch, alter Qwen beendet, STT-HTTP-Standby unverändert.
+Pilot vom sauberen Main777c91c sichtbar gestartet (536x679), aktuelle Sitzung
+über Root.runtime/current-pilot-fixes-session.txt. Ein danach erkanntes reales
+Diktat wurde wegen der zweiten Fokusklasse abgewiesen; Mikrofon/Erkennung
+damit beobachtet, alltägliche Übergabe nach zweiter Klassenfreigabe noch offen.
+Nach geprüftem Konfigurationsmerge erneut geordnet starten. Strg+Alt+D/V und
+einmaliger Rückweg erhalten. Maus/Alt+Y/Gesamtmigration sowie das separate
+menschliche Hörurteil Freya/Tyr bleiben offen.
