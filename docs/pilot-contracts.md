@@ -2,7 +2,8 @@
 
 `config/targets.json` ist agentengepflegte Konfiguration. Die Delivery-Liste
 enthält nach vollständigen nativen Proben ausschließlich
-`Chrome_RenderWidgetHostHWND` mit Paketfamilie `OpenAI.Codex_2p2nqsd0c76g0`;
+`Chrome_RenderWidgetHostHWND` und `Chrome_WidgetWin_1`, jeweils mit der exakten
+Paketfamilie `OpenAI.Codex_2p2nqsd0c76g0` und 0,15s Restore;
 der Ctrl+C-Lesefallback bleibt leer. Nachweis:
 [Codex-Übergabe](codex-delivery-2026-10-15.md). Direkte Standard-Edit-/UIA-Auswahl
 und manuelles Kopieren eines RAM-Diktats bleiben verfügbar.

@@ -52,6 +52,19 @@ Normale Maus-/Alt+Y-Aktivierung und vollständige Migration bleiben offen.
   Ausgangsinhalt erhalten, eigener Service geschlossen, kein Enter. Nur exakte
   geprüfte Fokusklasse/Paketfamilie aktivieren. Nach geprüftem Neustart bleibt
   Brians Mikrofontest im Alltag sowie die übrige Gesamtproduktabnahme offen.
+- Nach PR7-Neustart: reales Diktat erkannt, aber target_unverified im von Brian
+  bestätigten Codex-Feld. Unveränderter realer Fokus liefert Chrome_WidgetWin_1,
+  Accessibility-SetFocus zuvor Chrome_RenderWidgetHostHWND. Beide Klassen
+  separat nativ vollständig geprüft (je Anfang/Ende mit Paste/Restore/Home-
+  Gegenfall/gezieltem Cleanup), dann exakte Codex-Familienfreigabe für beide
+  vorbereiten. Profil→Service-Regression zuerst rot, danach329 Sourcechecks
+  grün. Keine Source-/Deadline-/Modelländerung, kein breiter Chromiumfallback.
+- Den Reviewbefund zu mehrdeutigen End-Receipts separat schließen: beide
+  Klassen zusätzlich mit eigener synthetischer15-UTF-16-Basis, vor Paste
+  Position15/nichtleere Basis/kein Platzhalter, positiver Paste, Restore,
+  Home-Gegenfall und Entfernung BEIDER eigener Literale prüfen. Beide
+  Originalbaselines und Service-/Familienabschlüsse bestätigt. Vorherige
+  End-Navigation allein ist kein Beleg für positive Einfügeposition.
 
 ## Fortsetzung 15.10.2026: echte Codex-Prüfung
 

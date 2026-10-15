@@ -1,6 +1,8 @@
 from dataclasses import replace
+from pathlib import Path
 import unittest
 
+from hugin.targets import load_target_approvals
 from hugin.windows.clipboard import (ClipboardService, WindowTarget, ClipboardSnapshot,
                                      ClipboardFailure, MAX_SNAPSHOT_BYTES)
 
@@ -100,6 +102,29 @@ class FakeClipboard:
 
 
 class ClipboardContracts(unittest.TestCase):
+    def test_shipped_codex_profile_delivers_both_focus_classes_and_blocks_other_packages_before_snapshot(self):
+        profile=load_target_approvals(Path(__file__).resolve().parents[2])
+        family='OpenAI.Codex_2p2nqsd0c76g0'
+        for control in ('Chrome_RenderWidgetHostHWND','Chrome_WidgetWin_1','Chrome_WidgetWin_2'):
+            for package in (family,None,'Unrelated.Browser_2p2nqsd0c76g0',family.lower()):
+                with self.subTest(control=control,package=package):
+                    backend=FakeClipboard()
+                    backend.target=replace(backend.target,control_class=control,package_family=package)
+                    saved=backend.data.copy();snapshots=[];snapshot=backend.snapshot
+                    backend.snapshot=lambda budget:snapshots.append(budget) or snapshot(budget)
+                    service=ClipboardService(backend=backend)
+                    for approval in profile.delivery:
+                        service.approve_target_class(approval.control_class,approval.restore_delay_seconds,
+                            package_family=approval.package_family)
+                    result=service.deliver('synthetic',backend.target,lambda:True)
+                    approved=control!='Chrome_WidgetWin_2' and package==family
+                    self.assertEqual((result.status,result.submitted,result.restored),
+                        ('submitted',True,True) if approved else ('target_unverified',False,False))
+                    self.assertEqual(backend.pastes,int(approved))
+                    self.assertEqual(len(snapshots),int(approved))
+                    self.assertEqual(backend.mutations,2 if approved else 0)
+                    self.assertEqual(backend.data,saved)
+
     def service(self):
         backend = FakeClipboard()
         service = ClipboardService(backend=backend, selection_timeout=0.005)
