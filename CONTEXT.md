@@ -102,7 +102,8 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
   dieser wurde nicht wiederhergestellt. Spätere Restorebelege gelten separat.
 - PR7 https://github.com/valhalla-hq/hugin/pull/7 und PR8
   https://github.com/valhalla-hq/hugin/pull/8 integriert. Laufstand-Checkpoint
-  auf demselben Branch; Root-Ownership bleibt aktiv, laufender
+  https://github.com/valhalla-hq/hugin/pull/9 auf demselben Branch;
+  Root-Ownership bleibt aktiv, laufender
   Supervisor benötigt den Worktree. Mikrofonerkennung beobachtet, erfolgreiche
   Alltagsübergabe nach zweiter Freigabe und Hörurteil Freya/Tyr noch offen.
 

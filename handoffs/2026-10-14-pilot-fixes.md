@@ -18,7 +18,8 @@
   Kosten, Veröffentlichung oder dauerhafte Autostartänderung.
 - PR8 am unveränderten Head3f4efaaf323c005038d6e2cc5e093ea7b9f1b964 nach zwei
   unabhängigen Reviews/drei grünen Hosted-Checks integriert. Remote-Merge
-  bb700f0 enthält denselben Tree/Head. Dieser neue Draft-Checkpoint hält nur
+  bb700f0 enthält denselben Tree/Head. Draft-Checkpoint
+  https://github.com/valhalla-hq/hugin/pull/9 hält nur
   den geprüften Laufstand und offene menschliche Abnahme fest.
 
 ## Umsetzung und Prüfstand
