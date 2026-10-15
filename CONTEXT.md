@@ -37,7 +37,7 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Next Step
 
-- Aktiver Task codex/hugin-pilot-fixes-mjolnir, Draft PR9:
+- Aktiver Task codex/hugin-pilot-fixes-mjolnir, integrierte PR9:
   https://github.com/valhalla-hq/hugin/pull/9. User bestaetigt normalen
   Codex-Alltagspaste; neuer Auftrag: markierte Auswahl ersetzen, allgemeine
   Felder (YouTube/Chrome), zwei Aufnahme-Cues, echtes Streaming korrigieren.
@@ -63,9 +63,22 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
   eigenen Familienabschluss und Altstack-Rueckstart. Nutzer hat Whispering/
   PipPal danach normal beendet; frisch keine alten Apps/Qwen beobachtet,
   Profil/Startup-lnks hashidentisch. Alter STT-HTTP-Standby unveraendert.
-- Naechster Schritt: aktualisierten privaten Draft checkpointen, exakte Hosted-
-  Checks und Routineintegration, danach sauberen Main FF und geprueften neuen
-  Pilot mit einmaligem Supervisor starten. Root-Ownership behalten.
+- PR9 am unveraenderten geprueften Head573ca3fa4c8c9e4d7b09b60772b9de022b66479d
+  nach drei gruenen Hostedchecks und frischem Identitaets-/Scopegate regulaer
+  integriert. Merge8e4ceabb718edb2c8d1b80e1b07b69e0f3b933bd ist remote auf
+  main; Merge-/Headtrees identisch, Sourceancestry bewiesen. Deployment sauber FF.
+- Neuer einmaliger Pilot auf genau diesem Main gestartet. Receipt:
+  pilot-session-854cec59-a15a-44c1-8373-be2cd39273a8.json. Supervisor41332,
+  Appwrapper42772, echte App16336 frisch mit gehaltenen Prozesshandles,
+  Image/Creation/Elternkette gebunden. Sichtbares Hugin536x679, eigene Signal-
+  /Trayfenster und belegte Instanz bestaetigt. Schema2/generisches Profil/
+  zwei Codex-Overrides vorhanden; Startup-lnks und PipPal-Profil hashidentisch.
+- Nativer Tk-/Tray-UIA-Leseweg exponiert den Statuswortlaut nicht; daraus
+  keine sichtbare Bereit- oder Hoerabnahme abgeleitet. Kuratierter lokaler
+  Rolloutbeleg Root.runtime/input-audio-rollout.json, keine Sprachinhalte.
+- Naechster Schritt: Alltagstest mit neuem Pilot; Root-Ownership bleibt wegen
+  laufendem Supervisor aktiv. Rolloutcheckpoint separat privat sichern;
+  Helperworktrees nach bewiesenem eigenen Remotecheckpoint regulaer freigeben.
 - Brian meldet nach Wiederholung fluessige Sprache. Auf Wunsch deutlichere/
   lautere Töne: Start115ms tief doppelt, Ende180ms hell aufsteigend.82 passende
   Checks und NativeReplay/Gate114Callbacks/31.680B/0alteADCs gruen.

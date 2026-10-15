@@ -9,11 +9,12 @@
   v1-Spec/Privacy/Cancel/Altstack-Rueckweg gelten weiter.
 - Repository valhalla-hq/hugin; Branch codex/hugin-pilot-fixes-mjolnir.
   Root C:/Users/brian/brian-projects/worktrees/hugin/hugin-pilot-fixes-mjolnir.
-  Root-Ownership aktiv; spaeterer Supervisor benoetigt diesen Worktree.
-- Control e3deecae6673a024aa9015a4387737fbec04c795. Stable Main bb700f0;
+  Root-Ownership aktiv; laufender Supervisor benoetigt diesen Worktree.
+- Control e3deecae6673a024aa9015a4387737fbec04c795. Stable Main
+  8e4ceabb718edb2c8d1b80e1b07b69e0f3b933bd;
   CoreSource6f4897c; abschliessenderTon-Source9a470aca936d3dbc885935229a7eb434d0504c86.
-  Draft https://github.com/valhalla-hq/hugin/pull/9 wird um diesen Auftrag
-  aktualisiert. Routineintegration im bekannten privaten Scope autorisiert.
+  https://github.com/valhalla-hq/hugin/pull/9 ist regulaer integriert.
+  Routineintegration im bekannten privaten Scope autorisiert; kein Bypass.
 
 ## Umsetzung und Nachweise
 
@@ -52,15 +53,17 @@
   native Mic/Player/Hotkeys/Mutex/Idle-App/HiddenRichEdit. Zwei unabhaengige
   Linsen fuer fremde Slices, Originalendpoint-P2 reproduziert/geschlossen,
   sieben Device-/ADC-/Cleanup-Guards fuer reale MME-Luecke. Keine offenen
-  reproduzierten P1/P2 amSource6f4897c. Hosted-CI bleibt vor Merge erforderlich.
+  reproduzierten P1/P2 amSource6f4897c. Alle drei Hostedchecks am festen
+  finalen Head573ca3fa4c8c9e4d7b09b60772b9de022b66479d gruen.
 - Kuratierte Quellen, Versionen und Messgrenzen: docs/input-audio-2026-10-15.md.
   Fruehere Codex-/Restorebelege: docs/codex-delivery-2026-10-15.md. Eine fruehe
   fehlgeschlagene Probe verlor RAM-Clipboardinhalt; nicht wiederhergestellt.
 
 ## Laufzustand und Rueckweg
 
-- C:/Users/brian/Hugin ist Junction zum sauberen _repos/hugin Main. Main erst
-  nach bestaetigtem Pilotende aktualisieren; keine gemischten Livequellen.
+- C:/Users/brian/Hugin ist Junction zum sauberen _repos/hugin Main. Nach
+  bestaetigtem Pilotende FF auf8e4ceab, dann neuer Pilot; keine gemischten
+  Livequellen. Main waehrend dieser Sitzung nicht fuer Sourceupdates verwenden.
 - Nutzer hat Hugin normal beendet. Alter Pointer Root.runtime/current-pilot-
   fixes-session.txt -> pilot-session-2b3d2475-04da-4175-87c1-a49e7825c86e.json
   bestaetigt return_dispatched/exit0/own_family_exited und beideStartup-lnks.
@@ -69,17 +72,30 @@
   Alter STT-HTTP-Standby unveraendert. Kein fremdesKill/parallelGPU.
 - Root.runtime/pilot_session.pyw dry-run --head <checked-main>, --run verborgen
   starten: eigenerJob/Familienabschluss, danach unveraenderteStartup-lnks.
-  Keine dauerhafte Autostartaenderung. Neuen exaktenReceipt/Prozessbindung
-  nach Integration erfassen; altePIDs nie als aktuelleAutoritaet behandeln.
+  Keine dauerhafte Autostartaenderung. Neuer Receipt:
+  C:/Users/brian/brian-projects/_repos/hugin/.runtime/pilot-session-854cec59-a15a-44c1-8373-be2cd39273a8.json.
+  Aktueller Root.runtime/current-pilot-fixes-session.txt zeigt darauf.
+- PR9 am festen573ca3f nach frischer privater Repo-/PR-/28Dateien-/Check-
+  Pruefung mit normalem Merge integriert. RemoteMerge8e4ceab/Ancestry/
+  identischer GitTree belegt; Main sauber. Dry-run und unique-neuerReceipt
+  statt Dateiname-/PID-Raten; Zustandpilot_running. Supervisor41332,
+  Appwrapper42772, echteApp16336; vier frische gehaltene Image-/Creation-
+  Bindings und Elternkette bestaetigt. Sichtbares Hugin536x679, eigene Signal-
+  /Trayfenster und belegteInstanz. GenericEdit+zweiCodex-Overrides geladen;
+  Schutzdateien hashidentisch. Root.runtime/input-audio-rollout.json.
+- NativeTk-/Tray-UIA exponiert den Bereit-Wortlaut nicht; keine direkte
+  Status-/Hoerabnahme daraus behauptet. Bei Fortsetzung PIDs/Handles und
+  Receipt frisch pruefen; gespeicherte Zahlen sind keine kuenftige Autoritaet.
 - Kuerzel bleiben Strg+Alt+D und Strg+Alt+V, Escape imVorgang. NormaleMaus-
   /Alt+Y-/Autostartmigration gesperrt. UI/Rabenicon/Stimmen unveraendert.
 
 ## Offen / Fortsetzen
 
-1. Draft9 mit genauem Code/Context/Handoff checkpointen; Remotehead/Inhalte
-   beweisen, CI/PR-Scope/Head/Review vor Routineintegration frisch binden.
-2. Sauberen Main nach bestaetigtem Appende FF; neuer einmaligerPilot mit
-   exaktemMainhead/Receipt, sichtbaremBereit/Profilbindung starten.
+1. PR9 und gepruefter Pilotneustart abgeschlossen. Aktueller dokumentarischer
+   Rolloutcheckpoint auf codex/hugin-pilot-fixes-mjolnir; Branch/Draftstatus
+   und Context-/Handoffblobs bei Fortsetzung frisch lesen.
+2. Pilot laeuft auf8e4ceab; Root wegen Supervisor nicht freigeben/entfernen.
+   Keine weiteren Sprach-/Fokus-/Clipboardproben ohne konkreten Testbedarf.
 3. Brian meldet fluessige Sprache. Lautere/distinktereTöne aufWunsch umgesetzt;
    82 passendeChecks+NativeReplay/Gate114Callbacks/31.680B/0alteADCs gruen.
    NeueTonabnahme, Cue-Echo sowie reale Codex-
@@ -91,6 +107,7 @@
 
 Starter: Hugin AGENTS.md, CONTEXT.md und genau diesen Handoff lesen; zentralen
 Lifecycle/Preflight mit aktivemBranch, Git/PR/Ownership und Runtime frisch
-pruefen. Source6f4897c ist lokal nativ/quellengeprueft. PrivateRoutineintegration
-und Pilotneustart fortsetzen, ohne alte Fokus-/Clipboardfragen zu wiederholen.
+pruefen. Source6f4897c plusTon9a470ac geprueft und ueberPR9/Main8e4ceab im
+laufendenPilot. Nutzerfeedback/Alltagstest fortsetzen, ohne alte Fokus-/
+Clipboardfragen zu wiederholen.
 Keine Rohinhalte inGit, kein Enter/Send, keineProduktionsmigration behaupten.
