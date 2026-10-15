@@ -92,8 +92,10 @@
 ## Offen / Fortsetzen
 
 1. PR9 und gepruefter Pilotneustart abgeschlossen. Aktueller dokumentarischer
-   Rolloutcheckpoint auf codex/hugin-pilot-fixes-mjolnir; Branch/Draftstatus
-   und Context-/Handoffblobs bei Fortsetzung frisch lesen.
+   Rolloutcheckpoint auf codex/hugin-pilot-fixes-mjolnir ist Draft PR10:
+   https://github.com/valhalla-hq/hugin/pull/10. Nur Context, dieser exakte
+   Handoff und Aufgabenstatus; Branch/Draftstatus und Context-/Handoffblobs
+   bei Fortsetzung frisch lesen.
 2. Pilot laeuft auf8e4ceab; Root wegen Supervisor nicht freigeben/entfernen.
    Keine weiteren Sprach-/Fokus-/Clipboardproben ohne konkreten Testbedarf.
 3. Brian meldet fluessige Sprache. Lautere/distinktereTöne aufWunsch umgesetzt;

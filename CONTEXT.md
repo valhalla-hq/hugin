@@ -76,9 +76,11 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 - Nativer Tk-/Tray-UIA-Leseweg exponiert den Statuswortlaut nicht; daraus
   keine sichtbare Bereit- oder Hoerabnahme abgeleitet. Kuratierter lokaler
   Rolloutbeleg Root.runtime/input-audio-rollout.json, keine Sprachinhalte.
-- Naechster Schritt: Alltagstest mit neuem Pilot; Root-Ownership bleibt wegen
-  laufendem Supervisor aktiv. Rolloutcheckpoint separat privat sichern;
-  Helperworktrees nach bewiesenem eigenen Remotecheckpoint regulaer freigeben.
+- Dokumentarischer Rolloutcheckpoint: Draft PR10,
+  https://github.com/valhalla-hq/hugin/pull/10. Er aendert nur Context, exakten
+  Handoff und Aufgabenstatus. Naechster Schritt: Alltagstest mit neuem Pilot;
+  Root-Ownership bleibt wegen laufendem Supervisor aktiv. Helperworktrees nach
+  bewiesenem eigenen Remotecheckpoint regulaer freigeben.
 - Brian meldet nach Wiederholung fluessige Sprache. Auf Wunsch deutlichere/
   lautere Töne: Start115ms tief doppelt, Ende180ms hell aufsteigend.82 passende
   Checks und NativeReplay/Gate114Callbacks/31.680B/0alteADCs gruen.
