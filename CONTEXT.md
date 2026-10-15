@@ -113,12 +113,17 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Bounded Cue Helper Checkpoint
 
-- Only this helper branch: codex/hugin-cues-20261015-mjolnir, Mjolnir ownership
-  active. Accountable root retains integration and the running pilot.
+- Only this helper branch: codex/hugin-cues-20261015-mjolnir. Bounded work is
+  complete; accountable root retains integration and the running pilot.
 - IA-003/005 source commit ac942eb6280792435e6e19c3d68528c86ea7a917, based on
   the committed change spec5a238677ce0ff915b141f313e7960434cf92ad28.
 - Owned original capture cues, device-time ADC gate, cancellation and cleanup
   implemented;351 source/integration checks and final75 scoped checks green.
   Native hearing, acoustic tail/echo and hardware acceptance remain open.
-- Explicit helper instruction: local commit only; no push, PR, merge, ownership
-  release, device/GPU/input action or pilot restart. Exact state in the handoff.
+- Root integrated the source as087afa16966a0ba160bb3a217ef6ac1edb46f49e.
+  Follow-up endpoint/WASAPI review closed at6f4897c16cec03ce37ae014f708271b5f7332f71;
+  this historical helper source remains unchanged.
+- Root now explicitly authorizes this private helper checkpoint, regular
+  ownership release, then verified removal of only its worktree/local branch.
+  No helper PR/merge or runtime action. Exact limits and handoff are below;
+  confirmed release/cleanup facts come from the central tool and final report.

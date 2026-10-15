@@ -13,9 +13,15 @@
   bb700f0469dd3f75007041c430058c5bae368b47 was current at preflight.
 - Workspace tool accepts only a remote branch as base: opened regularly from
   origin/codex/hugin-pilot-fixes-mjolnir, then approved ff-only to the exact spec.
-- Ownership active on Mjolnir. Explicit instruction: no push/PR/merge/release.
-  No remote checkpoint claimed. These helper metadata files are separate from
-  the source commit and should not be cherry-picked into the root task.
+- Source integrated by root as087afa16966a0ba160bb3a217ef6ac1edb46f49e.
+  The bounded implementation and follow-up review are complete. Root's later
+  endpoint/WASAPI source6f4897c16cec03ce37ae014f708271b5f7332f71 was independently
+  reviewed; this historical helper source has not adopted that later code.
+- Initial local-only instruction is superseded solely for the explicitly
+  authorized private checkpoint, regular release and verified removal of this
+  worktree/local branch. No helper PR/merge or runtime action is authorized.
+  The remote branch must preserve the checkpoint before removal. These helper
+  metadata files remain separate and should not be cherry-picked into root.
 
 ## Changed Files and Contract
 
@@ -53,6 +59,10 @@
 - git diff --check passed. Self-review against IA-003/005 and ownership rules.
 - Ruff unavailable in base Python; no package installed. Root can run its lint
   gate and independent integration review on the exact source commit.
+- Final independent follow-up on fixed root6f4897c:66 simulated target/device/
+  gate guards passed in0.238s, including the original endpoint repro and an
+  independent clock-abort/failed-cleanup/retry guard. Own cues were excluded
+  from the independent review. No hardware action was performed by this helper.
 
 ## Data, Running State and Remaining Limits
 
@@ -69,9 +79,9 @@
 
 ## Pick Up Here / Starter Prompt
 
-Review/cherry-pick source ac942eb6280792435e6e19c3d68528c86ea7a917 from this
-helper branch into the accountable root task. Keep its generic approval changes
-and Cue DI together in Application.run. Read AGENTS.md, CONTEXT.md, this exact
-handoff and the IA spec first. No helper push, PR, merge, ownership release,
-native audio/GPU/input or pilot restart is authorized here. Preserve the helper
-worktree/ownership until root explicitly directs the next bounded action.
+This helper task is complete. Continue the overall project only through the
+accountable root task and its current handoff; do not restart this historical
+implementation. Preserve this private remote checkpoint. Verify the central
+released ownership record and final cleanup report before reusing any old path;
+open a regular new exclusive worktree only for a new bounded request. No helper
+PR/merge, native audio/GPU/input or pilot restart is authorized by this handoff.
