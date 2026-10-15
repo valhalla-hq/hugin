@@ -283,8 +283,8 @@ class ProbeProcessContracts(unittest.TestCase):
     def test_duplicate_or_boolean_version_request_is_rejected(self):
         data = encode_request(TARGET)[4:]
         self.assertEqual(decode_request(data), TARGET)
-        for invalid in (data.replace(b'"version":1', b'"version":true'),
-                        data.replace(b'"version":1', b'"version":1,"version":1')):
+        for invalid in (data.replace(b'"version":4', b'"version":true'),
+                        data.replace(b'"version":4', b'"version":4,"version":4')):
             with self.assertRaises(ValueError):
                 decode_request(invalid)
 

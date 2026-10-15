@@ -19,6 +19,7 @@ import uuid
 MAX_SNAPSHOT_BYTES = 32 * 1024 * 1024
 MAX_TEXT_BYTES = 256 * 1024
 CF_UNICODETEXT = 13
+NATIVE_EDIT_CLASSES = frozenset(('edit','richedit','richedit20a','richedit20w','richedit50w'))
 
 
 class ClipboardFailure(Exception):
@@ -33,21 +34,31 @@ class ClipboardFailure(Exception):
 class UiaTargetIdentity:
     focus_id: tuple[int, ...]
     root_id: tuple[int, ...]
-    element_id: tuple[int, ...]
+    start_id: tuple[int, ...]
+    end_id: tuple[int, ...]
     focus_pid: int
-    position: int  # UTF-16 prefix length relative to the focused Edit provider.
-    caret_id: tuple[int, ...]
+    selection: tuple[int, int]  # Ordered UTF-16 prefixes in the focused field.
+    start_relation: int  # Each endpoint relative to DocumentRange.End.
     end_relation: int
 
     def __post_init__(self):
-        for parts in (self.focus_id,self.root_id,self.element_id,self.caret_id):
+        for parts in (self.focus_id,self.root_id,self.start_id,self.end_id):
             if type(parts) is not tuple or not 0<len(parts)<=64 or any(
                     type(part) is not int or not -(1<<31)<=part<1<<31 for part in parts):
                 raise ValueError('invalid UIA runtime identity')
-        if type(self.focus_pid) is not int or not 0<self.focus_pid<1<<32 or type(self.position) is not int or not 0<=self.position<=MAX_TEXT_BYTES:
-            raise ValueError('invalid UIA insertion point')
-        if type(self.end_relation) is not int or self.end_relation not in (-1,0,1):
-            raise ValueError('invalid UIA endpoint relation')
+        if type(self.focus_pid) is not int or not 0<self.focus_pid<1<<32:
+            raise ValueError('invalid UIA focus process')
+        if (type(self.selection) is not tuple or len(self.selection)!=2
+                or any(type(point) is not int for point in self.selection)
+                or not 0<=self.selection[0]<=self.selection[1]<=MAX_TEXT_BYTES):
+            raise ValueError('invalid UIA selection')
+        for relation in (self.start_relation,self.end_relation):
+            if type(relation) is not int or relation not in (-1,0,1):
+                raise ValueError('invalid UIA endpoint relation')
+        if self.start_relation>self.end_relation:
+            raise ValueError('inverted UIA endpoint relation')
+        if self.selection[0]==self.selection[1] and (self.start_id!=self.end_id or self.start_relation!=self.end_relation):
+            raise ValueError('ambiguous UIA collapsed selection')
 
 
 @dataclass(frozen=True)
@@ -60,7 +71,7 @@ class WindowTarget:
     control_class: str
     caret: tuple[int, int, int, int, int] | None
     selection: tuple[int, int] | None
-    editable: bool = True
+    native_editable: bool = False
     uia: UiaTargetIdentity | None = None
     package_family: str | None = None
 
@@ -70,8 +81,9 @@ class WindowTarget:
 
     @property
     def verifiable(self):
-        return bool(self.editable and self.hwnd and self.focus and self.process_created and
-                    ((self.caret is not None and self.selection is not None) or isinstance(self.uia,UiaTargetIdentity)))
+        return bool(self.hwnd and self.focus and self.process_created and
+                    ((self.native_editable is True and self.caret is not None and self.selection is not None)
+                     or isinstance(self.uia,UiaTargetIdentity)))
 
 
 @dataclass(frozen=True)
@@ -452,6 +464,7 @@ class NativeClipboard:
             ('GetWindowThreadProcessId', [W.HWND, ctypes.POINTER(W.DWORD)], W.DWORD),
             ('GetClassNameW', [W.HWND, W.LPWSTR, ctypes.c_int], ctypes.c_int),
             ('GetWindowLongPtrW', [W.HWND, ctypes.c_int], ctypes.c_ssize_t),
+            ('IsWindowEnabled', [W.HWND], W.BOOL),
             ('SendMessageTimeoutW', [W.HWND, W.UINT, W.WPARAM, W.LPARAM, W.UINT, W.UINT,
                                      ctypes.POINTER(ctypes.c_size_t)], ctypes.c_ssize_t),
             ('GetAsyncKeyState', [ctypes.c_int], W.SHORT),
@@ -698,6 +711,13 @@ class NativeClipboard:
         value=buffer.value
         return value if len(value)+1==length.value else None
 
+    def _native_edit_style(self,focus):
+        ctypes.set_last_error(0)
+        style=self.user.GetWindowLongPtrW(focus,-16)
+        if (not style and ctypes.get_last_error()) or style & 0x20:
+            raise ClipboardFailure('target_unverifiable')
+        return style
+
     def capture_native_target(self):
         hwnd = self.user.GetForegroundWindow()
         pid = W.DWORD()
@@ -727,25 +747,22 @@ class NativeClipboard:
             raise ClipboardFailure('target_unverifiable')
         caret = None
         selection = None
-        editable = True
+        native_editable = False
         if info.hwndCaret:
             rect = info.rcCaret
             caret = (int(info.hwndCaret), rect.left, rect.top, rect.right, rect.bottom)
-        if name.value.lower() == 'edit' or name.value.lower().startswith('richedit'):
-            ctypes.set_last_error(0)
-            style = self.user.GetWindowLongPtrW(info.hwndFocus, -16)
-            if not style and ctypes.get_last_error():
-                raise ClipboardFailure('target_unverifiable')
-            if style & 0x20:  # never read password controls
-                raise ClipboardFailure('target_unverifiable')
-            editable = not bool(style & 0x800)
+        if name.value.lower() in NATIVE_EDIT_CLASSES:
+            self._native_edit_style(info.hwndFocus)  # Never query password fields.
             start, end, result = W.DWORD(), W.DWORD(), ctypes.c_size_t()
             ok = self.user.SendMessageTimeoutW(info.hwndFocus, 0xB0, ctypes.addressof(start),
                                                ctypes.addressof(end), 0x23, 50, ctypes.byref(result))
-            if ok:
+            if ok and start.value <= end.value:
                 selection = (start.value, end.value)
+                style=self._native_edit_style(info.hwndFocus)
+                native_editable = bool(self.user.IsWindowEnabled(info.hwndFocus)
+                    and not style & 0x800 and info.hwndCaret==info.hwndFocus)
         return WindowTarget(int(hwnd), int(info.hwndFocus), pid.value, thread, creation,
-                            name.value, caret, selection, editable,package_family=package_family)
+                            name.value, caret, selection, native_editable,package_family=package_family)
 
     def capture_target(self,*,expected=None,cancelled=lambda:False):
         """Complete delivery proof; call off the controller/audio owner.

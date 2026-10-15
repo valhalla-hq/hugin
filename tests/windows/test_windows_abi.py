@@ -4,6 +4,7 @@ import ctypes
 import sys
 import unittest
 from unittest.mock import patch
+from types import SimpleNamespace as NS
 
 from hugin.windows.clipboard import (NativeClipboard, ClipboardFailure,ClipboardService,ClipboardSnapshot, _Input,
                                      _GuiThreadInfo, _KeyInput, _MouseInput, WindowTarget)
@@ -31,6 +32,56 @@ class Library:
 
 @unittest.skipUnless(sys.platform == 'win32', 'Windows ctypes ABI')
 class WindowsAbiContracts(unittest.TestCase):
+    def native_target_fixture(self):
+        from ctypes import wintypes as W
+        backend=object.__new__(NativeClipboard)
+        class User:
+            name='Edit';style=0;enabled=True;caret=200;selection=(7,10);reply=True
+            after_selection=lambda self:None
+            def GetForegroundWindow(self):return 100
+            def GetWindowThreadProcessId(self,hwnd,pointer):
+                ctypes.cast(pointer,ctypes.POINTER(W.DWORD))[0]=3;return 4
+            def GetGUIThreadInfo(self,thread,pointer):
+                info=ctypes.cast(pointer,ctypes.POINTER(_GuiThreadInfo)).contents
+                info.hwndFocus=200;info.hwndCaret=self.caret
+                return 1
+            def GetClassNameW(self,hwnd,buffer,limit):buffer.value=self.name;return len(self.name)
+            def GetWindowLongPtrW(self,*args):return self.style
+            def IsWindowEnabled(self,hwnd):return self.enabled
+            def SendMessageTimeoutW(self,hwnd,message,start,end,flags,timeout,result):
+                self.assertion=(hwnd,message,flags,timeout)
+                ctypes.cast(start,ctypes.POINTER(W.DWORD))[0]=self.selection[0]
+                ctypes.cast(end,ctypes.POINTER(W.DWORD))[0]=self.selection[1]
+                self.after_selection();return int(self.reply)
+        def times(handle,created,*args):
+            ctypes.cast(created,ctypes.POINTER(W.FILETIME)).contents.dwLowDateTime=500;return 1
+        backend.user=User();backend.kernel=NS(OpenProcess=lambda *args:77,GetProcessTimes=times,CloseHandle=lambda handle:1)
+        backend._package_family=lambda handle:None
+        return backend,backend.user
+
+    def test_native_capability_requires_enabled_edit_selection_and_owned_caret(self):
+        for kind in ('edit','rich','unknown_rich','combo','readonly','disabled','foreign_caret','missing_caret','inverted','timeout'):
+            backend,user=self.native_target_fixture()
+            if kind=='rich':user.name='RICHEDIT50W'
+            elif kind=='unknown_rich':user.name='RichEditUnknown'
+            elif kind=='combo':user.name='ComboBox'
+            elif kind=='readonly':user.style=0x800
+            elif kind=='disabled':user.enabled=False
+            elif kind=='foreign_caret':user.caret=201
+            elif kind=='missing_caret':user.caret=0
+            elif kind=='inverted':user.selection=(10,7)
+            elif kind=='timeout':user.reply=False
+            target=backend.capture_native_target()
+            self.assertEqual((target.native_editable,target.verifiable),(kind in ('edit','rich'),)*2,kind)
+        backend,user=self.native_target_fixture();user.style=0x20
+        with self.assertRaises(ClipboardFailure) as failure:backend.capture_native_target()
+        self.assertEqual(failure.exception.status,'target_unverifiable')
+
+    def test_native_readonly_change_during_selection_query_is_not_proven_editable(self):
+        backend,user=self.native_target_fixture()
+        user.after_selection=lambda:setattr(user,'style',0x800)
+        self.assertFalse(backend.capture_native_target().verifiable)
+
     def test_x64_layouts_match_win32_headers(self):
         if ctypes.sizeof(ctypes.c_void_p) != 8:
             self.skipTest('Hugin x64 target')
@@ -361,7 +412,7 @@ class WindowsAbiContracts(unittest.TestCase):
 
     def test_direct_edit_selection_uses_utf16_offsets_without_clipboard(self):
         backend = object.__new__(NativeClipboard)
-        target = WindowTarget(100, 200, 3, 4, 500, 'Edit', None, (1, 3), editable=False)
+        target = WindowTarget(100, 200, 3, 4, 500, 'Edit', None, (1, 3), native_editable=False)
         data = 'A😀Z'.encode('utf-16-le')
         class ReadOS:
             def SendMessageTimeoutW(self, hwnd, message, capacity, pointer, flags, timeout, result):
