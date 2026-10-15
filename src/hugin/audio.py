@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import ctypes as ct
 from ctypes import wintypes as wt
+from dataclasses import dataclass
+import math
 import threading
 import time
 
@@ -51,26 +53,49 @@ class RecordingBuffer:
             return self._fault
 
 
+@dataclass
+class _InputGate:
+    required: bool
+    cutoff: float | None = None
+    cancelled: bool = False
+    fault: HuginError | None = None
+
+
 class Microphone:
     def __init__(self, limit: int, stream_factory=None):
         self.limit = limit
         self._factory = stream_factory
         self._stream = None
         self._buffer = None
-        self._callback_fault = None
+        self._gate = None
 
-    def start(self):
+    def start(self, *, armed=True):
+        if type(armed) is not bool:
+            raise HuginError('config_invalid','capture_gate')
         if self._stream is not None:
             raise HuginError('microphone_failed','capture_start')
         import sounddevice as sd
-        self._buffer = RecordingBuffer(self.limit)
-        self._callback_fault = None
+        buffer = RecordingBuffer(self.limit)
+        gate = _InputGate(required=not armed)
+        self._buffer,self._gate = buffer,gate
 
         def callback(data, frames, timing, status):
+            if gate.cancelled:
+                return
             if status:
-                self._callback_fault = HuginError('microphone_failed','capture_callback')
+                gate.fault = HuginError('microphone_failed','capture_callback')
                 raise sd.CallbackAbort
-            if not self._buffer.append(data):
+            if gate.required:
+                adc = getattr(timing,'inputBufferAdcTime',None)
+                if type(adc) not in (int,float) or not math.isfinite(adc):
+                    gate.fault = HuginError('microphone_failed','capture_clock')
+                    raise sd.CallbackAbort
+                # A callback delivered after arming may contain old ADC data.
+                # Drop the whole block when it starts before the cutoff,
+                # including blocks that overlap it. No callback waits or I/O.
+                if gate.cutoff is None or adc < gate.cutoff:
+                    return
+            if not buffer.append(data):
                 raise sd.CallbackAbort
 
         try:
@@ -80,37 +105,58 @@ class Microphone:
             stream = factory(samplerate=16000,channels=1,dtype='int16',callback=callback)
             self._stream = stream
             stream.start()
+            if gate.fault or buffer.fault:
+                raise HuginError('microphone_failed','capture_start')
         except Exception:
             self.cancel()
             raise HuginError('microphone_failed','capture_start') from None
+
+    @property
+    def device_time(self):
+        if self._stream is None:
+            raise HuginError('microphone_failed','capture_clock')
+        value = self._stream.time
+        if type(value) not in (int,float) or not math.isfinite(value):
+            raise HuginError('microphone_failed','capture_clock')
+        return float(value)
+
+    def arm_after(self, device_time):
+        if (self._stream is None or self._gate is None or self._gate.cancelled
+                or not self._gate.required or self.fault is not None
+                or type(device_time) not in (int,float) or not math.isfinite(device_time)):
+            raise HuginError('microphone_failed','capture_gate')
+        self._gate.cutoff = float(device_time)
 
     def stop(self) -> bytes:
         if self._stream is None or self._buffer is None:
             raise HuginError('microphone_failed','capture_stop')
         try:
-            self._stream.stop()
-            self._stream.close()
+            self._stream.stop(ignore_errors=False)
+            self._stream.close(ignore_errors=False)
         except Exception:
             raise HuginError('microphone_failed','capture_stop') from None
         self._stream = None
-        if self._callback_fault:
-            raise self._callback_fault
+        self._gate.cancelled = True
+        if self._gate.fault:
+            raise self._gate.fault
         return self._buffer.finish()
 
     def cancel(self):
+        if self._gate is not None:
+            self._gate.cancelled = True
         if self._buffer is not None:
             self._buffer.cancel()
         if self._stream is not None:
             try:
-                self._stream.abort()
-                self._stream.close()
+                self._stream.abort(ignore_errors=False)
+                self._stream.close(ignore_errors=False)
             except Exception:
                 raise HuginError('microphone_failed','capture_close') from None
             self._stream = None
 
     @property
     def fault(self):
-        return self._callback_fault or (self._buffer.fault if self._buffer else None)
+        return (self._gate.fault if self._gate else None) or (self._buffer.fault if self._buffer else None)
 
     @property
     def owned(self):
