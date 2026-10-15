@@ -1,0 +1,65 @@
+# Windows selection range helper
+
+## Objective and Git
+
+- IA-001/002/005 under specs/2026-10-15-hugin-input-audio, Spec before code.
+- Repository valhalla-hq/hugin; branch codex/hugin-range-20261015-mjolnir.
+- Worktree C:/Users/brian/brian-projects/worktrees/hugin/hugin-range-20261015-mjolnir.
+- Exact base5a238677ce0ff915b141f313e7960434cf92ad28. Lifecycle tool only
+  accepts remote branch bases, so regular open from origin/codex/hugin-pilot-fixes-mjolnir
+  followed by Root-authorized local fast-forward to this exact Spec head.
+- Control/preflight e3deecae6673a024aa9015a4387737fbec04c795; main bb700f0.
+- Source commit41253ed6af45813012dd59db75504521e9441c8d, metadata separate.
+- Ownership active on Mjolnir. No push or own PR by explicit Root instruction.
+  Root remains accountable for integration, review, policy and actual pilot.
+
+## Source scope and contracts
+
+- src/hugin/windows/selection.py and selection_probe.py: one ordered interval
+  replaces collapsed-only caret; both endpoint enclosures and affinities,
+  bounded UTF-16 prefixes and final fresh text-free selection/editability check.
+- clipboard.py: identity/native producer only; ClipboardService policy untouched.
+- UiaTargetIdentity(focus_id,root_id,start_id,end_id,focus_pid,selection,
+  start_relation,end_relation). Both relations compare to DocumentRange.End.
+  Four IDs of at most64 signed32-bit parts; selection0<=start<=end<=262144.
+  Largest tested JSON3211B within4092B. Invisible noncollapsed spans fail closed.
+- Requestversion4 requires operation selection/target/delivery; target response3.
+  Old versions and editable/position/caret_id/element_id shapes have no alias.
+  TTS text response remains1; its ancestor-provider _Binding is unchanged.
+- WindowTarget.native_editable defaultsFalse. Native proof requires enabled
+  known standard Edit/RichEdit, no password/readonly, valid EM_GETSEL and caret
+  owned by the actual focused Edit. Style is read again after EM_GETSEL.
+  Native ComboBox itself is unproven; its truly focused Edit child uses this
+  existing path. Direct focused UIA ComboBox needs the complete Text+Value,
+  editable/enabled/nonpassword, root ancestry and single-range proof.
+- SelectionProbe.capture_target(base,cancelled) returns TargetResult;
+  begin_delivery(base,cancelled) returns held DeliveryLease with result.identity,
+  one confirm() and worker-owned close(). NativeClipboard.capture_target keeps
+  expected/cancelled keywords. Transient lease/Job/EOF/stderr/cleanup unchanged.
+
+## Verification
+
+- Three initial behavior guards red: selection7..10, default native capability,
+  complete focused UIA ComboBox. Then green after producer changes.
+- Last selected endpoint10->11 during final GetText rejected; both endpoint
+  IDs, readonly, disabled, embedded/unknown, UTF-16, local limits and affinity
+  regressions covered. Native readonly-during-EM_GETSEL guard red, then green.
+- tools/dev.py check --group contracts:308 tests green,3.316s.
+- Final scoped Clipboard/Selection/Target/ABI:121 tests green,0.308s;
+  Win32 calls mocked, no native input/clipboard/microphone/provider action.
+- git diff --check clean; source diff self-reviewed against bounded Spec.
+- Root owns independent review and native Codex selection/Chrome search/HiddenEdit
+  proof. New selected-range warm latency is unmeasured; logical50ms unchanged.
+  Collapsed path deduplicates endpoint ownership and prefix reads; start0 reads
+  no text. Metadata contains no text; bounded prefixes stay only in child RAM.
+
+## Running state and next step
+
+No helper product/runtime started. Existing pilot/Altstack were untouched.
+Root-owned generic policy/config/application changes are not in this branch.
+Root should cherry-pick source only, integrate policy, run independent review
+and coordinated native proof. Retain this helper ownership until explicitly released.
+
+Starter: Read AGENTS.md, CONTEXT.md and this exact handoff. Re-prove branch,
+clean head and active ownership; retain the explicit no-push/no-native boundary.
+Continue only the bounded Windows range task. Do not modify Root or other helpers.

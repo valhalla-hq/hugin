@@ -109,4 +109,19 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Active Handoff
 
-- `handoffs/2026-10-14-pilot-fixes.md`
+- `handoffs/2026-10-15-range-helper.md`
+
+## Exclusive Windows range helper
+
+- Bounded IA-001/002/005 helper on codex/hugin-range-20261015-mjolnir,
+  based exactly on Spec5a238677ce0ff915b141f313e7960434cf92ad28. Root owns
+  overall integration, generic policy, native product checks and rollout.
+- Source41253ed6af45813012dd59db75504521e9441c8d implements ordered UIA
+  intervals, four bounded runtime IDs, two affinities and strict new wire.
+  Native editability defaults unproven; enabled/style/selection/caret must
+  establish it. Direct focused UIA ComboBox needs full Text/Value proof.
+- Guard-first failures and scoped source checks documented in the exact
+  helper handoff. No native UI/input/clipboard/audio/GPU action was executed.
+- No push, PR, merge or ownership release: Root explicitly requested local
+  scope commits and active helper ownership. Helper metadata is separate
+  from source and should not be cherry-picked into Root.
