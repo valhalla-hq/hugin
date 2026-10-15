@@ -14,6 +14,9 @@
   PR5 und PR6 integriert; geprüfter Source/Main:
   2298f298c99e5f7491465b91b8a17eeef2575a69.
   https://github.com/valhalla-hq/hugin/pull/6
+- Aktueller Statuscheckpoint/Fortsetzungspunkt als Draft:
+  https://github.com/valhalla-hq/hugin/pull/7. Kein Merge dieses Checkpoints
+  erforderlich, solange die echte Codex-Abnahme noch aussteht.
 - Routinemäßige private Integration folgt dem zentralen Lifecycle-Vertrag;
   keine neue Policy, Veröffentlichung, Kosten oder Autostartänderung.
 

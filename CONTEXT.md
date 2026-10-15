@@ -66,6 +66,8 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
   synthetische Probe starten, Ausgangsinhalt im RAM erhalten, nur eigenen
   Testtext entfernen. Bei Erfolg ausschließlich die genaue Codex-Paket- und
   Klassenfreigabe samt Nachweis/Test aktivieren und geprüft neu starten.
+- Aktueller Statuscheckpoint und Fortsetzungspunkt als Draft:
+  https://github.com/valhalla-hq/hugin/pull/7. Root-Ownership bleibt aktiv.
 
 ## Active Handoff
 
