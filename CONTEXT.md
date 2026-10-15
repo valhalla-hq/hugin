@@ -47,27 +47,35 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
   vorher, beide0 nachher, PCM vollständig identisch, alle eigenen Header/
   Handles geschlossen. Modellladen und Übergabeablehnungen werden präzise
   angezeigt. Kuratierte Nachweise: docs/pilot-fixes-2026-10-14.md.
-- Cursorfix aus Sourcec3bacfd in PR6 integriert: lokale begrenzte Suche statt
-  globalem Chatprefix-Rundweg. 312 Vertrags-/Integrationsprüfungen, 29
-  Targetcontracts, 16 Windows-ABI-Verträge und ein eigener nativer UIA-Test
-  grün; zwei unabhängige Reviews ohne offene Befunde und Hosted-Checks am
-  unveränderten PR-Head grün. Nachweis: docs/codex-delivery-2026-10-15.md.
-- Native Position0-Bestätigung erfolgreich. Die echte Paste-/Restore-/Caret-
-  Gegenprobe bleibt offen: Windows meldete nach Brians Bereitschaft Teams
-  als Vordergrund; auch die begrenzte Warteprobe fand keinen aktiven Codex-
-  Composer. Kein Paste und kein Enter. Eine erneute Frage „Jetzt testen“
-  ist pending. targets.json bleibt bis zum vollständigen Nachweis leer.
+- Source ce0c1cfeb498b31db8fbafc5bf5e38e8b2001396 ersetzt die frühere
+  Character-Suche durch begrenzte lokale UTF-16-Präfixlänge, Caret-Kind-ID
+  und Endrelation. Präfixzeichen nur kurz im isolierten RAM; keine Inhalte
+  im IPC/Diagnose/Git. Objektgrenzen/Unklarheit vor Lesen ablehnen, Auswahl/
+  Editierbarkeit nach letztem Textaufruf frisch prüfen.
+- Clipboard-Veröffentlichung nach Close normalisiert; unbekannter Owner
+  behält den RAM-Snapshot. Zwei exakte Chromium-Herkunftsformate opak sichern;
+  unbekannte/OLE-Formate bleiben vor Mutation gesperrt.
+- 328 Sourceprüfungen und23 Windowsprüfungen grün; zwei unabhängige Reviews,
+  reproduzierte P1/P2 geschlossen. Nachweis: docs/codex-delivery-2026-10-15.md.
+- Vorstufe nativ: einmaliges Paste, Clipboard-Restore, End-Caret und echte
+  Home-Gegenprobe erfolgreich. Aktuelle vollständige Abschlussprobe samt
+  Fixture-Cleanup/Baseline-Erhalt offen; targets.json bleibt leer. Normaler
+  Accessibility-Fokus aktiviert den eindeutig gebundenen Hauptcomposer;
+  keine weitere Fokus-Rückfrage erforderlich.
 - Pilot am 15.10 geordnet beendet, Rückstart und erneute reguläre Pause der
   Altapps bestätigt. Neuer Pilot vom geprüften Main sichtbar gestartet;
   Sitzungsnachweis durch Root.runtime/current-pilot-fixes-session.txt.
   Profile und beide Startup-lnks hashidentisch. Normale Maus-/Alt+Y-Hooks
   bleiben gesperrt; Hörurteil für beide korrigierten Stimmen fehlt noch.
-- Sobald Codex mit aktivem Nachrichtenfeld bereit ist: sofort vorbereitete
-  synthetische Probe starten, Ausgangsinhalt im RAM erhalten, nur eigenen
-  Testtext entfernen. Bei Erfolg ausschließlich die genaue Codex-Paket- und
-  Klassenfreigabe samt Nachweis/Test aktivieren und geprüft neu starten.
-- Aktueller Statuscheckpoint und Fortsetzungspunkt als Draft:
-  https://github.com/valhalla-hq/hugin/pull/7. Root-Ownership bleibt aktiv.
+- Zwischenablage inzwischen durch andere App-Kopie ersetzt; Abschlussprobe
+  stoppte vor Mutation. Frage „Test kopiert“ pending. Bei Antwort Probe sofort
+  starten, Clipboard und Ausgangstext erhalten, nur eigenes geprüftes Literal
+  entfernen. Erst bei vollem Erfolg exakte Paket-/Klassenfreigabe eintragen
+  und geprüft neu starten.
+- Eine frühe fehlgeschlagene Probe verlor ihren RAM-Clipboard-Ausgangsstand;
+  dieser wurde nicht wiederhergestellt. Spätere Restorebelege gelten separat.
+- Draft/Fortsetzung https://github.com/valhalla-hq/hugin/pull/7.
+  Root-Ownership bleibt aktiv; laufender Supervisor benötigt den Worktree.
 
 ## Active Handoff
 

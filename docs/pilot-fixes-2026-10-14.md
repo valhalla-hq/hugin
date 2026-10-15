@@ -37,6 +37,11 @@ Cleanup; ein menschlicher Hörvergleich bleibt ein eigener Nachweis.
 
 ## Codex-Übergabe
 
+Dieser Abschnitt hält den früheren Source-/Prüfstand vom14.10 fest.
+Aktueller Cursor-/Clipboardvertrag und native Abnahme stehen in
+[Codex-Übergabe15.10](codex-delivery-2026-10-15.md). Die damalige textfreie
+Character-Positionsmessung ist inzwischen ersetzt.
+
 Zwei Ursachen reproduziert: anfangs leere Delivery-Freigabe und fehlende native
 Caret-/EM_GETSEL-Fakten für Chrome_WidgetWin_1. Der Controller stellte auch
 ungeprüfte/unprüfbare Ziele und Clipboardfehler fälschlich als Zielwechsel dar.
