@@ -10,3 +10,9 @@ jobs:
           python-version: '3.12.10'
       - run: python tools/dev.py check --docs
       - run: python tools/dev.py check --group all
+      - name: Check owned delivery IPC without UI or audio
+        shell: pwsh
+        run: |
+          python -m venv --without-pip .runtime/controller
+          $env:PYTHONPATH = 'src'
+          ./.runtime/controller/Scripts/python.exe -m unittest discover -s tests/windows -p test_delivery_process.py -v

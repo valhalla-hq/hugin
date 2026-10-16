@@ -8,8 +8,8 @@
   Auswahl auch bei Mehrfachauswahlfähigkeit zulässig.
 - [x] DC-T04: Diagnoseverlust zuerst rot, Originalstatus sicher halten; DC-003.
   Zielprüfungs-Ausnahmen verlieren keine gültigen Aufnahmebytes.
-- [x] DC-T05: 402 Source-/Integrationschecks20,879s ohne Skips, 142 gezielte
-  Checks inklusive echter eigener Windows-Prozess-Fixture1,206s ohne Skips;
+- [x] DC-T05: 404 Source-/Integrationschecks21,392s ohne Skips, 144 gezielte
+  Checks inklusive echter eigener Windows-Prozess-Fixture1,205s ohne Skips;
   bestehender Docscheck19Anforderungen/17Abnahmekriterien grün. Alle DC.
 - [ ] DC-T06: Unabhängige Spec-/Standardsreviews, kuratierter Remotecheckpoint;
   alle DC. Stimmen-/Tonabnahme festhalten, reale Feldmatrix offen lassen.

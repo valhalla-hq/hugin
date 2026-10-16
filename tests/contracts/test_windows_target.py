@@ -512,10 +512,11 @@ class TargetContracts(unittest.TestCase):
         from dataclasses import asdict
         for field,bad in (('selection',True),('selection',[7,6]),('selection',[True,7]),('focus_pid',0),('focus_id',[True]),('start_id',list(range(65))),('end_id',[]),('end_id',[True]),('start_relation',True),('end_relation',2)):
             value=asdict(identity)
-            value[field]=bad;data=json.dumps(value).encode('ascii')
-            with self.assertRaises(ValueError):decode_target_response(io.BytesIO(struct.pack('!BBI',3,0,len(data))+data))
+            value[field]=bad
+            data=json.dumps({'identity':value,'verified_at':time.monotonic()}).encode('ascii')
+            with self.assertRaises(ValueError):decode_target_response(io.BytesIO(struct.pack('!BBI',4,0,len(data))+data))
         with self.assertRaises(ValueError):decode_target_response(io.BytesIO(encode_response('captured','not metadata')))
-        with self.assertRaises(ValueError):decode_target_response(io.BytesIO(struct.pack('!BBI',3,0,4093)))
+        with self.assertRaises(ValueError):decode_target_response(io.BytesIO(struct.pack('!BBI',4,0,4093)))
 
     def test_full_native_capture_binds_basis_without_recursing_into_full_probe(self):
         identity=self.read(Automation()).identity
@@ -534,21 +535,72 @@ class TargetContracts(unittest.TestCase):
 
 
 class OwnerCommitContracts(unittest.TestCase):
-    def test_owner_rechecks_held_clipboard_token_after_warm_confirmation(self):
+    def test_final_native_check_cannot_age_attestation_before_sendinput(self):
+        from unittest.mock import patch
+        from test_delivery_attestation import AttestationProcess,IDENTITY
+        native,target,events,state=self.backend();target=replace(target,uia=IDENTITY)
+        clock=[100.0];process=AttestationProcess(stamp=lambda:100.0)
+        process.cleanup_release.set()
+        probe=SelectionProbe(spawn=lambda *a,**k:process);native._selection_probe=probe
+        def delayed_native():
+            clock[0]=100.051
+            return BASE
+        native.capture_native_target=delayed_native
+        try:
+            with patch('hugin.windows.selection.time.monotonic',side_effect=lambda:clock[0]):
+                with self.assertRaises(ClipboardFailure) as failure:
+                    native.commit_paste(7,target,lambda:True,lambda transaction:True)
+            self.assertEqual(failure.exception.status,'target_probe_timeout')
+            self.assertFalse(failure.exception.submitted)
+            self.assertFalse(any(kind=='input' for kind,_ in events))
+        finally:probe.close()
+
+    def test_family_unwind_releases_clipboard_and_preserves_submitted_fact(self):
+        for cleanup_fails in (False,True):
+            with self.subTest(cleanup_fails=cleanup_fails):
+                native,target,events,state=self.backend()
+                entered=threading.Event();release=threading.Event();finished=threading.Event();errors=[]
+                original=native._selection_probe.begin_delivery
+                def begin(basis,cancelled):
+                    lease=original(basis,cancelled);close=lease.close
+                    def unwind():
+                        entered.set()
+                        if not release.wait(1):raise AssertionError('test cleanup was not released')
+                        close()
+                        if cleanup_fails:raise ClipboardFailure('target_cleanup_failed')
+                    lease.close=unwind;return lease
+                native._selection_probe.begin_delivery=begin
+                def worker():
+                    try:native.commit_paste(7,target,lambda:True,lambda transaction:True)
+                    except BaseException as error:errors.append(error)
+                    finally:finished.set()
+                thread=threading.Thread(target=worker);thread.start()
+                try:
+                    self.assertTrue(entered.wait(1))
+                    self.assertEqual(sum(kind=='input' for kind,_ in events),1)
+                    self.assertFalse(state['held'],'target must be able to read clipboard during family unwind')
+                    self.assertFalse(finished.is_set(),'process ownership must stay held during unwind')
+                finally:release.set();thread.join(1)
+                self.assertFalse(thread.is_alive())
+                if cleanup_fails:
+                    self.assertEqual(len(errors),1)
+                    self.assertIsInstance(errors[0],ClipboardFailure)
+                    self.assertEqual(errors[0].status,'target_cleanup_failed')
+                    self.assertTrue(errors[0].submitted)
+                else:self.assertEqual(errors,[])
+
+    def test_owner_rechecks_held_clipboard_token_after_last_native_check(self):
         for changed in ('sequence','owner','size','token'):
             native,target,events,state=self.backend()
-            original=native._selection_probe.begin_delivery
-            def begin(basis,cancelled):
-                lease=original(basis,cancelled);confirm=lease.confirm
-                def changed_confirm():
-                    result=confirm()
-                    if changed=='sequence':native.sequence=lambda:8
-                    if changed=='owner':native.user.GetClipboardOwner=lambda:11
-                    if changed=='size':native.kernel.GlobalSize=lambda _:6
-                    if changed=='token':native._read_handle=lambda *_:b'other'
-                    return result
-                lease.confirm=changed_confirm;return lease
-            native._selection_probe.begin_delivery=begin
+            original=native.capture_native_target
+            def changed_native():
+                result=original()
+                if changed=='sequence':native.sequence=lambda:8
+                if changed=='owner':native.user.GetClipboardOwner=lambda:11
+                if changed=='size':native.kernel.GlobalSize=lambda _:6
+                if changed=='token':native._read_handle=lambda *_:b'other'
+                return result
+            native.capture_native_target=changed_native
             with self.assertRaises(ClipboardFailure) as failure:
                 native.commit_paste(7,target,lambda:True,lambda transaction:events.append(('authorize',0)) or True)
             self.assertEqual(failure.exception.status,'clipboard_changed')

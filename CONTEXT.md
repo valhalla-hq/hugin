@@ -57,9 +57,12 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 - Capture-Status bleibt für begrenzte Diagnose erhalten. Fehler in der
   Zielprüfung verwerfen keine gültigen Aufnahmebytes oder RAM-Ergebnisse.
   Keine Rohinhalte, URLs, Titel oder IDs in Diagnose/Git.
-- 402 Source-/Integrationschecks20,879s und142 gezielteChecks1,206s grün,
+- 404 Source-/Integrationschecks21,392s und144 gezielteChecks1,205s grün,
   ohne Skips. Letztere enthalten eine echte eigene Windows-Prozess-/Pipe-
   Fixture mit synthetischem UIA; kein Chrome-/Providererfolgsbeweis.
+  Native Clipboardfreigabe vor langsamem Cleanup; Frischeverbrauch nach dem
+  letzten wartenden Nativecheck. Beide Reviewbefunde zuerst rot, dann grün.
+  Eigener Prozessguard zusätzlich in Windows-CI, lokal frische venv grün.
   Bestehender Docscheck19Anforderungen/17AC grün. Review-/Remoteabschluss
   dieser Kandidatenfassung steht noch aus. Nachweis/Grenzen:
   docs/delivery-completion-2026-10-16.md.

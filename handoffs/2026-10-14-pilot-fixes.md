@@ -39,6 +39,8 @@ IA- und v1-Verträge gelten weiter.
 - tests/contracts/test_delivery_attestation.py und betroffene Controller-/
   Target-/Selection-/Cue-Guards; tests/windows/test_delivery_process.py:
   neue Regressionen und echte eigene Windows-Pipe-/Prozess-Fixture.
+- .github/workflows/check.yml: frische eigene venv ohne pip, ausschließlich
+  synthetischer Windows-Prozessguard; lokal1Test0,476s grün.
 - Specs, docs/delivery-completion-2026-10-16.md, README, CONTEXT und dieser
   exakte Handoff: bestätigtes Audio, Kandidat, Laufzustand und Abnahmegrenzen.
 
@@ -47,12 +49,15 @@ IA- und v1-Verträge gelten weiter.
 - Guards zuerst rot: valide7..18+80ms Cleanup -> target_probe_timeout;
   fehlendes prepare/Zeitmetadatum; verlorener Capturegrund; Feldexception
   verhindert STT; Multiple-Fähigkeit+ein Bereich; echte Pipe-EOF-Verzögerung.
-- tools/dev.py check --group all:402Tests20,879s, grün ohne Skips.
+- tools/dev.py check --group all:404Tests21,392s, grün ohne Skips.
 - Gezielte Controller/Cue/Attestation/Target/Selection/Process-Tests:
-  142Tests1,206s, grün ohne Skips. Eine echte eigene native Windows-Fixture
+  144Tests1,205s, grün ohne Skips. Eine echte eigene native Windows-Fixture
   prüft gemeinsame monotone Zeit, venv, frühes EOF und120ms gehaltene Familie.
 - tools/dev.py check --docs:19Anforderungen/17AC, keine Probleme.
-- Unabhängige Spec-/Standards-Pässe für diese Fassung noch ausstehend.
+- Getrennte Spec-/Standards-Pässe am73f7390: Clipboardlock während Unwind
+  (P1) und Frischeverbrauch vor wartendem Nativecheck (P2) reproduziert und
+  mit zuerst roten Commit-Seam-Guards korrigiert. Finale Wiederprüfung offen.
+  Malformed-Identity-Fixtures auf gültige Response4-Envelopes migriert.
 - Historisch:390Source/56Windows aus15.10., echte Mic-/Audio-/GPU-/Cancel-
   Nachweise in docs/input-audio-2026-10-15.md. Keine Wiederholung/Erfolgs-
   Behauptung am neuen Kandidaten. Neue native Fixture ist kein Chrome-Test.

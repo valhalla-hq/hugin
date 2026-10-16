@@ -16,11 +16,15 @@
    Annahme als Cleanup-Erfolg. Fehlgeschlossene Ressourcen behalten ihren
    Owner für Retry. Ein bekannter Fehlerexit mit vollständig geschlossenen
    Ressourcen bleibt gemeldet, hält aber keinen toten Owner unbegrenzt fest.
+   Vor langsamem Unwind den nativen Clipboardlock freigeben; OneShotGate und
+   Callbackdetachment vorher abschließen, submitted-Fakt erhalten.
 5. Aufnahme-/Delivery-Status einmal in begrenzte Diagnosefelder normalisieren,
    passende kurze Fehlermeldungen behalten und gültiges Diktat im RAM erhalten.
    Feldprüfungs-Ausnahmen dürfen gültige Aufnahmebytes nicht verwerfen.
 6. Bestehende und neue Guards, echte eigene Pipe-/Prozess-Fixture ohne Fremd-UI,
    getrennte Reviews, Context/Handoff/Tasks und privater Remotecheckpoint.
+   Der eigene Prozessguard läuft zusätzlich in Windows-CI in frischem venv
+   ohne pip, Providerpakete, Browser, Mikrofon oder Audio.
    Kein Live-Rollout während die neue native Feldmatrix ungeprüft ist.
 
 Risiken: systemweit gemeinsame monotone Windows-/Python3.12-Zeitbasis nativ

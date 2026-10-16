@@ -44,6 +44,8 @@ die echte Feldmatrix bleibt ein separater letzter Abnahmeschritt.
   Private Framing-/EOF-/stderr-Prüfung bleibt vollständig; Prozessbesitz bleibt
   bis bestätigtem Familienabschluss erhalten. Fehler nach Übergabe dürfen
   keinen zweiten Paste und keine falsche Cleanup-Erfolgsmeldung erzeugen.
+  Der native Clipboardlock endet vor dem langsamen Familienabschluss, damit
+  das Zielfeld die bereits übergebene Einfügeanforderung lesen kann.
 - DC-003: Zielaufnahme und Delivery behalten einen begrenzten technischen
   Status samt Phase für Diagnose. Timeout, unzugängliche Abhängigkeit,
   Feldwechsel und nicht prüfbares Feld bleiben unterscheidbar. Keine Texte,

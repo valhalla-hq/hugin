@@ -43,6 +43,9 @@ nicht deren aktuelle Anzahl. [Microsoft-Enum](https://learn.microsoft.com/en-us/
   Fehler beim Schließen behalten Ressourcen für Retry. Ein später bekannter
   Fehlerexit bleibt gemeldet, auch wenn der Paste bereits übergeben wurde;
   vollständig geschlossene tote Owner bleiben nicht dauerhaft blockiert.
+  Der native Clipboardlock endet vor langsamem Unwind; das Zielfeld kann
+  die übergebene Einfügeanforderung währenddessen lesen. Callbackdetachment
+  und OneShotGate enden vor der Freigabe, submitted bleibt auch bei Fehlerexit.
 - Genau ein aktueller Bereich ist auch bei Mehrfachauswahlfähigkeit zulässig.
   Mehrere tatsächliche Bereiche und alle bisherigen Schutzfeld-/Identitäts-
   /Endpunkt-/Objektprüfungen bleiben ablehnend.
@@ -56,10 +59,11 @@ nicht deren aktuelle Anzahl. [Microsoft-Enum](https://learn.microsoft.com/en-us/
 
 | Prüfung | Ergebnis | Grenze |
 | --- | --- | --- |
-| Source/Integration: tools/dev.py check --group all |402Tests,20,879s, keine Skips| simulierte Hardware/Provider |
-| Gezielte Controller/Cue/Lease/Target/Selection/Process-Tests |142Tests,1,206s, keine Skips|1 echte eigene Windows-Prozess-/Pipe-Fixture, synthetisches UIA |
+| Source/Integration: tools/dev.py check --group all |404Tests,21,392s, keine Skips| simulierte Hardware/Provider |
+| Gezielte Controller/Cue/Lease/Target/Selection/Process-Tests |144Tests,1,205s, keine Skips|1 echte eigene Windows-Prozess-/Pipe-Fixture, synthetisches UIA |
 | Bestehender Docscheck |19Anforderungen/17Abnahmekriterien, keine Probleme| prüft v1-Dokumente und Locks; keine native Produktabnahme |
 | Eigene native Prozess-Fixture | grün: zeitlich frischer Nachweis, Familie während120ms Abwicklung noch gehalten, später Exit0| kein fremdes Fenster, Clipboard, Mikrofon, Audio oder GPU |
+| Hosted-Step lokal in frischer venv ohne pip nachvollzogen |1Test,0,476s, grün| eigens gehaltene synthetische Pipe-/Prozess-Fixture; Hosted-Ergebnis separat prüfen |
 
 Neue Guards decken alte/future/ungültige Zeitwerte, verzögerte Ownerqueue,
 Trailingbytes, einmaligen Commit, späteren Fehlerexit, Ressourcenabschluss,
@@ -69,6 +73,18 @@ laufen weiter. Die alte vollständige Windowsmatrix56Tests ist historische
 Evidenz aus15.10.; sie wurde am neuen Kandidaten nicht erneut als nativ grün
 behauptet. CPU, Peakmemory, GPU, p95 und Agenttokens dieses Deltas sind nicht
 gemessen. Aus der Testlaufzeit wird kein Produktlatenzgewinn abgeleitet.
+
+## Review und Folgerungen
+
+Getrennte Spec-/Standards-Pässe am festen Source73f7390 fanden einen
+Clipboardlock während des neuen langsamen Prozessunwinds und eine mögliche
+Alterung der Attestation während des abschließenden nativen Zielreads.
+Beide wurden am tatsächlichen Commit-Seam mit zuerst roten Guards belegt.
+Cleanup liegt nun außerhalb OpenClipboard; der einmalige Frischeverbrauch
+liegt hinter dem potentiell wartenden nativen Zielread. Malformed-Identity-
+Guards verwenden gültige Response4-Envelopes, damit sie die Metadaten statt
+nur eine alte Wireversion prüfen. Der echte Windows-Prozessguard wurde als
+kleiner isolierter CI-Step ergänzt. Abschließende Reviews folgen am neuen Head.
 
 ## Letzte Abnahme und Laufzustand
 
