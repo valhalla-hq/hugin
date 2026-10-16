@@ -31,6 +31,18 @@ die echte Feldmatrix bleibt ein separater letzter Abnahmeschritt.
 
 ## Anforderungen
 
+### Von Brian beauftragter Integrationsschnitt am16.10.2026
+
+Google-Diktat und Überschreiben sind am25d9c97 von Brian bestätigt. Codex und
+Word funktionieren laut seiner Probe weiterhin nicht. Er beauftragt die
+Prüfung und Mainintegration des vorhandenen Stands ausdrücklich als bekannte
+Zwischenbasis; die beiden Fälle werden in einer neuen PR bearbeitet. Die
+vollständige Feld-/Produktabnahme bleibt offen und ist weiterhin Voraussetzung
+für die abschließende Maus-/Alt+Y-/Autostartumstellung. PR10-Merge und
+Produktionsumstellung sind für diesen Schnitt getrennte Ergebnisse.
+
+### Unveränderte Funktionsanforderungen
+
 - DC-001: Langsame Feldprüfung und Prozessabwicklung laufen außerhalb des
   Controllerowners. Der letzte Owner-Commit wartet nicht auf COM oder Pipes.
   Er verbraucht genau eine vollständige, höchstens50ms alte Feldattestation.
@@ -76,6 +88,8 @@ die echte Feldmatrix bleibt ein separater letzter Abnahmeschritt.
 - DCA-004 (alle): Source-/Integrations-/Docschecks und getrennte Spec-/Standards-
   Reviews. Private prüfbare Kandidatenfassung; reale Google-/Codex-Auswahl,
   Fokuswechsel und geschützte Felder bleiben bis zum wirklichen Test offen.
+  Google-Diktat/Überschreiben inzwischen von Brian bestätigt; Codex/Word
+  bleiben bekannte Fehler des separat beauftragten Integrationsschnitts.
 - DCA-005 (DC-002/005): Cursor, Teil- und Gesamtauswahl mit gleicher sichtbarer
   Feld-Enclosure und abweichender Endaffinität zuerst rot, dann grün; Unicode,
   veränderte Grenzen/Affinität und fremdes Feld prüfen. Eigene verborgene

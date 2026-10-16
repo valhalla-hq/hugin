@@ -1,5 +1,12 @@
 # Einfügekorrektur: Kandidat vom 16.10.2026
 
+> Aktualisierung nach Brians Abnahme: Google-Diktat und Überschreiben am
+> normalen Pilot25d9c97 funktionieren. Codex und Word bleiben fehlgeschlagen.
+> Brian beauftragt jetzt den Schnitt und die Mainintegration als bekannte
+> Zwischenbasis. Aktueller [Integrationsstand](baseline-2026-10-16.md) und
+> [Folgeauftrag](../handoffs/2026-10-16-codex-word-followup.md) ersetzen die
+> historischen Lauf-/Mergeaussagen weiter unten. Keine Gesamtabnahme.
+
 ## Bewiesene Fehler und Grenzen
 
 Brian bestätigt die beiden Stimmen Freya/Tyr und die deutlicheren Aufnahme-

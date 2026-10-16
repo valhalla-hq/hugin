@@ -16,8 +16,10 @@
   Hostedchecks einschließlich eigener Windows-IPC-Fixture grün; privater
   DraftPR10, Remotehead und Context-/Handoffblobs bewiesen. Alle DC.
   Bestätigte Stimmen/Töne dokumentiert; reale Feldmatrix bleibt offen.
-- [ ] DC-T07: Letzte native Google-/Codex-/Schutzfeldabnahme und erst danach
-  geprüften Kandidaten ausrollen. DC-001/002/004; neue Fassung benötigt Neustart.
+- [ ] DC-T07: Vollständige Feld-/Schutzfeldabnahme und finale Produktumstellung.
+  Google-Diktat/Überschreiben am25d9c97 durch Brian bestätigt. Codex und Word
+  fehlgeschlagen; nächste PR laut handoffs/2026-10-16-codex-word-followup.md.
+  Der ausdrücklich beauftragte Main-Schnitt ist keine Erledigung dieser Aufgabe.
 - [x] DC-T08: DC-005: beobachtete Endrelation im eigenständigen Providermodell
   zuerst reproduzieren, falsche Kopplung von Feldbesitz und Endordnung entfernen.
 - [x] DC-T09: DCA-005: Cursor-/Teil-/Gesamtauswahl, Unicode, fremde Felder und
@@ -27,4 +29,11 @@
 - [x] DC-T10: Neue Korrektur unabhängig gegen Spec und Standards prüfen,
   Context/Handoff aktualisieren und Kandidat für die kurze Nutzerabnahme sichern.
   Beide Reviews ohne offene Befunde, jeweils91 Scopedtests grün; Source während
-  Reviews unverändert. Private DraftPR10 bleibt bis realer Abnahme offen.
+  Reviews unverändert. Nach Google-Abnahme gibt Brian PR10 ausdrücklich als
+  Zwischenbasis zur Integration frei; offene Codex-/Word-Fälle werden übertragen.
+- [x] DC-T11: Gesamte sieben PR10-Commits und finalen Diff prüfen, aktuellen
+  Abnahmestand und Handoff für den ausdrücklich freigegebenen Main-Schnitt sichern.
+  Ein zusätzlicher DC-003-Diagnosefehler im Launcher wurde zuerst rot belegt und
+  eng korrigiert; unabhängiger Wiederreview schließt ihn. 412 Source-/Integrations-
+  und3 native Tests grün. Merge-/Mainnachweis erfolgt am exakten grünen PR10-Head;
+  sein tatsächlicher Zustand ist in GitHub maßgeblich. Keine Gesamtabnahme.

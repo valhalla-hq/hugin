@@ -1,5 +1,12 @@
 # Hugin Pilotkorrekturen — Stand 16.10.2026
 
+> Historischer Handoff, abgelöst durch
+> [Codex-/Word-Fortsetzung](2026-10-16-codex-word-followup.md).
+> Brian bestätigt Google-Diktat/Überschreiben am25d9c97 und beauftragt die
+> Mainintegration als Zwischenbasis trotz offener Codex-/Word-Fehler.
+> Die folgenden Lauf-/Mergeaussagen beschreiben den früheren Prüfzeitpunkt;
+> aktueller Auftrag, Pilot25d9c97 und Laufabhängigkeiten stehen im neuen Handoff.
+
 ## Objective
 
 Markierte Teil-/Gesamtauswahl sicher mit Diktat ersetzen und falsche
