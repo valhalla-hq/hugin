@@ -63,11 +63,13 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
   Native Clipboardfreigabe vor langsamem Cleanup; Frischeverbrauch nach dem
   letzten wartenden Nativecheck. Beide Reviewbefunde zuerst rot, dann grün.
   Eigener Prozessguard zusätzlich in Windows-CI, lokal frische venv grün.
-  Bestehender Docscheck19Anforderungen/17AC grün. Review-/Remoteabschluss
-  dieser Kandidatenfassung steht noch aus. Nachweis/Grenzen:
+  Bestehender Docscheck19Anforderungen/17AC grün. Getrennte Spec-/Standards-
+  Wiederprüfung am festen Source489ed2ff44aa0b6e9f77a9d8a4b18f2f2ba5dca7
+  ohne offene Befunde; drei Hostedchecks samt Windows-IPC-Step grün.
+  Privater Remotehead und Context-/Handoffblobs bewiesen. Nachweis/Grenzen:
   docs/delivery-completion-2026-10-16.md.
-- Draft PR10 https://github.com/valhalla-hq/hugin/pull/10 wird auf diesen
-  finalen Sourceumfang aktualisiert; alter docs-only-Titel ist überholt.
+- Draft PR10 https://github.com/valhalla-hq/hugin/pull/10 ist auf den finalen
+  Sourceumfang aktualisiert: fix(input): keep selection proofs fresh through delivery.
   Kein aktueller Kandidatenrollout. Reale Google-/Codex-/Schutzfeldmatrix
   bleibt DC-T07, Computer Use hat URL-Verifikation automatisch abgelehnt.
   Keine UI-Sperrumgehung und keine erneuten Fokus-/Clipboard-Frageschleifen.

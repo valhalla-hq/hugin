@@ -84,7 +84,20 @@ Cleanup liegt nun außerhalb OpenClipboard; der einmalige Frischeverbrauch
 liegt hinter dem potentiell wartenden nativen Zielread. Malformed-Identity-
 Guards verwenden gültige Response4-Envelopes, damit sie die Metadaten statt
 nur eine alte Wireversion prüfen. Der echte Windows-Prozessguard wurde als
-kleiner isolierter CI-Step ergänzt. Abschließende Reviews folgen am neuen Head.
+kleiner isolierter CI-Step ergänzt. Getrennte Spec-/Standards-Wiederprüfungen
+am festen Source489ed2ff44aa0b6e9f77a9d8a4b18f2f2ba5dca7 schließen beide
+Befunde und finden keine weiteren konkreten Probleme. Beide prüfen jeweils
+143 hardwarefreie Scopedtests am festen Source (0,834s/0,832s), keine
+Nativeaktionen. Root prüft zusätzlich die oben genannte native IPC-Fixture.
+
+Drei Hostedchecks am Source489ed2f sind grün, einschließlich des neuen
+Windows-Prozesssteps in beiden Check-Hugin-Runs:
+[Pushcheck](https://github.com/valhalla-hq/hugin/actions/runs/38863724113),
+[PRcheck](https://github.com/valhalla-hq/hugin/actions/runs/38863728485),
+[Baseline](https://github.com/valhalla-hq/hugin/actions/runs/38863728357).
+PR10 bleibt Draft. Der abschließende Dokumentcheckpoint ändert nur Context,
+Handoff, Aufgaben und diesen Nachweis; sein frischer Head/Blob-/CI-Nachweis
+wird separat geprüft, ohne einen neuen Source- oder Browsererfolg abzuleiten.
 
 ## Letzte Abnahme und Laufzustand
 

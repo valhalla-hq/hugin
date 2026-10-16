@@ -11,7 +11,10 @@
 - [x] DC-T05: 404 Source-/Integrationschecks21,392s ohne Skips, 144 gezielte
   Checks inklusive echter eigener Windows-Prozess-Fixture1,205s ohne Skips;
   bestehender Docscheck19Anforderungen/17Abnahmekriterien grün. Alle DC.
-- [ ] DC-T06: Unabhängige Spec-/Standardsreviews, kuratierter Remotecheckpoint;
-  alle DC. Stimmen-/Tonabnahme festhalten, reale Feldmatrix offen lassen.
+- [x] DC-T06: Getrennte Spec-/Standardsreviews am festen Source
+  489ed2ff44aa0b6e9f77a9d8a4b18f2f2ba5dca7 ohne offene Befunde. Drei
+  Hostedchecks einschließlich eigener Windows-IPC-Fixture grün; privater
+  DraftPR10, Remotehead und Context-/Handoffblobs bewiesen. Alle DC.
+  Bestätigte Stimmen/Töne dokumentiert; reale Feldmatrix bleibt offen.
 - [ ] DC-T07: Letzte native Google-/Codex-/Schutzfeldabnahme und erst danach
   geprüften Kandidaten ausrollen. DC-001/002/004; aktuell UI-Testwerkzeug blockiert.

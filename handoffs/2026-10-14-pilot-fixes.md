@@ -19,7 +19,9 @@ IA- und v1-Verträge gelten weiter.
   Der neue Kandidatenhead ist der Commit, der diesen Handoff enthält;
   konkrete SHA beim Pickup frisch aus Git/PR lesen, nicht selbstreferenziell.
 - PR: https://github.com/valhalla-hq/hugin/pull/10, Draft. Vorher docs-only,
-  jetzt Einfügekandidat; finale Beschreibung/Remoteprüfung noch ausstehend.
+  jetzt Einfügekandidat; Beschreibung/Titel auf finalen Sourceumfang geändert.
+  Geprüfter Source489ed2ff44aa0b6e9f77a9d8a4b18f2f2ba5dca7 ist remote;
+  Context-/Handoffblobs stimmen. Dokumentabschluss ändert nur vier MD-Dateien.
 - Ownership: aktiv beim selben Root-Executor/Task auf Mjolnir. Kein neuer
   Executor darf den aktiven Worktree übernehmen. Frühere Helper freigegeben.
 - Autorisierung: begrenzter Umsetzungsauftrag und Fortsetzung. Routine private
@@ -56,7 +58,10 @@ IA- und v1-Verträge gelten weiter.
 - tools/dev.py check --docs:19Anforderungen/17AC, keine Probleme.
 - Getrennte Spec-/Standards-Pässe am73f7390: Clipboardlock während Unwind
   (P1) und Frischeverbrauch vor wartendem Nativecheck (P2) reproduziert und
-  mit zuerst roten Commit-Seam-Guards korrigiert. Finale Wiederprüfung offen.
+  mit zuerst roten Commit-Seam-Guards korrigiert. Beide unabhängigen finalen
+  Wiederprüfungen am489ed2f ohne offene Befunde; jeweils143 hardwarefreie
+  Scopedtests grün0,834s/0,832s. Drei Hostedchecks an diesem Source grün,
+  beide neuen Windows-IPC-Steps separat als success nachgewiesen.
   Malformed-Identity-Fixtures auf gültige Response4-Envelopes migriert.
 - Historisch:390Source/56Windows aus15.10., echte Mic-/Audio-/GPU-/Cancel-
   Nachweise in docs/input-audio-2026-10-15.md. Keine Wiederholung/Erfolgs-
@@ -96,19 +101,21 @@ Fokuswechsel und Schutzfelder bleiben DC-T07; nicht als behoben behaupten.
 
 ## Pick Up Here
 
-1. Kandidat unabhängig gegen Spec und Standards prüfen, Befunde reproduzieren
-   und korrigieren; nur notwendige Checks nach Änderungen wiederholen.
-2. Context/diesen Handoff/Tasks und DraftPR10 auf finalen Scope bringen,
-   geänderte Pfade bewusst checkpointen, Remotehead/Blobs/Hostedchecks beweisen.
-3. Letzte reale Feldmatrix am geprüften Kandidaten ermöglichen und ohne Enter
+1. Frischen PR10-/Githead und Context-/Handoffblobs lesen. Source489ed2f
+   ist geprüft; letzter Dokumentcheckpoint enthält diesen Stand. Kein Merge
+   oder Rollout dieser Kandidatenfassung bisher; Ownership bleibt aktiv.
+2. Letzte reale Feldmatrix am geprüften Kandidaten ermöglichen und ohne Enter
    abnehmen, bevor er ausgerollt wird. Keine wiederholten Fokus-/Clipboardfragen.
    Keine Produktion/Autostartmigration ohne geprüfte Umstellung behaupten.
+3. Nach Feldabnahme private Integration nach frischem exaktem Head-/Review-/
+   Checkgate, kontrollierter Teststart/Rückweg und anschließend finale
+   Maus-/Alt+Y-/Autostartumstellung gemäß Spec. Kein Zusatzumfang.
 
 ## Starter Prompt
 
 Continue valhalla-hq/hugin from handoffs/2026-10-14-pilot-fixes.md. Read AGENTS,
 CONTEXT, genau diesen Handoff, PR10 und Git frisch; Lifecycle/Preflight für
 codex/hugin-pilot-fixes-mjolnir beachten. Ownership ist aktiv beim Root.
-Einfügekandidat abschließend reviewen/checkpointen, reale Feldabnahme offen
-halten. Bestätigte Stimmen/Töne erhalten; Altstack nicht ungeprüft stoppen,
+Einfügekandidat ist geprüft und privat checkpointed; reale Feldabnahme
+fortsetzen. Bestätigte Stimmen/Töne erhalten; Altstack nicht ungeprüft stoppen,
 keine gesperrte Computersteuerung umgehen und keinen Testtext absenden.
