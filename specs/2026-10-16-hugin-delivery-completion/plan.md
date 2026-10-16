@@ -31,3 +31,21 @@ Risiken: systemweit gemeinsame monotone Windows-/Python3.12-Zeitbasis nativ
 prüfen; keine frische Zeit im Client erfinden. Der neue Frischevertrag darf
 keinen UIA-Befund oder Prozessabschluss vortäuschen. Daten und alte private
 IPC-Shapes fail-closed. Rückweg: unveränderte Mainfassung/Altstack behalten.
+
+## Korrektur nach der Feldmessung
+
+Die reale Google-Probe scheitert vor Delivery an der Kombination aus eigener
+Edit-Enclosure und positiver Endrelation. Chromium155.0.8059.40 verbirgt Kinder
+atomarer Textfelder und unterscheidet gleiche Textoffsets durch Affinität.
+Der Produzent darf sichtbare Feldidentität deshalb nicht als Textankeridentität
+interpretieren. Die widersprüchliche Sonderprüfung entfernen; bestehenden
+Enclosure-/Präfix-/Frischevertrag einheitlich verwenden. Tests modellieren
+Offset und Affinität getrennt. Ein nackter numerischer Offset außerhalb der
+Textlänge mit gleichzeitig eigener Enclosure und abschneidendem GetText ist
+kein getreues Chrome-Modell: Chromium normalisiert solche Offsets selbst.
+Fremde und unbekannte Bereiche weiterhin über beobachtbare Enclosures prüfen.
+
+Die laufende Diagnosesitzung ist auf eine unveränderte, ignorierte Kopie ihres
+Sources94ee13b festgelegt. Neue Sourceänderungen gelangen erst mit dem nächsten
+geprüften Start in eine Hugin-Sitzung. Vor der Abnahme: Regressionen, eigene
+native Feldmatrix, getrennte Reviews und privater Kandidatencheckpoint.

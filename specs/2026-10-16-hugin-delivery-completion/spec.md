@@ -53,6 +53,13 @@ die echte Feldmatrix bleibt ein separater letzter Abnahmeschritt.
 - DC-004: Stimmen, Töne, Mikrofon, GPU, Kürzel, RAM-Ergebnis, Clipboardrestore,
   neue Nutzerkopien und normaler Altstack-Rückweg bleiben erhalten. Kein Enter,
   kein OS-/Browser-Setting, keine Produktionsmigration und keine Zusatz-UI.
+- DC-005: Feldzugehörigkeit folgt den geprüften UIA-Enclosures, nicht der
+  Reihenfolge eines Endpunkts gegenüber DocumentRange.End. Ein eigener
+  Endpunkt darf auch bei derselben sichtbaren Edit-Enclosure dahinter
+  sortieren. Beide Endrelationen, Identitäten und begrenzten UTF-16-Präfixe
+  bleiben eingefroren und frisch geprüft. Keine zusätzliche Volltextlesung,
+  Zeichenwanderung oder App-Ausnahme. Fremde/unklare Enclosures und geänderte
+  Auswahl bleiben abgelehnt.
 
 ## Abnahme
 
@@ -69,6 +76,11 @@ die echte Feldmatrix bleibt ein separater letzter Abnahmeschritt.
 - DCA-004 (alle): Source-/Integrations-/Docschecks und getrennte Spec-/Standards-
   Reviews. Private prüfbare Kandidatenfassung; reale Google-/Codex-Auswahl,
   Fokuswechsel und geschützte Felder bleiben bis zum wirklichen Test offen.
+- DCA-005 (DC-002/005): Cursor, Teil- und Gesamtauswahl mit gleicher sichtbarer
+  Feld-Enclosure und abweichender Endaffinität zuerst rot, dann grün; Unicode,
+  veränderte Grenzen/Affinität und fremdes Feld prüfen. Eigene verborgene
+  Windows-RichEdit-Matrix prüft echte Providerbereiche ohne Nutzerfokus oder
+  Zwischenablage zu verändern. Sie ersetzt keine reale Chrome-Abnahme.
 
 ## Nichtziele
 

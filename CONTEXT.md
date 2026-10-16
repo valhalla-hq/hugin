@@ -68,15 +68,30 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
   ohne offene Befunde; drei Hostedchecks samt Windows-IPC-Step grün.
   Privater Remotehead und Context-/Handoffblobs bewiesen. Nachweis/Grenzen:
   docs/delivery-completion-2026-10-16.md.
-- Draft PR10 https://github.com/valhalla-hq/hugin/pull/10 ist auf den finalen
-  Sourceumfang aktualisiert: fix(input): keep selection proofs fresh through delivery.
-  Kein aktueller Kandidatenrollout. Reale Google-/Codex-/Schutzfeldmatrix
-  bleibt DC-T07, Computer Use hat URL-Verifikation automatisch abgelehnt.
-  Keine UI-Sperrumgehung und keine erneuten Fokus-/Clipboard-Frageschleifen.
-- Laufzustand16.10.: kein Hugin-App-/Supervisorprozess frisch beobachtet;
-  PipPal und alter Qwen-Worker laufen. Alte Receipt854cec59 mit pilot_running
-  ist historisch/stale und keine aktuelle Prozessautorität. Alte Installationen,
-  Profile und Startup-lnks bleiben erhalten; kein fremdes Kill dieser Sitzung.
+- Fortgesetzte reale Google-Proben am94ee13b scheitern bereits beim Capture:
+  eigene Edit-Enclosure, positive Endrelation, Dokument-/Präfixlänge jeweils23.
+  Chromium155.0.8059.40 kann interne Kinder hinter derselben Edit-Enclosure
+  verbergen und gleiche Textoffsets nach Affinität ordnen. Die entsprechende
+  Sonderablehnung entfällt; Enclosure, Prozess/Root, exakte Endpunkte, beide
+  Relationen, begrenzte UTF-16-Präfixe und Frische bleiben geprüft. Keine neue
+  Volltextlesung oder Chrome-Ausnahme; internes Chrome-Ankerpaar nicht beobachtet.
+- Neuer Stand:409 Source-/Integrationschecks18,457s,91 gezielte Checks0,466s,
+  3 native eigene RichEdit-/IPC-Tests0,794s grün ohne Skips. Cursor, Endcursor,
+  Teil-/Gesamtauswahl und Unicode samt tatsächlicher EM_REPLACESEL-Ersetzung
+  am eigenen verborgenen HWND geprüft. Auswahlwechsel erkannt. Das ist ein
+  Range-Nachweis, keine Fokus-/Clipboard-/SendInput-Abnahme in Fremdprogrammen.
+- Getrennte unabhängige Spec-/Standardsreviews des eingefrorenen Deltas gegen
+  94ee13b ohne offene Befunde; jeweils91 hardwarefreie Tests grün. Producer-
+  SHA256:7cafc36082deae40d289b85e0ca1775a4e4da67ca7a545cb6274ebd118a307da.
+- Private Draft PR10 https://github.com/valhalla-hq/hugin/pull/10 bleibt
+  Kandidat für die kurze Google-/Codex-Abnahme DC-T07. Die frühere Computer-
+  Use-Ablehnung wegen unklarer Browseradresse wird nicht umgangen. Keine
+  weiteren Fokus-/Clipboard-Frageschleifen; keine Produktionsmigration.
+- Laufzustand16.10. aktualisiert: Brian hat den Diagnosepilot94ee13b gestartet;
+  App und Supervisor sind frisch als laufend beobachtet. Dessen Probeprozesse
+  verwenden eine ignorierte unveränderte Sourcekopie94ee13b mit Hashmanifest.
+  Die Korrektur benötigt einen geordneten Neustart. Der stabile Main8e4ceab,
+  alte Installationen, Profile und Startup-lnks bleiben unverändert.
 - Strg+Alt+D/V und Escape bleiben Pilotkürzel. Normale Maus-/Alt+Y-/Autostart-
   Migration bleibt bis zur geprüften Umstellung offen. Früherer verlorener
   RAM-Clipboardstand bleibt dokumentiert und ist nicht wiederhergestellt.

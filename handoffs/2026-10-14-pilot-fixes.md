@@ -15,13 +15,13 @@ IA- und v1-Verträge gelten weiter.
 - Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-pilot-fixes-mjolnir.
 - Stable Main:8e4ceabb718edb2c8d1b80e1b07b69e0f3b933bd. PR9 regulär
   integriert; drei Hostedchecks, Ancestry und gleicher Head-/Mergetree belegt.
-- Vorheriger Checkpoint:996590af8bf3eba734ca068a1cd6ae406b268686.
+- Vorheriger Checkpoint:94ee13bf61d057a10f20b19e64958621e0d6349e.
   Der neue Kandidatenhead ist der Commit, der diesen Handoff enthält;
   konkrete SHA beim Pickup frisch aus Git/PR lesen, nicht selbstreferenziell.
 - PR: https://github.com/valhalla-hq/hugin/pull/10, Draft. Vorher docs-only,
   jetzt Einfügekandidat; Beschreibung/Titel auf finalen Sourceumfang geändert.
-  Geprüfter Source489ed2ff44aa0b6e9f77a9d8a4b18f2f2ba5dca7 ist remote;
-  Context-/Handoffblobs stimmen. Dokumentabschluss ändert nur vier MD-Dateien.
+  Frühere Reviews/Hostedchecks an489ed2f und94ee13b sind historische Evidenz.
+  Neuer Head-/Context-/Handoff-/CI-Nachweis wird nach dem Checkpoint geprüft.
 - Ownership: aktiv beim selben Root-Executor/Task auf Mjolnir. Kein neuer
   Executor darf den aktiven Worktree übernehmen. Frühere Helper freigegeben.
 - Autorisierung: begrenzter Umsetzungsauftrag und Fortsetzung. Routine private
@@ -32,6 +32,21 @@ IA- und v1-Verträge gelten weiter.
 
 ## Changed Files
 
+- Neues Delta seit94ee13b: selection_probe.py entfernt die widersprüchliche
+  Ablehnung eigener Edit-Enclosure plus positiver Endrelation. Feldbesitz
+  folgt Enclosures; Endrelation bleibt Vergleichsfakt. Keine neue Textlesung
+  oder Chrome-Ausnahme. Native Prozess/Root-, Endpunkt-, Objekt-, UTF-16-
+  Präfix- und Frischeprüfungen bleiben erhalten.
+- test_windows_field_ranges.py trennt gültigen Textoffset und Affinität;
+  ersetzt zwei ungültige Affinitäts-Fixtures in test_windows_target.py.
+  _uia_field_fixture_probe.py / test_windows_uia_native.py prüfen echte eigene
+  RichEdit-Ranges und EM_REPLACESEL an ausschließlich eigenen verborgenen HWNDs.
+- Nachweis: Nutzerprobe scheitert beim Capture, eigene Edit-Enclosure,
+  positive Endrelation, Dokument-/Präfixlänge jeweils23. Chromium155.0.8059.40
+  verbirgt atomare Feldkinder und ordnet gleiche Textoffsets auch nach Affinität.
+  Konkretes internes Ankerpaar nicht beobachtet; öffentliche Implementierung
+  und unabhängiges Modell erklären den falschen Guard. Pinned Quellen im Doc.
+- Frühere Änderungen im selben PR, weiterhin enthalten:
 - src/hugin/windows/selection.py, selection_probe.py, clipboard.py:
   Producerzeit, Request5/Response4, Worker-prepare/Owner-confirm ohne I/O,
   echte Pipe-EOFs vor COM-Unwind, direkter Basisinterpreter mit exaktem venv,
@@ -51,7 +66,19 @@ IA- und v1-Verträge gelten weiter.
 - Guards zuerst rot: valide7..18+80ms Cleanup -> target_probe_timeout;
   fehlendes prepare/Zeitmetadatum; verlorener Capturegrund; Feldexception
   verhindert STT; Multiple-Fähigkeit+ein Bereich; echte Pipe-EOF-Verzögerung.
-- tools/dev.py check --group all:404Tests21,392s, grün ohne Skips.
+- Neues Delta zuerst rot an der tatsächlichen Capture-Ablehnung, danach grün.
+- tools/dev.py check --group all:409Tests18,457s, grün ohne Skips.
+- Neue Range-/Target-/Delivery-/Selection-Verträge:91Tests0,466s grün.
+- Native eigene RichEdit-Matrix plus Selection-/IPC-Fixtures:3Tests0,794s,
+  grün ohne Skips. Cursor, Endcursor, Teil-/Gesamtauswahl und Unicode korrekt
+  vermessen und tatsächlich per EM_REPLACESEL ersetzt. Auswahlwechsel erkannt,
+  Nutzerfokus/Clipboard unverändert. Kein voller Fokus-/Paste-/Chrome-Nachweis.
+- Getrennte unabhängige Spec-/Standardsreviews am eingefrorenen Delta gegen
+  94ee13b ohne offene Befunde; jeweils91 hardwarefreie Tests0,406s/0,413s grün.
+  Producer-SHA256:7cafc36082deae40d289b85e0ca1775a4e4da67ca7a545cb6274ebd118a307da.
+  Fünf Source-/Testdateien während Review unverändert; keine nativen Aktionen
+  durch Reviewer. Die echte Matrix führte Root aus.
+- Frühere Verifikation vor dem neuen Delta:
 - Gezielte Controller/Cue/Attestation/Target/Selection/Process-Tests:
   144Tests1,205s, grün ohne Skips. Eine echte eigene native Windows-Fixture
   prüft gemeinsame monotone Zeit, venv, frühes EOF und120ms gehaltene Familie.
@@ -72,17 +99,27 @@ IA- und v1-Verträge gelten weiter.
 Keine Diktate, Audio, Clipboardinhalte, Titel/URLs, IDs, Exception-Payloads,
 Credentials, Umgebungsdumps, Rohlogs oder Runtimeartefakte in Git. Keine
 Fremd-UI/SendInput/CDP nach Computer-Use-Ablehnung. Eigene synthetische
-Prozesse und Pipes ausschließlich CPU; kein Mikrofon/GPU/Clipboardzugriff.
+Prozesse, Pipes und verborgene HWNDs ausschließlich CPU; kein Mikrofon/GPU/
+Clipboardzugriff. Native Feldtests verwenden nur eigenen synthetischen Text.
 
 ## Running State
 
 - C:/Users/brian/Hugin ist Junction zum sauberen _repos/hugin-Mainclone.
   Dieser bleibt8e4ceab; kein Sourceupdate und kein Kandidatenstart hier.
-- Frische Prozessabfrage16.10.: keine Hugin-App/kein Supervisor beobachtet,
-  PipPal samt altem Qwen-Worker aktiv. Nichts davon beendet. Whispering nicht
-  in dieser begrenzten Abfrage nachgewiesen; keine globale Abwesenheitsannahme.
-- Alte Receipt pilot-session-854cec59-a15a-44c1-8373-be2cd39273a8.json meldet
-  noch pilot_running, ist aber stale. Alte PIDs sind keine aktuelle Autorität.
+- Brian hat Diagnosepilot94ee13b gestartet; App/Supervisor wurden frisch laufend
+  beobachtet. Die frühere Abwesenheitsbeobachtung ist überholt. Ignorierte
+  Receipt: .runtime/pilot-session-884da9d9-dd7b-4d5a-82c1-1d9e4f474018.json.
+  Receipt/PID allein ist keine Cleanup-Autorität; Supervisor hält eigene Familie.
+- Dessen neue Probeprozesse nutzen unveränderten Source94ee13b unter
+  .runtime/pilot-source-94ee13bf61d0 mit Hashmanifest; trace_selection_probe.py
+  ist darauf festgelegt. Keine halbe Liveaktualisierung während Codeänderungen.
+- Neuer Kandidat benötigt geordneten Neustart. Normaler Starter ist
+  .runtime/Hugin-Test-starten.cmd / pilot_candidate_session.pyw mit neuem Head;
+  Planlauf muss sauber/runtimekompatibel sein. Nicht den alten Diagnose-
+  Starter Hugin-Feldtest.cmd mit Head94ee13b verwenden.
+- Normales Beenden des Diagnosepilots startet über seinen Supervisor die
+  bestehenden Whispering-/PipPal-Startup-lnks. Diese vor dem neuen Pilottest
+  normal beenden, damit keine doppelten Kürzel/Modellnutzer aktiv sind.
 - Profile/Startup-lnks und alter STT-Standby in dieser Sitzung unverändert.
   Strg+Alt+D/V und Escape bleiben Pilotkürzel. Maus/Alt+Y/Autostartmigration
   folgt auf geprüfte Umstellung. Früherer RAM-Clipboardverlust nicht rückgängig.
@@ -98,14 +135,17 @@ Computer Use hat die Google-Probe beendet, weil die aktuelle Browseradresse
 auf Windows nicht zuverlässig genug bestimmt werden konnte. Diese automatische
 Ablehnung wird nicht umgangen. Echte Google-/Codex-Teil-/Vollauswahl, Cursor,
 Fokuswechsel und Schutzfelder bleiben DC-T07; nicht als behoben behaupten.
+Zwei frühere automatische Appstarts wurden als blocked by policy abgewiesen,
+ohne bekannte allgemeine OS-Regel. Kein indirekter Launch als Umgehung.
+Manueller Start funktionierte; keine erneute Diagnose-/Fokus-/Clipboardfrageschleife.
 
 ## Pick Up Here
 
-1. Frischen PR10-/Githead und Context-/Handoffblobs lesen. Source489ed2f
-   ist geprüft; letzter Dokumentcheckpoint enthält diesen Stand. Kein Merge
+1. Frischen PR10-/Githead und Context-/Handoffblobs lesen. Der aktuelle
+   Checkpoint enthält die Feldkorrektur und ihren Nachweis. Kein Merge
    oder Rollout dieser Kandidatenfassung bisher; Ownership bleibt aktiv.
-2. Letzte reale Feldmatrix am geprüften Kandidaten ermöglichen und ohne Enter
-   abnehmen, bevor er ausgerollt wird. Keine wiederholten Fokus-/Clipboardfragen.
+2. Geordnet auf den neuen normalen Kandidaten starten, dann kurze reale
+   Cursor-/Teil-/Gesamtauswahl-Abnahme mit Brian ohne Enter. Keine wiederholten Fokus-/Clipboardfragen.
    Keine Produktion/Autostartmigration ohne geprüfte Umstellung behaupten.
 3. Nach Feldabnahme private Integration nach frischem exaktem Head-/Review-/
    Checkgate, kontrollierter Teststart/Rückweg und anschließend finale
@@ -116,6 +156,7 @@ Fokuswechsel und Schutzfelder bleiben DC-T07; nicht als behoben behaupten.
 Continue valhalla-hq/hugin from handoffs/2026-10-14-pilot-fixes.md. Read AGENTS,
 CONTEXT, genau diesen Handoff, PR10 und Git frisch; Lifecycle/Preflight für
 codex/hugin-pilot-fixes-mjolnir beachten. Ownership ist aktiv beim Root.
-Einfügekandidat ist geprüft und privat checkpointed; reale Feldabnahme
-fortsetzen. Bestätigte Stimmen/Töne erhalten; Altstack nicht ungeprüft stoppen,
+Einfügekandidat ist geprüft und privat checkpointed; laufender Diagnosepilot
+ist noch94ee13b und auf diesen Source gepinnt. Nach geordnetem Neustart kurze
+reale Feldabnahme fortsetzen. Bestätigte Stimmen/Töne erhalten; Altstack nicht ungeprüft stoppen,
 keine gesperrte Computersteuerung umgehen und keinen Testtext absenden.

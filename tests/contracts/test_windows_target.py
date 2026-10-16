@@ -215,30 +215,12 @@ class TargetContracts(unittest.TestCase):
                 self.assertEqual(confirm_uia_target(automation,Uia,BASE,lambda:BASE,proof).status,'target_captured')
                 self.assertEqual(len(calls),expected)
 
-    def test_owned_text_end_affinity_uses_the_logical_utf16_offset(self):
-        automation=Automation();pattern=automation.focus.pattern
-        child=Element(77,automation.focus);child.CurrentControlType=50020
-        pattern.owner=child;pattern.extent=4;pattern.position=5;pattern.text='Test'
-        result=self.read(automation)
-        self.assertEqual(result.status,'target_captured')
-        self.assertEqual(result.identity.selection,(4,4))
-        self.assertEqual((result.identity.start_id,result.identity.end_id),(child.GetRuntimeId(),)*2)
-        pattern.position=0
-        self.assertEqual(self.read(automation).identity.selection,(0,0))
-
     def test_utf16_offset_does_not_assume_one_character_unit_per_python_character(self):
         automation=Automation();pattern=automation.focus.pattern
         pattern.text='A😀e\u0301';pattern.position=4
         result=self.read(automation)
         self.assertEqual(result.status,'target_captured')
         self.assertEqual(result.identity.selection,(5,5))
-
-    def test_changed_end_affinity_cannot_alias_the_frozen_offset_and_child(self):
-        automation=Automation();pattern=automation.focus.pattern;child=Element(77,automation.focus)
-        pattern.owner=child;pattern.extent=4;pattern.position=5;pattern.text='Test'
-        proof=_target_proof(automation,Uia,BASE,lambda:BASE,lambda:False)
-        pattern.position=4
-        self.assertEqual(confirm_uia_target(automation,Uia,BASE,lambda:BASE,proof).status,'target_changed')
 
     def test_embedded_object_and_omitted_plaintext_cannot_prove_a_caret(self):
         from unittest.mock import patch
@@ -488,13 +470,13 @@ class TargetContracts(unittest.TestCase):
         self.assertTrue(process.closed)
 
     def test_unbounded_or_foreign_range_is_never_a_target_proof(self):
-        for change in ('limit','enclosing','outside'):
+        for change in ('limit','root','sibling'):
             automation=Automation()
             if change=='limit':
                 automation.focus.pattern.position=262145;automation.focus.pattern.extent=262145
-            elif change=='enclosing':
+            elif change=='root':
                 automation.focus.pattern.owner=automation.root
-            else:automation.focus.pattern.position=101
+            else:automation.focus.pattern.owner=Element(99,automation.root)
             self.assertEqual(self.read(automation).status,'target_unverifiable',change)
 
     def test_metadata_failure_is_sanitized_and_never_drops_cleanup_ownership(self):

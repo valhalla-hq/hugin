@@ -17,4 +17,14 @@
   DraftPR10, Remotehead und Context-/Handoffblobs bewiesen. Alle DC.
   Bestätigte Stimmen/Töne dokumentiert; reale Feldmatrix bleibt offen.
 - [ ] DC-T07: Letzte native Google-/Codex-/Schutzfeldabnahme und erst danach
-  geprüften Kandidaten ausrollen. DC-001/002/004; aktuell UI-Testwerkzeug blockiert.
+  geprüften Kandidaten ausrollen. DC-001/002/004; neue Fassung benötigt Neustart.
+- [x] DC-T08: DC-005: beobachtete Endrelation im eigenständigen Providermodell
+  zuerst reproduzieren, falsche Kopplung von Feldbesitz und Endordnung entfernen.
+- [x] DC-T09: DCA-005: Cursor-/Teil-/Gesamtauswahl, Unicode, fremde Felder und
+  geänderte Auswahl prüfen; eigene native RichEdit-Matrix ergänzen und ausführen.
+  409 Source-/Integrationschecks18,457s,91 gezielte Checks0,466s und3 native
+  eigene Range-/IPC-Tests0,794s grün. Kein voller Chrome-/SendInput-Nachweis.
+- [x] DC-T10: Neue Korrektur unabhängig gegen Spec und Standards prüfen,
+  Context/Handoff aktualisieren und Kandidat für die kurze Nutzerabnahme sichern.
+  Beide Reviews ohne offene Befunde, jeweils91 Scopedtests grün; Source während
+  Reviews unverändert. Private DraftPR10 bleibt bis realer Abnahme offen.

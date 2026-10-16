@@ -55,11 +55,48 @@ nicht deren aktuelle Anzahl. [Microsoft-Enum](https://learn.microsoft.com/en-us/
   capture_native, capture_field und delivery sowie begrenzten Statuswerten.
   Keine Texte, URLs, Titel, UIA-IDs, Clipboardinhalte oder Exception-Payloads.
 
+## Feldgrenze nach der realen Google-Probe
+
+Die Nutzerprobe am16.10. scheitert bereits beim Capture, vor jeder Delivery:
+Die Punkt-Enclosure gehört zum aktiven Feld, ihr Endpunkt sortiert jedoch
+hinter DocumentRange.End. Dokument und Präfix melden jeweils23 UTF-16-Einheiten.
+Der bisherige Produzent verwirft genau diese Kombination. Gleiche Längen
+allein sind dabei kein Beweis für Feldzugehörigkeit.
+
+Die installierte Chrome-Version155.0.8059.40 verbirgt Kinder atomarer
+Textfelder vor UIA; GetEnclosingElement kann deshalb denselben sichtbaren
+Edit-Knoten für unterschiedliche interne Textanker liefern.
+[Chromium: ShouldHideChildrenForUIA und GetLowestAccessibleElementForUIA](https://chromium.googlesource.com/chromium/src/+/refs/tags/155.0.8059.40/ui/accessibility/platform/ax_platform_node_win.cc)
+Gleiche Textoffsets können durch ihre Affinität unterschiedlich sortieren.
+[Chromium: AXPosition::SlowCompareTo](https://chromium.googlesource.com/chromium/src/+/refs/tags/155.0.8059.40/ui/accessibility/ax_position.h)
+Die konkreten internen Chrome-Anker wurden nicht beobachtet. Das öffentliche
+Providerverhalten erklärt die falsche Annahme; das neue unabhängige Modell
+bildet Offset und Affinität getrennt ab.
+
+Die Korrektur entfernt nur die Kopplung von eigener Edit-Enclosure und
+Endordnung. Feld-/Root-/Prozesszugehörigkeit, Objektfreiheit, exakt abgeleitete
+Endpunkte, begrenzte UTF-16-Präfixe, beide Endrelationen und frische
+Wiederholungsprüfungen bleiben erhalten. Es gibt keine zusätzliche Volltext-
+Lesung, keine Zeichenwanderung und keine Chrome-Ausnahme. Die bisherige
+Descendant-Sonderbehandlung wird damit ein einheitlicher Enclosure-Vertrag.
+
+Zwei alte Affinitäts-Fixtures modellierten einen ungültigen numerischen Offset
+mit still abschneidendem Python-Slicing. Sie sind durch gültige Textoffsets
+und eine unabhängige Affinität ersetzt. Chromium normalisiert ungültige
+Offsets bereits bei GetSelection und Endpunktbewegungen.
+[TextProvider](https://chromium.googlesource.com/chromium/src/+/refs/tags/155.0.8059.40/ui/accessibility/platform/ax_platform_node_textprovider_win.cc),
+[TextRangeProvider](https://chromium.googlesource.com/chromium/src/+/refs/tags/155.0.8059.40/ui/accessibility/platform/ax_platform_node_textrangeprovider_win.cc)
+Unbekannte oder fremde Enclosures bleiben abgelehnt. Ein Provider, der
+Feldbesitz und alle zugehörigen Bereichsfakten konsistent falsch meldet,
+liegt weiterhin außerhalb des beweisbaren UIA-Vertrags.
+
 ## Verifikation
 
 | Prüfung | Ergebnis | Grenze |
 | --- | --- | --- |
-| Source/Integration: tools/dev.py check --group all |404Tests,21,392s, keine Skips| simulierte Hardware/Provider |
+| Source/Integration: tools/dev.py check --group all |409Tests,18,457s, keine Skips| simulierte Hardware/Provider |
+| Neue Feldbereiche plus bestehende Target-/Delivery-/Selection-Guards |91Tests,0,466s, grün| vor Korrektur reproduzierte Endablehnung; synthetische Provider |
+| Native eigene RichEdit-Matrix, bestehende Selection-Fixture und IPC-Fixture |3Tests,0,794s, keine Skips| echte TextPattern-Bereiche; Cursor, Endcursor, Teil-/Gesamtauswahl, Unicode, Auswahlwechsel und EM_REPLACESEL ausschließlich am eigenen verborgenen HWND |
 | Gezielte Controller/Cue/Lease/Target/Selection/Process-Tests |144Tests,1,205s, keine Skips|1 echte eigene Windows-Prozess-/Pipe-Fixture, synthetisches UIA |
 | Bestehender Docscheck |19Anforderungen/17Abnahmekriterien, keine Probleme| prüft v1-Dokumente und Locks; keine native Produktabnahme |
 | Eigene native Prozess-Fixture | grün: zeitlich frischer Nachweis, Familie während120ms Abwicklung noch gehalten, später Exit0| kein fremdes Fenster, Clipboard, Mikrofon, Audio oder GPU |
@@ -95,9 +132,19 @@ Windows-Prozesssteps in beiden Check-Hugin-Runs:
 [Pushcheck](https://github.com/valhalla-hq/hugin/actions/runs/38863724113),
 [PRcheck](https://github.com/valhalla-hq/hugin/actions/runs/38863728485),
 [Baseline](https://github.com/valhalla-hq/hugin/actions/runs/38863728357).
-PR10 bleibt Draft. Der abschließende Dokumentcheckpoint ändert nur Context,
+PR10 bleibt Draft. Der damalige Dokumentcheckpoint änderte nur Context,
 Handoff, Aufgaben und diesen Nachweis; sein frischer Head/Blob-/CI-Nachweis
-wird separat geprüft, ohne einen neuen Source- oder Browsererfolg abzuleiten.
+wurde separat geprüft, ohne einen neuen Source- oder Browsererfolg abzuleiten.
+
+Die neue Feldkorrektur wurde in getrennten Spec-/Standards-Pässen am
+eingefrorenen Delta gegen94ee13b geprüft. Beide finden keine konkreten offenen
+Befunde und bestätigen die Begrenzung der nativen Fixture auf eigene Ranges
+und Ersetzung. Jeweils91 hardwarefreie Scopedtests sind grün (0,406s/0,413s).
+Producer-SHA256:7cafc36082deae40d289b85e0ca1775a4e4da67ca7a545cb6274ebd118a307da.
+Die fünf Source-/Testdateien blieben während der Reviews unverändert;
+die Reviewer führten keine nativen Aktionen aus. Root führte die native
+Matrix selbst aus. Neue Hostedchecks werden am frischen Remotehead geprüft;
+die oben verlinkten Runs gelten ausschließlich für den früheren Source.
 
 ## Letzte Abnahme und Laufzustand
 
@@ -108,10 +155,16 @@ vorhandene Testseite erhielt keinen Testtext und keine Suche wurde abgesandt.
 Echte Google-/Codex-Teil-/Vollauswahl, Cursor, Fokuswechsel und Schutzfelder
 bleiben am Kandidaten ungeprüft. Die reale Feldmatrix ist DC-T07.
 
-Die alte Receipt-Datei nennt noch pilot_running; das ist kein aktueller
-Laufnachweis. Frisch am16.10. wurden kein Hugin-App-/Supervisorprozess,
-aber PipPal samt altem Qwen-Worker beobachtet. Kein fremder Prozess wurde
-beendet. Der stabile Main bleibt8e4ceabb718edb2c8d1b80e1b07b69e0f3b933bd;
-dieser Kandidat ist nicht ausgerollt. Private Draft-PR10 und aktiver Root-
-Worktree halten die Fortsetzung bereit. Normale Maus-/Alt+Y-/Autostart-
-Migration folgt erst auf die geprüfte Umstellung.
+Inzwischen hat Brian den Diagnosepilot94ee13b gestartet; Supervisor und App
+wurden frisch als laufend beobachtet. Die alte Abwesenheitsbeobachtung ist
+überholt. Seine neu gestarteten Probeprozesse verwenden nun eine unveränderte
+lokale Sourcekopie dieses Heads mit Hashmanifest. Der laufende Pilot bekommt
+dadurch keine halbe Sourceaktualisierung während dieser Korrektur.
+
+Die neue native Matrix prüft die Range-Grenze und native Ersetzung am eigenen
+verborgenen RichEdit. Sie prüft weder Fokusattestation noch Clipboard/SendInput
+in Chrome oder Codex. Diese kurze reale Abnahme bleibt DC-T07. Die laufende
+Diagnoseversion ist noch die alte Fassung; der neue Kandidat benötigt einen
+geordneten Neustart. Der stabile Main bleibt8e4ceabb718edb2c8d1b80e1b07b69e0f3b933bd.
+Private Draft-PR10 und aktiver Root-Worktree halten die Fortsetzung bereit.
+Normale Maus-/Alt+Y-/Autostartmigration folgt erst auf die geprüfte Umstellung.

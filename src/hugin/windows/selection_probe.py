@@ -258,12 +258,12 @@ def _range_snapshot(automation,binding):
         if point.CompareEndpoints(0,document,0)<0:
             raise _SelectionFailure('target_unverifiable')
         identity=_edit_enclosure(automation,binding,point)
-        # A proven descendant may expose its trailing boundary beyond the
-        # focused provider's structural End. Preserve that affinity per end.
+        # Enclosure proves field ownership. Endpoint order is a separate fact:
+        # providers can hide child text anchors behind the same Edit element,
+        # and their end affinity may sort after DocumentRange.End. Preserve
+        # that relation; it is not an independent numeric field boundary.
         relation=point.CompareEndpoints(0,document,1)
         relation=(relation>0)-(relation<0)
-        if relation>0 and identity==binding.element_id:
-            raise _SelectionFailure('target_unverifiable')
         ids.append(identity);relations.append(relation)
     return (start if ordering==0 else selected.Clone()),tuple(ids),tuple(relations),document,(start,end)
 
