@@ -7,6 +7,8 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 import json
+import math
+import os
 from pathlib import Path
 import struct
 import subprocess
@@ -37,6 +39,7 @@ class SelectionResult:
 class TargetResult:
     status: str
     identity: UiaTargetIdentity | None = None
+    verified_at: float | None = None
 
 
 TARGET_CODES={'target_captured':0,'target_unverifiable':1,'target_changed':3,
@@ -74,7 +77,7 @@ def decode_operation(data: bytes):
     value = json.loads(data, object_pairs_hook=unique)
     if not isinstance(value,dict) or type(value.get('version')) is not int:
         raise ValueError('selection request version')
-    if (value['version']!=4 or set(value)!={'version','operation','target'}
+    if (value['version']!=5 or set(value)!={'version','operation','target'}
             or value['operation'] not in ('selection','target','delivery')):
         raise ValueError('selection request version')
     operation=value['operation']
@@ -112,7 +115,7 @@ def decode_request(data:bytes)->WindowTarget:
 def encode_request(target: WindowTarget,*,operation='selection') -> bytes:
     if not isinstance(target,WindowTarget):raise ValueError('invalid native target')
     fields=asdict(target.without_uia);fields.pop('uia')
-    envelope={'version':4,'operation':operation,'target':fields}
+    envelope={'version':5,'operation':operation,'target':fields}
     data = json.dumps(envelope, ensure_ascii=True,
                       separators=(',', ':')).encode('utf-8')
     decode_request(data)
@@ -134,19 +137,22 @@ def encode_target_response(result:TargetResult)->bytes:
     if result.status not in TARGET_CODES:raise ValueError('target status')
     if result.status=='target_captured':
         if not isinstance(result.identity,UiaTargetIdentity):raise ValueError('missing target metadata')
-        data=json.dumps(asdict(result.identity),separators=(',',':')).encode('ascii')
-        _decode_identity(json.loads(data))
+        if type(result.verified_at) is not float or not math.isfinite(result.verified_at) or result.verified_at<=0:
+            raise ValueError('invalid target verification time')
+        data=json.dumps({'identity':asdict(result.identity),'verified_at':result.verified_at},
+            separators=(',',':')).encode('ascii')
+        _decode_identity(json.loads(data)['identity'])
         if len(data)>REQUEST_LIMIT:raise ValueError('target metadata limit')
     else:
-        if result.identity is not None:raise ValueError('unexpected target metadata')
+        if result.identity is not None or result.verified_at is not None:raise ValueError('unexpected target metadata')
         data=b''
-    return HEADER.pack(3,TARGET_CODES[result.status],len(data))+data
+    return HEADER.pack(4,TARGET_CODES[result.status],len(data))+data
 
 
 def read_target_frame(stream)->TargetResult:
     version,code,length=HEADER.unpack(read_exact(stream,HEADER.size))
     codes={code:status for status,code in TARGET_CODES.items()}
-    if version!=3 or code not in codes or length>REQUEST_LIMIT or (code==0)!=(length>0):
+    if version!=4 or code not in codes or length>REQUEST_LIMIT or (code==0)!=(length>0):
         raise ValueError('invalid target frame')
     def unique(pairs):
         value={}
@@ -154,8 +160,16 @@ def read_target_frame(stream)->TargetResult:
             if name in value:raise ValueError('duplicate target metadata')
             value[name]=item
         return value
-    identity=_decode_identity(json.loads(read_exact(stream,length),object_pairs_hook=unique)) if length else None
-    return TargetResult(codes[code],identity)
+    identity,verified_at=None,None
+    if length:
+        value=json.loads(read_exact(stream,length),object_pairs_hook=unique)
+        if not isinstance(value,dict) or set(value)!={'identity','verified_at'}:
+            raise ValueError('target attestation fields')
+        verified_at=value['verified_at']
+        if type(verified_at) is not float or not math.isfinite(verified_at) or verified_at<=0:
+            raise ValueError('invalid target verification time')
+        identity=_decode_identity(value['identity'])
+    return TargetResult(codes[code],identity,verified_at)
 
 
 def decode_target_response(stream)->TargetResult:
@@ -196,9 +210,9 @@ def decode_response(stream) -> SelectionResult:
 
 
 class DeliveryLease:
-    """One initialized proof plus one <=50ms confirmation, then owned cleanup.
+    """Prepare off-owner; consume one <=50ms-old attestation without I/O.
 
-    The worker owns close(); confirmation only signals private pipe threads.
+    The worker owns prepare()/close(); confirmation consumes parsed facts only.
     This is never reused across delivery transactions or retained as a cache.
     """
     def __init__(self,probe,cancelled):
@@ -209,6 +223,7 @@ class DeliveryLease:
         self._request=threading.Event();self._sent=threading.Event();self._stderr=threading.Event()
         self._stop=threading.Event();self._gate=threading.Lock()
         self._fault=False;self._closed=False;self._used=False;self._lock_held=True
+        self._preparing=False;self._prepared=None;self._channel_complete=False
         self._expires=0
 
     def _failed(self):
@@ -223,8 +238,7 @@ class DeliveryLease:
         request=encode_request(target,operation='delivery')
         try:probe._process=probe._spawn_process()
         except Exception as error:
-            probe._process=getattr(error,'owner',None)
-            self.result=TargetResult('target_cleanup_failed' if probe._process is not None else 'target_probe_failed')
+            self.result=TargetResult(probe._spawn_failure(error,'target_probe_failed','target_cleanup_failed'))
             return
         process=probe._process
         def write():
@@ -239,9 +253,13 @@ class DeliveryLease:
                 self.result=read_target_frame(process.stdout);self._initial.set()
                 if self.result.status!='target_captured':return
                 self._confirmation=decode_target_response(process.stdout)
-                # A green confirmation includes EOF and the stderr barrier.
-                if (not self._stderr.wait(1) or self._fault
-                        or process.wait(probe.timeout)!=0):self._failed()
+                # Immutable frame/EOF barriers precede native process unwind.
+                # Ownership remains with the probe until close(), off-owner.
+                if not self._stderr.wait(1) or self._fault:self._failed()
+                else:
+                    code=process.poll()
+                    if code is not None and code!=0:self._failed()
+                    else:self._channel_complete=True
                 self._confirmed.set()
             except Exception:self._failed()
         def drain():
@@ -258,15 +276,16 @@ class DeliveryLease:
             if time.monotonic()>=deadline:self.result=TargetResult('target_probe_timeout');return
         if self._cancelled():self.result=TargetResult('cancelled')
         if self._fault:self.result=TargetResult('target_probe_failed')
-        self._expires=time.monotonic()+probe.timeout
+        self._expires=deadline
 
-    def confirm(self):
+    def prepare(self):
+        """Provider and private pipe waits belong to the delivery worker."""
         with self._gate:
-            if self._closed or self._used:return TargetResult('commit_rejected')
-            self._used=True
+            if self._closed or self._preparing:return TargetResult('commit_rejected')
+            self._preparing=True
             if self.result.status!='target_captured' or self._fault:return TargetResult('target_probe_failed')
             if self._cancelled():return TargetResult('cancelled')
-            deadline=min(time.monotonic()+.05,self._expires)
+            deadline=self._expires
             if time.monotonic()>=deadline:return TargetResult('target_probe_timeout')
             self._request.set()
             while not (self._confirmed.is_set() and self._sent.is_set()):
@@ -282,6 +301,23 @@ class DeliveryLease:
             result=self._confirmation
             if result.status=='target_captured' and result.identity!=self.result.identity:
                 return TargetResult('target_changed')
+            self._prepared=result
+            return result
+
+    def confirm(self):
+        """Single owner commit: no COM, pipe, thread join or process wait."""
+        with self._gate:
+            if self._closed or self._used:return TargetResult('commit_rejected')
+            self._used=True
+            if self._fault:return TargetResult('target_probe_failed')
+            if self._cancelled():return TargetResult('cancelled')
+            result=self._prepared
+            if result is None:return TargetResult('commit_rejected')
+            if result.status!='target_captured':return result
+            stamp=result.verified_at;now=time.monotonic()
+            if type(stamp) is not float or not math.isfinite(stamp) or stamp>now or stamp<=0:
+                return TargetResult('target_probe_failed')
+            if now-stamp>.05 or now>=self._expires:return TargetResult('target_probe_timeout')
             return result
 
     def abort_io(self):
@@ -320,9 +356,20 @@ class SelectionProbe:
         if self.spawn is None:
             from hugin.windows.process import OwnedProcess
             self.spawn=OwnedProcess
-        return self.spawn([sys.executable,'-I','-B','-u',str(Path(__file__).with_name('selection_probe.py').resolve())],
+        executable=Path(sys.executable).resolve();environment=None
+        if sys.platform=='win32' and sys.prefix!=sys.base_prefix:
+            # The Windows venv redirector retains inherited pipe handles until
+            # its child exits. Start the same base interpreter directly, using
+            # CPython's own launcher context to retain this exact venv.
+            base=Path(sys._base_executable).resolve()
+            if not base.is_file() or not base.is_relative_to(Path(sys.base_prefix).resolve()):
+                raise ClipboardFailure('dependency_unavailable')
+            environment=dict(os.environ)
+            environment['__PYVENV_LAUNCHER__']=str(executable)
+            executable=base
+        return self.spawn([str(executable),'-I','-B','-u',str(Path(__file__).with_name('selection_probe.py').resolve())],
             stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
-            close_fds=True,creationflags=0x08000000,memory_limit=PROBE_MEMORY)
+            close_fds=True,creationflags=0x08000000,memory_limit=PROBE_MEMORY,env=environment)
 
     def begin_delivery(self,target:WindowTarget,cancelled)->DeliveryLease:
         if not self._lock.acquire(blocking=False):raise ClipboardFailure('target_probe_busy')
@@ -334,6 +381,15 @@ class SelectionProbe:
             lease.close()
             raise
         return lease
+
+    def _spawn_failure(self,error,failed,cleanup_failed):
+        """Retain partial ownership before normalizing known launch failures."""
+        self._process=getattr(error,'owner',None)
+        if self._process is not None:return cleanup_failed
+        if (isinstance(error,ClipboardFailure) and type(error.status) is str
+                and error.status=='dependency_unavailable'):
+            return 'dependency_unavailable'
+        return failed
 
     def _read(self,target,cancelled,*,operation):
         target_mode=operation=='target'
@@ -358,8 +414,7 @@ class SelectionProbe:
             try:
                 self._process=self._spawn_process()
             except Exception as failure:
-                self._process = getattr(failure, 'owner', None)
-                return result_type(cleanup_failed if self._process is not None else failed)
+                return result_type(self._spawn_failure(failure,failed,cleanup_failed))
             process = self._process
             done = threading.Event()
             outcome = {'result': result_type(failed), 'fault': False}
@@ -434,9 +489,15 @@ class SelectionProbe:
         if self._process is None:
             self._delivery=None
             return
-        if self._process.poll() is None:
+        attested=bool(self._delivery is not None and self._delivery._channel_complete)
+        if self._process.poll() is None and not attested:
             self._process.kill()
-        self._process.wait(self.cleanup_timeout)
+        try:code=self._process.wait(self.cleanup_timeout)
+        except subprocess.TimeoutExpired:
+            self._process.kill()
+            self._process.wait(self.cleanup_timeout)
+            # The actual completed channel is valid, but normal unwind failed.
+            code=1
         deadline = time.monotonic() + 1
         for thread in self._threads:
             if thread.ident is not None:
@@ -447,6 +508,7 @@ class SelectionProbe:
         self._process = None
         self._threads = []
         self._delivery=None
+        if attested and code!=0:raise ClipboardFailure('target_cleanup_failed')
 
     def close(self):
         with self._lock:

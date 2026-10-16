@@ -897,56 +897,62 @@ class NativeClipboard:
 
     def commit_paste(self, expected, target, still_current, authorize=None, transaction=None,commit=None):
         submitted = False
-        active=False;attempted=False;gate=threading.Lock();lease=None
+        active=False;attempted=False;gate=threading.Lock();lease=None;owned_lease=None
         try:
-            with self._opened():
-                try:
-                    if self.sequence()!=expected or self.user.GetClipboardOwner()!=self.hwnd:
-                        raise ClipboardFailure('clipboard_changed')
-                    token_handle=self.user.GetClipboardData(self.tx_format)
-                    size=self.kernel.GlobalSize(token_handle) if token_handle else 0
-                    if size!=len(self._token or b'') or not size or self._read_handle(token_handle,size)!=self._token:
-                        raise ClipboardFailure('clipboard_changed')
-                    if target.uia is not None:
-                        lease=self._probe().begin_delivery(target.without_uia,lambda:not still_current())
-                        if lease.result.status!='target_captured':raise ClipboardFailure(lease.result.status)
-                        if lease.result.identity!=target.uia:raise ClipboardFailure('target_changed')
-                    active=True
-                    def fast_commit():
-                        nonlocal submitted,attempted
-                        with gate:
-                            if not active or attempted:raise ClipboardFailure('commit_rejected')
-                            attempted=True
-                            if lease is not None:
+            try:
+                with self._opened():
+                    try:
+                        if self.sequence()!=expected or self.user.GetClipboardOwner()!=self.hwnd:
+                            raise ClipboardFailure('clipboard_changed')
+                        token_handle=self.user.GetClipboardData(self.tx_format)
+                        size=self.kernel.GlobalSize(token_handle) if token_handle else 0
+                        if size!=len(self._token or b'') or not size or self._read_handle(token_handle,size)!=self._token:
+                            raise ClipboardFailure('clipboard_changed')
+                        if target.uia is not None:
+                            lease=self._probe().begin_delivery(target.without_uia,lambda:not still_current())
+                            if lease.result.status!='target_captured':raise ClipboardFailure(lease.result.status)
+                            if lease.result.identity!=target.uia:raise ClipboardFailure('target_changed')
+                            prepared=lease.prepare()
+                            if prepared.status!='target_captured':raise ClipboardFailure(prepared.status)
+                            if prepared.identity!=target.uia:raise ClipboardFailure('target_changed')
+                        active=True
+                        def fast_commit():
+                            nonlocal submitted,attempted
+                            with gate:
+                                if not active or attempted:raise ClipboardFailure('commit_rejected')
+                                attempted=True
+                                if self.capture_native_target()!=target.without_uia:raise ClipboardFailure('target_changed')
+                                # The worker still holds OpenClipboard and this
+                                # token HGLOBAL. Recheck it on the input owner
+                                # without a cross-thread GetClipboardData/open.
+                                if (self.sequence()!=expected or self.user.GetClipboardOwner()!=self.hwnd
+                                        or self.kernel.GlobalSize(token_handle)!=size
+                                        or self._read_handle(token_handle,size)!=self._token):
+                                    raise ClipboardFailure('clipboard_changed')
+                                if self.modifiers_down():raise ClipboardFailure('modifiers_active')
                                 if not still_current():raise ClipboardFailure('cancelled')
-                                confirmed=lease.confirm()  # Private IPC only; hard <=50ms.
-                                if confirmed.status!='target_captured':raise ClipboardFailure(confirmed.status)
-                                if confirmed.identity!=target.uia:raise ClipboardFailure('target_changed')
-                            # The worker still holds OpenClipboard and this
-                            # token HGLOBAL. Recheck it on the input owner
-                            # without a cross-thread GetClipboardData/open.
-                            if (self.sequence()!=expected or self.user.GetClipboardOwner()!=self.hwnd
-                                    or self.kernel.GlobalSize(token_handle)!=size
-                                    or self._read_handle(token_handle,size)!=self._token):
-                                raise ClipboardFailure('clipboard_changed')
-                            if self.capture_native_target()!=target.without_uia:raise ClipboardFailure('target_changed')
-                            if self.modifiers_down():raise ClipboardFailure('modifiers_active')
-                            if not still_current():raise ClipboardFailure('cancelled')
-                            if authorize is not None and not authorize(transaction):raise ClipboardFailure('commit_rejected')
-                            self._chord(0x56);submitted=True
-                    if commit is None:fast_commit()
-                    else:commit(transaction,fast_commit)
-                    if not submitted:raise ClipboardFailure('commit_rejected')
-                finally:
-                    with gate:
-                        active=False
-                        # Saved rejected closures must not retain effect.text
-                        # indirectly through application callbacks/transaction.
-                        still_current=authorize=transaction=None
-                    if lease is not None:
-                        owned_lease=lease
-                        with gate:lease=None
-                        owned_lease.close()
+                                if lease is not None:
+                                    # Native target reads may wait. Consume the
+                                    # <=50ms-old proof only after those checks.
+                                    confirmed=lease.confirm()
+                                    if confirmed.status!='target_captured':raise ClipboardFailure(confirmed.status)
+                                    if confirmed.identity!=target.uia:raise ClipboardFailure('target_changed')
+                                if authorize is not None and not authorize(transaction):raise ClipboardFailure('commit_rejected')
+                                self._chord(0x56);submitted=True
+                        if commit is None:fast_commit()
+                        else:commit(transaction,fast_commit)
+                        if not submitted:raise ClipboardFailure('commit_rejected')
+                    finally:
+                        with gate:
+                            active=False
+                            # Saved rejected closures must not retain effect.text
+                            # indirectly through application callbacks/transaction.
+                            still_current=authorize=transaction=None
+                            owned_lease,lease=lease,None
+            finally:
+                # Release OpenClipboard before slow COM/process unwind so the
+                # target can consume the submitted paste; retain family owner.
+                if owned_lease is not None:owned_lease.close()
         except ClipboardFailure as failure:
             failure.submitted = failure.submitted or submitted
             raise

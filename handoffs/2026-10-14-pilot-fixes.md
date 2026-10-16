@@ -1,96 +1,169 @@
-# Hugin Pilotkorrekturen — Stand 15.10.2026
+# Hugin Pilotkorrekturen — Stand 16.10.2026
 
-## Auftrag und feste Punkte
+> Historischer Handoff, abgelöst durch
+> [Codex-/Word-Fortsetzung](2026-10-16-codex-word-followup.md).
+> Brian bestätigt Google-Diktat/Überschreiben am25d9c97 und beauftragt die
+> Mainintegration als Zwischenbasis trotz offener Codex-/Word-Fehler.
+> Die folgenden Lauf-/Mergeaussagen beschreiben den früheren Prüfzeitpunkt;
+> aktueller Auftrag, Pilot25d9c97 und Laufabhängigkeiten stehen im neuen Handoff.
 
-- Brian bestaetigt normalen Paste in Codex. Folgeauftrag: markierten Text
-  ersetzen, regulaere Felder inklusive YouTube/Chrome, zwei Aufnahme-Cues,
-  echtes TTS-Streaming Freya/Tyr korrigieren. Keine neue Produkteinstellung.
-- Vertrag: specs/2026-10-15-hugin-input-audio/{spec,plan,tasks}.md; bisherige
-  v1-Spec/Privacy/Cancel/Altstack-Rueckweg gelten weiter.
-- Repository valhalla-hq/hugin; Branch codex/hugin-pilot-fixes-mjolnir.
-  Root C:/Users/brian/brian-projects/worktrees/hugin/hugin-pilot-fixes-mjolnir.
-  Root-Ownership aktiv; spaeterer Supervisor benoetigt diesen Worktree.
-- Control e3deecae6673a024aa9015a4387737fbec04c795. Stable Main bb700f0;
-  CoreSource6f4897c; abschliessenderTon-Source9a470aca936d3dbc885935229a7eb434d0504c86.
-  Draft https://github.com/valhalla-hq/hugin/pull/9 wird um diesen Auftrag
-  aktualisiert. Routineintegration im bekannten privaten Scope autorisiert.
+## Objective
 
-## Umsetzung und Nachweise
+Markierte Teil-/Gesamtauswahl sicher mit Diktat ersetzen und falsche
+Feldablehnungen beheben. Brian bestätigt Freya/Tyr und die neuen Töne.
+Kein weiterer Produktumfang. Aktueller Vertrag:
+specs/2026-10-16-hugin-delivery-completion/{spec,plan,tasks}.md;
+IA- und v1-Verträge gelten weiter.
 
-- UIA selection(start,end), je Endpoint-ID/Endaffinitaet; Default-Nativeproof
-  false. Native Edit/RichEdit und direkt fokussierte voll editierbare UIA-
-  Edit/Combo-Felder. Alte IPC-Shapes weg; Request4 mit operation, Response3,
-  maximal3211B innerhalb4092B. TTS-Providerbinding bleibt getrennt.
-- Verified-Edit-Profil0,25s, Codex-Overrides0,15s; keine Klassen-/Namensheuristik
-  fuer Editierbarkeit. Alle Clipboard-/Fokus-/UserCopy-/RAM-Ownerregeln erhalten.
-- Echte Chrome-/YouTube-Teilreplacement6..11 erfolgreich, Praefix/Suffix
-  unveraendert, alle3Clipboardformate zurueck, eigenes Literal entfernt und
-  leere Baseline bestaetigt. Warm46,482ms/Delivery0,585s, kein Enter. Spaetere
-  Vollauswahl wegen wechselndem OS-Fokus unverifizierbar; kein Paste. Nativ
-  unbestaetigte Vollmatrix bleibt offen, kein Erfolg daraus abgeleitet.
-- Eigene115ms-tiefeStartdoppelimpuls-/180ms-aufsteigendeEnd-Cues, unabhaengiger Outputowner,
-  priorisierter Cancel. Mic zuerst unarmed, Cue/Drain, Geraetezeit+25ms Gate;
-  Endcue nach Micclose, vor UIA/STT. Endcuefehler verliert valides PCM nicht.
-- Native Untersuchung: MME liefert42×ADC0/0B trotz fortschreitender Streamzeit.
-  Producer waehlt eindeutig WASAPI-Default, prueft globale Device-/Host-ID,
-  Sharedmode auto_convert identisch an Check/Open. ADC0 ist Clockfault.
-  NativeProbe ueber wirkliche factory=None109Callbacks/12gated/31.040B,
-  0akzeptierte ADCs vorCutoff, beideCues+Cleanup bestaetigt. Kein PCM gespeichert.
-- Worker: Generator bleibt GPU-Owner, genau ein Writer/ein Pendingchunk;
-  hoechstens3×1.440.000B Provider-PCM, Client-/native Queue unveraendert.
-  Normalterminal erst nach Generatorclose/Writerbarriere/GPU-sync; Fehler-
-  Cleanup bleibt gehalten. Verzogerter FIFO-Guard zuerstrot, dann lueckenfrei.
-- Reale Vergleichsprobe: nur alter Serverbb700f0 gegen sonst identische
-  Provider/Client/Controller/Nativepipeline. Freya9/Tyr8 leere Refills vorher,
-  nachherbeide0; Freya291.840B/Tyr284.160B, alle Provider-/IPC-/Player-/Cross-
-  Hashes gleich. NativeQueuepeak6.000B. Neue zweiOperationen27,344s, alte30,642s;
-  frischeWorker, FreyainklInit/Tyrwarm; Cacheeffekte/p95 nicht kontrolliert.
-  WorkerCPU20,984vs21,625s; PeakJobCommit8.454.057.984vs8.455.290.880B.
-  Kein physischer RAM-/GPU-/Tokenmessnachweis. NativeCancel0,760s/6.000B
-  bisReset/Terminal/Familienabschluss bestaetigt.
-- 390 Source-/Integrationschecks18,418s und56 Windowschecks3,377s ohneSkips;
-  native Mic/Player/Hotkeys/Mutex/Idle-App/HiddenRichEdit. Zwei unabhaengige
-  Linsen fuer fremde Slices, Originalendpoint-P2 reproduziert/geschlossen,
-  sieben Device-/ADC-/Cleanup-Guards fuer reale MME-Luecke. Keine offenen
-  reproduzierten P1/P2 amSource6f4897c. Hosted-CI bleibt vor Merge erforderlich.
-- Kuratierte Quellen, Versionen und Messgrenzen: docs/input-audio-2026-10-15.md.
-  Fruehere Codex-/Restorebelege: docs/codex-delivery-2026-10-15.md. Eine fruehe
-  fehlgeschlagene Probe verlor RAM-Clipboardinhalt; nicht wiederhergestellt.
+## Git State
 
-## Laufzustand und Rueckweg
+- Repository: valhalla-hq/hugin, privat. Runtime: Mjolnir.
+- Branch: codex/hugin-pilot-fixes-mjolnir; Base: main.
+- Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-pilot-fixes-mjolnir.
+- Stable Main:8e4ceabb718edb2c8d1b80e1b07b69e0f3b933bd. PR9 regulär
+  integriert; drei Hostedchecks, Ancestry und gleicher Head-/Mergetree belegt.
+- Vorheriger Checkpoint:94ee13bf61d057a10f20b19e64958621e0d6349e.
+  Der neue Kandidatenhead ist der Commit, der diesen Handoff enthält;
+  konkrete SHA beim Pickup frisch aus Git/PR lesen, nicht selbstreferenziell.
+- PR: https://github.com/valhalla-hq/hugin/pull/10, Draft. Vorher docs-only,
+  jetzt Einfügekandidat; Beschreibung/Titel auf finalen Sourceumfang geändert.
+  Frühere Reviews/Hostedchecks an489ed2f und94ee13b sind historische Evidenz.
+  Neuer Head-/Context-/Handoff-/CI-Nachweis wird nach dem Checkpoint geprüft.
+- Ownership: aktiv beim selben Root-Executor/Task auf Mjolnir. Kein neuer
+  Executor darf den aktiven Worktree übernehmen. Frühere Helper freigegeben.
+- Autorisierung: begrenzter Umsetzungsauftrag und Fortsetzung. Routine private
+  Integration nach zentralem Vertrag; keine Policyänderung oder UI-Umgehung.
+  Dieser Kandidat bleibt bis zur echten Feldabnahme ohne Live-Rollout.
+- Preflight: Control e3deecae6673a024aa9015a4387737fbec04c795 und aktiver
+  Branch/Main frisch geprüft vor den Änderungen.
 
-- C:/Users/brian/Hugin ist Junction zum sauberen _repos/hugin Main. Main erst
-  nach bestaetigtem Pilotende aktualisieren; keine gemischten Livequellen.
-- Nutzer hat Hugin normal beendet. Alter Pointer Root.runtime/current-pilot-
-  fixes-session.txt -> pilot-session-2b3d2475-04da-4175-87c1-a49e7825c86e.json
-  bestaetigt return_dispatched/exit0/own_family_exited und beideStartup-lnks.
-- Nutzer danach Whispering/PipPal normal beendet; Apps/alterQwen frisch
-  abwesend. PipPal-Profil und beideStartup-lnks gleiche bekannteSHA256.
-  Alter STT-HTTP-Standby unveraendert. Kein fremdesKill/parallelGPU.
-- Root.runtime/pilot_session.pyw dry-run --head <checked-main>, --run verborgen
-  starten: eigenerJob/Familienabschluss, danach unveraenderteStartup-lnks.
-  Keine dauerhafte Autostartaenderung. Neuen exaktenReceipt/Prozessbindung
-  nach Integration erfassen; altePIDs nie als aktuelleAutoritaet behandeln.
-- Kuerzel bleiben Strg+Alt+D und Strg+Alt+V, Escape imVorgang. NormaleMaus-
-  /Alt+Y-/Autostartmigration gesperrt. UI/Rabenicon/Stimmen unveraendert.
+## Changed Files
 
-## Offen / Fortsetzen
+- Neues Delta seit94ee13b: selection_probe.py entfernt die widersprüchliche
+  Ablehnung eigener Edit-Enclosure plus positiver Endrelation. Feldbesitz
+  folgt Enclosures; Endrelation bleibt Vergleichsfakt. Keine neue Textlesung
+  oder Chrome-Ausnahme. Native Prozess/Root-, Endpunkt-, Objekt-, UTF-16-
+  Präfix- und Frischeprüfungen bleiben erhalten.
+- test_windows_field_ranges.py trennt gültigen Textoffset und Affinität;
+  ersetzt zwei ungültige Affinitäts-Fixtures in test_windows_target.py.
+  _uia_field_fixture_probe.py / test_windows_uia_native.py prüfen echte eigene
+  RichEdit-Ranges und EM_REPLACESEL an ausschließlich eigenen verborgenen HWNDs.
+- Nachweis: Nutzerprobe scheitert beim Capture, eigene Edit-Enclosure,
+  positive Endrelation, Dokument-/Präfixlänge jeweils23. Chromium155.0.8059.40
+  verbirgt atomare Feldkinder und ordnet gleiche Textoffsets auch nach Affinität.
+  Konkretes internes Ankerpaar nicht beobachtet; öffentliche Implementierung
+  und unabhängiges Modell erklären den falschen Guard. Pinned Quellen im Doc.
+- Frühere Änderungen im selben PR, weiterhin enthalten:
+- src/hugin/windows/selection.py, selection_probe.py, clipboard.py:
+  Producerzeit, Request5/Response4, Worker-prepare/Owner-confirm ohne I/O,
+  echte Pipe-EOFs vor COM-Unwind, direkter Basisinterpreter mit exaktem venv,
+  gehaltenes Cleanup. Genau eine Auswahl auch bei Multiple-Fähigkeit.
+- src/hugin/application.py, errors.py: Capture-Ausgang statt target-only,
+  sichere Statusdiagnose und Fehlermeldungen; gültiges PCM bleibt erhalten.
+- tests/contracts/test_delivery_attestation.py und betroffene Controller-/
+  Target-/Selection-/Cue-Guards; tests/windows/test_delivery_process.py:
+  neue Regressionen und echte eigene Windows-Pipe-/Prozess-Fixture.
+- .github/workflows/check.yml: frische eigene venv ohne pip, ausschließlich
+  synthetischer Windows-Prozessguard; lokal1Test0,476s grün.
+- Specs, docs/delivery-completion-2026-10-16.md, README, CONTEXT und dieser
+  exakte Handoff: bestätigtes Audio, Kandidat, Laufzustand und Abnahmegrenzen.
 
-1. Draft9 mit genauem Code/Context/Handoff checkpointen; Remotehead/Inhalte
-   beweisen, CI/PR-Scope/Head/Review vor Routineintegration frisch binden.
-2. Sauberen Main nach bestaetigtem Appende FF; neuer einmaligerPilot mit
-   exaktemMainhead/Receipt, sichtbaremBereit/Profilbindung starten.
-3. Brian meldet fluessige Sprache. Lautere/distinktereTöne aufWunsch umgesetzt;
-   82 passendeChecks+NativeReplay/Gate114Callbacks/31.680B/0alteADCs gruen.
-   NeueTonabnahme, Cue-Echo sowie reale Codex-
-   /Browser-/Win32-Delivery-Vollmatrix als Nutzerabnahme weiterfuehren.
-   TechnischerNativebeleg ist keine Hoer-/Produktionsgesamtabnahme.
-4. Root-Worktree/Ownership bei laufendemSupervisor behalten. HelperSource
-   ist separat integriert; derenOwnership nur ueber regulaerenLifecycle
-   nach eigenemRemotecheckpoint freigeben, keine fremdenStateeingriffe.
+## Verification
 
-Starter: Hugin AGENTS.md, CONTEXT.md und genau diesen Handoff lesen; zentralen
-Lifecycle/Preflight mit aktivemBranch, Git/PR/Ownership und Runtime frisch
-pruefen. Source6f4897c ist lokal nativ/quellengeprueft. PrivateRoutineintegration
-und Pilotneustart fortsetzen, ohne alte Fokus-/Clipboardfragen zu wiederholen.
-Keine Rohinhalte inGit, kein Enter/Send, keineProduktionsmigration behaupten.
+- Guards zuerst rot: valide7..18+80ms Cleanup -> target_probe_timeout;
+  fehlendes prepare/Zeitmetadatum; verlorener Capturegrund; Feldexception
+  verhindert STT; Multiple-Fähigkeit+ein Bereich; echte Pipe-EOF-Verzögerung.
+- Neues Delta zuerst rot an der tatsächlichen Capture-Ablehnung, danach grün.
+- tools/dev.py check --group all:409Tests18,457s, grün ohne Skips.
+- Neue Range-/Target-/Delivery-/Selection-Verträge:91Tests0,466s grün.
+- Native eigene RichEdit-Matrix plus Selection-/IPC-Fixtures:3Tests0,794s,
+  grün ohne Skips. Cursor, Endcursor, Teil-/Gesamtauswahl und Unicode korrekt
+  vermessen und tatsächlich per EM_REPLACESEL ersetzt. Auswahlwechsel erkannt,
+  Nutzerfokus/Clipboard unverändert. Kein voller Fokus-/Paste-/Chrome-Nachweis.
+- Getrennte unabhängige Spec-/Standardsreviews am eingefrorenen Delta gegen
+  94ee13b ohne offene Befunde; jeweils91 hardwarefreie Tests0,406s/0,413s grün.
+  Producer-SHA256:7cafc36082deae40d289b85e0ca1775a4e4da67ca7a545cb6274ebd118a307da.
+  Fünf Source-/Testdateien während Review unverändert; keine nativen Aktionen
+  durch Reviewer. Die echte Matrix führte Root aus.
+- Frühere Verifikation vor dem neuen Delta:
+- Gezielte Controller/Cue/Attestation/Target/Selection/Process-Tests:
+  144Tests1,205s, grün ohne Skips. Eine echte eigene native Windows-Fixture
+  prüft gemeinsame monotone Zeit, venv, frühes EOF und120ms gehaltene Familie.
+- tools/dev.py check --docs:19Anforderungen/17AC, keine Probleme.
+- Getrennte Spec-/Standards-Pässe am73f7390: Clipboardlock während Unwind
+  (P1) und Frischeverbrauch vor wartendem Nativecheck (P2) reproduziert und
+  mit zuerst roten Commit-Seam-Guards korrigiert. Beide unabhängigen finalen
+  Wiederprüfungen am489ed2f ohne offene Befunde; jeweils143 hardwarefreie
+  Scopedtests grün0,834s/0,832s. Drei Hostedchecks an diesem Source grün,
+  beide neuen Windows-IPC-Steps separat als success nachgewiesen.
+  Malformed-Identity-Fixtures auf gültige Response4-Envelopes migriert.
+- Historisch:390Source/56Windows aus15.10., echte Mic-/Audio-/GPU-/Cancel-
+  Nachweise in docs/input-audio-2026-10-15.md. Keine Wiederholung/Erfolgs-
+  Behauptung am neuen Kandidaten. Neue native Fixture ist kein Chrome-Test.
+
+## Source And Data Boundary
+
+Keine Diktate, Audio, Clipboardinhalte, Titel/URLs, IDs, Exception-Payloads,
+Credentials, Umgebungsdumps, Rohlogs oder Runtimeartefakte in Git. Keine
+Fremd-UI/SendInput/CDP nach Computer-Use-Ablehnung. Eigene synthetische
+Prozesse, Pipes und verborgene HWNDs ausschließlich CPU; kein Mikrofon/GPU/
+Clipboardzugriff. Native Feldtests verwenden nur eigenen synthetischen Text.
+
+## Running State
+
+- C:/Users/brian/Hugin ist Junction zum sauberen _repos/hugin-Mainclone.
+  Dieser bleibt8e4ceab; kein Sourceupdate und kein Kandidatenstart hier.
+- Brian hat Diagnosepilot94ee13b gestartet; App/Supervisor wurden frisch laufend
+  beobachtet. Die frühere Abwesenheitsbeobachtung ist überholt. Ignorierte
+  Receipt: .runtime/pilot-session-884da9d9-dd7b-4d5a-82c1-1d9e4f474018.json.
+  Receipt/PID allein ist keine Cleanup-Autorität; Supervisor hält eigene Familie.
+- Dessen neue Probeprozesse nutzen unveränderten Source94ee13b unter
+  .runtime/pilot-source-94ee13bf61d0 mit Hashmanifest; trace_selection_probe.py
+  ist darauf festgelegt. Keine halbe Liveaktualisierung während Codeänderungen.
+- Neuer Kandidat benötigt geordneten Neustart. Normaler Starter ist
+  .runtime/Hugin-Test-starten.cmd / pilot_candidate_session.pyw mit neuem Head;
+  Planlauf muss sauber/runtimekompatibel sein. Nicht den alten Diagnose-
+  Starter Hugin-Feldtest.cmd mit Head94ee13b verwenden.
+- Normales Beenden des Diagnosepilots startet über seinen Supervisor die
+  bestehenden Whispering-/PipPal-Startup-lnks. Diese vor dem neuen Pilottest
+  normal beenden, damit keine doppelten Kürzel/Modellnutzer aktiv sind.
+- Profile/Startup-lnks und alter STT-Standby in dieser Sitzung unverändert.
+  Strg+Alt+D/V und Escape bleiben Pilotkürzel. Maus/Alt+Y/Autostartmigration
+  folgt auf geprüfte Umstellung. Früherer RAM-Clipboardverlust nicht rückgängig.
+- Alle drei alten Helperworktrees entfernt nach eigenem Remote-/Handoffbeweis
+  und regulärer Freigabe. Private Remotebranches bleiben erhalten:
+  Cues2f045e9fd4e6ba830a843c15bd5b74c35ba4d5a8,
+  Range0a534632abdf19de98ee037fbe49ead234c6891d,
+  Stream0cccf901d5f70040757f5b065d4680bfb3b3f4e0.
+
+## Open Blockers
+
+Computer Use hat die Google-Probe beendet, weil die aktuelle Browseradresse
+auf Windows nicht zuverlässig genug bestimmt werden konnte. Diese automatische
+Ablehnung wird nicht umgangen. Echte Google-/Codex-Teil-/Vollauswahl, Cursor,
+Fokuswechsel und Schutzfelder bleiben DC-T07; nicht als behoben behaupten.
+Zwei frühere automatische Appstarts wurden als blocked by policy abgewiesen,
+ohne bekannte allgemeine OS-Regel. Kein indirekter Launch als Umgehung.
+Manueller Start funktionierte; keine erneute Diagnose-/Fokus-/Clipboardfrageschleife.
+
+## Pick Up Here
+
+1. Frischen PR10-/Githead und Context-/Handoffblobs lesen. Der aktuelle
+   Checkpoint enthält die Feldkorrektur und ihren Nachweis. Kein Merge
+   oder Rollout dieser Kandidatenfassung bisher; Ownership bleibt aktiv.
+2. Geordnet auf den neuen normalen Kandidaten starten, dann kurze reale
+   Cursor-/Teil-/Gesamtauswahl-Abnahme mit Brian ohne Enter. Keine wiederholten Fokus-/Clipboardfragen.
+   Keine Produktion/Autostartmigration ohne geprüfte Umstellung behaupten.
+3. Nach Feldabnahme private Integration nach frischem exaktem Head-/Review-/
+   Checkgate, kontrollierter Teststart/Rückweg und anschließend finale
+   Maus-/Alt+Y-/Autostartumstellung gemäß Spec. Kein Zusatzumfang.
+
+## Starter Prompt
+
+Continue valhalla-hq/hugin from handoffs/2026-10-14-pilot-fixes.md. Read AGENTS,
+CONTEXT, genau diesen Handoff, PR10 und Git frisch; Lifecycle/Preflight für
+codex/hugin-pilot-fixes-mjolnir beachten. Ownership ist aktiv beim Root.
+Einfügekandidat ist geprüft und privat checkpointed; laufender Diagnosepilot
+ist noch94ee13b und auf diesen Source gepinnt. Nach geordnetem Neustart kurze
+reale Feldabnahme fortsetzen. Bestätigte Stimmen/Töne erhalten; Altstack nicht ungeprüft stoppen,
+keine gesperrte Computersteuerung umgehen und keinen Testtext absenden.

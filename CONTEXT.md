@@ -35,44 +35,53 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 - Die laufende Testsitzung wird nach geprüfter Integration geordnet neu
   gestartet; Rückweg über die unveränderten Altstack-Verknüpfungen erhalten.
 
-## Next Step
+## Aktuelle Zwischenbasis und Folgeauftrag
 
-- Aktiver Task codex/hugin-pilot-fixes-mjolnir, Draft PR9:
-  https://github.com/valhalla-hq/hugin/pull/9. User bestaetigt normalen
-  Codex-Alltagspaste; neuer Auftrag: markierte Auswahl ersetzen, allgemeine
-  Felder (YouTube/Chrome), zwei Aufnahme-Cues, echtes Streaming korrigieren.
-- Change-Vertrag: specs/2026-10-15-hugin-input-audio/. Gepruefter Source
-  Core6f4897c und Ton-Nachtrag9a470aca936d3dbc885935229a7eb434d0504c86;
-  Root integriert getrennte Helper-
-  Slices. UI/Stimmen/Kuerzel/Privacy/GPU-Serialisierung/Rueckweg erhalten.
-- UIA-Intervall mit beiden geprueften Originalgrenzen; striktes IPC4/Response3.
-  Verified-Edit-Profil0,25s, gemessene Codex-Overrides0,15s; keine Freigabe
-  allein durch Appnamen. Native Chrome-Teilreplacement inkl. Clipboardrestore
-  und leerer Baseline bestanden. Keine Suche/Enter. Codex-/Vollmatrix offen.
-- Zwei eigene Cues + ADC-Gate. MME liefert nativ ADC0: Produzent auf eindeutig
-  geprueften Windows-WASAPI-Default/Shared-Konvertierung korrigiert. Native
-  Cue-Gate-Probe109Callbacks/31.040B/0alteADCs, Owner geschlossen; kein Audio
-  gespeichert. Keine globale/OS-Geraeteeinstellung geaendert.
-- Ein Worker-Writer + ein wartender Providerchunk, GPU-Owner unveraendert.
-  Reale Kontrollmessung alter Server9/8 leere Refills Freya/Tyr, neu beide0,
-  alle PCM-Hashes/Bytes identisch. Cancel und Familienabschluss belegt.
-- 390 Source-/Integrationschecks und56 Windowschecks ohne Skips gruen.
-  Unabhaengige Spec-/Standards-Paesse; reproduzierter Endpoint-P2 geschlossen.
-  Kuratierte Nachweise/Kosten/Grenzen: docs/input-audio-2026-10-15.md.
-- Pilotbb700f0 durch Nutzer normal beendet; Supervisorreceipt bestaetigt
-  eigenen Familienabschluss und Altstack-Rueckstart. Nutzer hat Whispering/
-  PipPal danach normal beendet; frisch keine alten Apps/Qwen beobachtet,
-  Profil/Startup-lnks hashidentisch. Alter STT-HTTP-Standby unveraendert.
-- Naechster Schritt: aktualisierten privaten Draft checkpointen, exakte Hosted-
-  Checks und Routineintegration, danach sauberen Main FF und geprueften neuen
-  Pilot mit einmaligem Supervisor starten. Root-Ownership behalten.
-- Brian meldet nach Wiederholung fluessige Sprache. Auf Wunsch deutlichere/
-  lautere Töne: Start115ms tief doppelt, Ende180ms hell aufsteigend.82 passende
-  Checks und NativeReplay/Gate114Callbacks/31.680B/0alteADCs gruen.
-- Neue Tonabnahme/Cue-Echo und reale Auswahl-Vollmatrix sind Nutzerabnahme im Pilot;
-  normale Maus-/Alt+Y-/Autostartmigration bleibt gesperrt. Frueherer Verlust
-  eines RAM-Clipboardstands bleibt dokumentiert und ist nicht wiederhergestellt.
+- Brian bestätigt am16.10. Google-Diktat einschließlich Überschreiben am
+  laufenden Source25d9c97ce5af41cf866907e99cbbb4572ca3cb77. Codex und Word
+  funktionieren laut seiner neuen Probe noch nicht; Ursachen sind offen.
+- Er beauftragt ausdrücklich, die vorhandenen Commits vollständig zu prüfen,
+  den aktuellen Stand über PR10 nach Main zu integrieren und die offenen
+  Fälle anschließend mit einer frischen PR fortzuführen. Dieser Schnitt
+  ersetzt die bisherige Bedingung, PR10 erst nach der gesamten Feldmatrix zu
+  mergen. Die Produktumstellung selbst bleibt an die Gesamtabnahme gebunden.
+- PR10: https://github.com/valhalla-hq/hugin/pull/10. Sieben geprüfte Commits
+  seit Main8e4ceabb718edb2c8d1b80e1b07b69e0f3b933bd, zuletzt Source25d9c97.
+  Die Gesamtprüfung fand zusätzlich einen verlorenen Dependency-Status beim
+  Probestart; Source052751b2476250bd430f5c6c0272eebc91c5feb2 korrigiert diesen
+  eng begrenzten Diagnosefehler. Aktuellen
+  Merge-/Mainhead und Checkstatus beim Pickup frisch aus GitHub lesen.
+- Funktionsumfang: frische einmalige Feldattestation unabhängig vom langsamen
+  Prozessabschluss; Clipboardfreigabe vor Cleanup; Capturestatus erhält gültige
+  Aufnahmebytes/RAM-Ergebnis; Feldbesitz folgt Enclosures statt Endordnung.
+  Nachweise: docs/delivery-completion-2026-10-16.md und docs/baseline-2026-10-16.md.
+- 412 Source-/Integrationsprüfungen18,399s,94 gezielte Checks0,463s und3 eigene
+  native Range-/IPC-Tests0,837s am Abschlussstand grün. Cursor, Teil-/Gesamtauswahl und Unicode sind im
+  Providermodell sowie eigenen Windows-Textfeld geprüft. Das beweist keine
+  Codex-/Word-Kompatibilität. Beide Fälle gehören in den nächsten Task.
+- Audio, Freya/Tyr und Aufnahme-Töne sind von Brian bestätigt. Keine neue
+  Audio-/UI-Funktion. Strg+Alt+D/V und Escape bleiben Pilotkürzel; Maus,
+  Alt+Y und Autostart erst nach geprüfter vollständiger Umstellung.
+- Laufzustand: neuer normaler Pilot25d9c97 gestartet, App/Supervisor frisch
+  beobachtet. Alter Diagnosepilot94ee13b ist beendet. Die laufende Sitzung
+  benötigt weiterhin den alten Taskworktree
+  C:/Users/brian/brian-projects/worktrees/hugin/hugin-pilot-fixes-mjolnir.
+  Dort keinen neuen Source entwickeln und den Pfad bis zum normalen Ende
+  erhalten. Die Rückkehr zu Whispering/PipPal erfolgt über den Supervisor.
+- Nach dem Merge Main-Deploymentclone sauber fast-forwarden; Worker-/Runtime-
+  Inputs sind unverändert. Laufender Controller bleibt25d9c97; der neue
+  Launcher-Diagnosefix wird dort erst nach einem Neustart aktiv. Rangeproduzent
+  und IPC sind gegenüber25d9c97 unverändert.
+  Seine alten Starter sind an alte Head-/Runtimewerte gebunden und müssen vor
+  späterem Neustart neu geprüft werden. Weitere Entwicklung in neuem exklusiven
+  Worktree ab Main; neue Draft-PR erst nach erstem inhaltlichem Folgecommit.
+- Ownership des alten Roots bleibt solange aktiv, wie die laufende App den
+  Sourcepfad benötigt. Danach reguläre Freigabe/Bereinigung. Andere alte
+  Helperworktrees werden nicht aus einem allgemeinen Aufräumwunsch gelöscht.
+- Alte Installationen, Profile, Startup-lnks und STT-Standby erhalten. Frühere
+  UI-Werkzeugablehnung nicht umgehen; der spätere autorisierte Appstart war
+  erfolgreich. Früherer RAM-Clipboardverlust ist nicht rückgängig gemacht.
 
 ## Active Handoff
 
-- `handoffs/2026-10-14-pilot-fixes.md`
+- `handoffs/2026-10-16-codex-word-followup.md`

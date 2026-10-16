@@ -149,7 +149,55 @@ class ApplicationContracts(unittest.TestCase):
         self.assert_delivery_rejection('target_unverifiable','target_unverifiable')
 
     def test_timed_out_target_proof_does_not_claim_clipboard_unavailable(self):
-        self.assert_delivery_rejection('target_probe_timeout','target_unverifiable')
+        self.assert_delivery_rejection('target_probe_timeout','input_check_timeout')
+
+    def test_failed_field_capture_preserves_reason_and_ram_result_without_delivery(self):
+        for status,code in (('target_probe_timeout','input_check_timeout'),
+                ('dependency_unavailable','input_check_unavailable'),
+                ('target_unverifiable','target_unverifiable'),
+                ('private arbitrary provider detail','input_check_failed')):
+            with self.subTest(status=status):
+                self.setUp()
+                self.clipboard.capture_target=lambda **kwargs:NS(target=None,status=status)
+                self.clipboard.deliver=lambda *a,**k:self.fail('unverified capture reached delivery')
+                self.dictation_ready()
+                request,generation=self.pool.inference[-1]
+                self.controller.worker_event(dict(type='result',engine='stt',engine_instance='actual-stt',
+                    request_id=request,generation=generation,text='synthetic retained dictation'))
+                self.pump()
+                self.assertEqual(self.controller.core.snapshot().error.code,code)
+                self.assertEqual(self.controller.view().text,'synthetic retained dictation')
+                checks=json.loads(self.controller.diagnostic())['input_checks']
+                self.assertEqual(checks['capture_field'],status if status!='private arbitrary provider detail' else 'unknown')
+                self.assertEqual(checks['delivery'],'not_attempted')
+                self.assertNotIn('private arbitrary provider detail',self.controller.diagnostic())
+
+    def test_native_capture_failure_does_not_invent_a_field_probe(self):
+        self.clipboard.capture_native_target=lambda:NS(target=None,status='target_changed')
+        self.clipboard.capture_target=lambda **kwargs:self.fail('missing native basis reached UIA')
+        self.clipboard.deliver=lambda *a,**k:self.fail('missing native basis reached delivery')
+        self.dictation_ready()
+        request,generation=self.pool.inference[-1]
+        self.controller.worker_event(dict(type='result',engine='stt',engine_instance='actual-stt',
+            request_id=request,generation=generation,text='synthetic retained dictation'))
+        self.pump()
+        self.assertEqual(self.controller.core.snapshot().error.code,'target_changed')
+        self.assertEqual(json.loads(self.controller.diagnostic())['input_checks'],
+            {'capture_native':'target_changed','capture_field':'not_attempted','delivery':'not_attempted'})
+
+    def test_field_probe_exception_does_not_discard_successful_audio(self):
+        def fail(**kwargs):raise RuntimeError('private provider payload')
+        self.clipboard.capture_target=fail
+        self.clipboard.deliver=lambda *a,**k:self.fail('failed probe reached delivery')
+        self.dictation_ready()
+        request,generation=self.pool.inference[-1]
+        self.controller.worker_event(dict(type='result',engine='stt',engine_instance='actual-stt',
+            request_id=request,generation=generation,text='synthetic retained dictation'))
+        self.pump()
+        self.assertEqual(self.controller.view().text,'synthetic retained dictation')
+        self.assertEqual(self.controller.core.snapshot().error.code,'input_check_failed')
+        self.assertEqual(json.loads(self.controller.diagnostic())['input_checks']['capture_field'],'target_probe_failed')
+        self.assertNotIn('private provider payload',self.controller.diagnostic())
 
     def test_clipboard_rejection_does_not_claim_target_changed(self):
         self.assert_delivery_rejection('format_unsupported','clipboard_failed')

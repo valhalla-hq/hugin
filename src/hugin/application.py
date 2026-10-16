@@ -70,6 +70,34 @@ class _DeliveryCommit:
     acknowledgement: Future
 
 
+@dataclass(frozen=True)
+class _CapturedTarget:
+    """One parsed capture outcome, passed opaquely through the reducer."""
+    status: str
+    target: object = None
+
+
+_INPUT_STATUSES=frozenset(('not_run','not_attempted','native_target_captured',
+    'target_captured','target_changed','target_unverifiable','target_unverified',
+    'target_probe_timeout','target_probe_failed','target_probe_busy','target_cleanup_pending',
+    'target_cleanup_failed','dependency_unavailable','unsupported','cancelled','submitted',
+    'clipboard_busy','clipboard_changed','clipboard_failed','clipboard_cleanup_failed',
+    'clipboard_recovery_pending','clipboard_restore_failed','clipboard_write_failed',
+    'format_delayed','format_unsupported','snapshot_limit','modifiers_active',
+    'modifier_release_failed','input_partial','commit_rejected','commit_timeout',
+    'text_invalid','text_limit','unknown'))
+
+
+def _input_error(status,phase):
+    if status in ('target_changed','target_unverifiable','target_unverified'):code=status
+    elif status in ('target_probe_timeout','commit_timeout'):code='input_check_timeout'
+    elif status in ('dependency_unavailable','unsupported'):code='input_check_unavailable'
+    elif status in ('target_probe_failed','target_probe_busy','target_cleanup_pending',
+            'target_cleanup_failed','unknown'):code='input_check_failed'
+    else:code='clipboard_failed'
+    return HuginError(code,phase)
+
+
 def _safe_error(error, phase):
     return HuginError(error.code if isinstance(error,HuginError) else 'worker_failed',phase)
 
@@ -121,6 +149,25 @@ class Controller:
         self._devices = {}
         self._closed_io = set()
         self._io_cleanup_failed = set()
+        self._input_checks = dict(capture_native='not_run',capture_field='not_run',delivery='not_run')
+
+    def _input_status(self,job,phase,value):
+        """Normalize once at the adapter boundary; keep no raw provider data."""
+        status=value if type(value) is str and len(value)<=64 and value in _INPUT_STATUSES else 'unknown'
+        with self._lock:
+            if self._snapshot.job==job:self._input_checks[phase]=status
+        return status
+
+    def _capture_target_outcome(self,job,phase,action):
+        """Field failures never reinterpret an already valid microphone capture."""
+        try:
+            result=action();value=getattr(result,'status',None);target=getattr(result,'target',None)
+            if type(value) is str and value in ('native_target_captured','target_captured') and target is None:
+                value='target_probe_failed'
+        except Exception:
+            value,target='target_probe_failed',None
+        status=self._input_status(job,phase,value)
+        return _CapturedTarget(status,target if status in ('native_target_captured','target_captured') else None)
 
     def _voice(self):
         path = self.settings.paths['state']/'preferences.json'
@@ -334,6 +381,8 @@ class Controller:
 
     def _effect(self, effect, audio_ack=None):
         if isinstance(effect,c.StartRecording):
+            with self._lock:
+                self._input_checks=dict(capture_native='not_run',capture_field='not_run',delivery='not_run')
             token=self._token(effect.job)
             def start():
                 try:
@@ -359,7 +408,10 @@ class Controller:
                     else: self._post(c.RecordingStarted(effect.job,_safe_error(error,'capture')))
             self._capture_submit(start)
         elif isinstance(effect,c.StopRecording):
-            target = None if effect.discard else self.clipboard.capture_native_target().target
+            target=None;native_status='not_attempted'
+            if not effect.discard:
+                native=self._capture_target_outcome(effect.job,'capture_native',self.clipboard.capture_native_target)
+                native_status,target=native.status,native.target
             token = self._token(effect.job)
             if effect.discard:
                 token.set()
@@ -368,7 +420,7 @@ class Controller:
                     except HuginError as error:self._post(_CueFailure(error))
             def stop():
                 data,error = None,None
-                bound_target=target
+                bound_target=_CapturedTarget(native_status,target)
                 try:
                     if effect.discard: self.microphone.cancel()
                     else:
@@ -379,7 +431,10 @@ class Controller:
                                     raise HuginError('audio_failed','capture_end_cue')
                             except Exception:self._post(_CueFailure(HuginError('audio_failed','capture_end_cue')))
                         if target is not None and not token.is_set():
-                            bound_target=self.clipboard.capture_target(expected=target,cancelled=token.is_set).target
+                            bound_target=self._capture_target_outcome(effect.job,'capture_field',
+                                lambda:self.clipboard.capture_target(expected=target,cancelled=token.is_set))
+                        else:
+                            self._input_status(effect.job,'capture_field','not_attempted')
                 except Exception as cause:
                     error = _safe_error(cause,'capture')
                     try: self.microphone.cancel()
@@ -480,14 +535,15 @@ class Controller:
                 acknowledgement.result()
             def deliver():
                 try:
-                    result=self.clipboard.deliver(effect.text,effect.target,current,
-                        authorize=authorize,commit=commit)
-                    code=result.status if result.status in (
-                        'target_changed','target_unverifiable','target_unverified') else 'clipboard_failed'
-                    if result.status in ('target_probe_timeout','target_probe_failed','target_probe_busy',
-                            'target_cleanup_pending'):
-                        code='target_unverifiable'
-                    error=None if result.submitted and result.restored else HuginError(code,'delivery')
+                    captured=effect.target
+                    if not isinstance(captured,_CapturedTarget) or captured.status!='target_captured' or captured.target is None:
+                        self._input_status(effect.job,'delivery','not_attempted')
+                        error=_input_error(captured.status if isinstance(captured,_CapturedTarget) else 'unknown','target_capture')
+                    else:
+                        result=self.clipboard.deliver(effect.text,captured.target,current,
+                            authorize=authorize,commit=commit)
+                        status=self._input_status(effect.job,'delivery',result.status)
+                        error=None if result.submitted and result.restored else _input_error(status,'delivery')
                 except BaseException as cause:error=_safe_error(cause,'delivery')
                 self._post(c.DeliveryFinished(effect.job,error))
             ticket=Future()
@@ -625,6 +681,7 @@ class Controller:
             abandoned_io=bool((self.microphone.owned or self._capture_tasks or self._delivery_tasks) and not capture_active
                 or self._selection_tasks and not selection_active
                 or self.cues is not None and self.cues.cleanup_pending)
+            input_checks=dict(self._input_checks)
         data = {'schema_version':1,'app':'Hugin','version':__version__,
             'state':snap.state.value,'voice':snap.voice,'input_ready':bool(self.inputs.running and not self.inputs.error),
             'profile_id':self.settings.voices[snap.voice].source_id,
@@ -636,6 +693,7 @@ class Controller:
                 'blocked':item.blocked or (item.engine,item.engine_instance) in self._cleanup_failed,
                 'device':self._devices.get(item.engine.value)} for item in snap.components},
             'error_code':self._runtime_error.code if self._runtime_error else snap.error.code if snap.error else None,
+            'input_checks':input_checks,
             'pending_cleanup':bool(self._closing or self._cleanup_failed or self._io_cleanup_failed
                 or snap.retired_operations or snap.cancelling_job or abandoned_io)}
         return json.dumps(data,ensure_ascii=False,indent=2)

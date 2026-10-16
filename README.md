@@ -2,7 +2,7 @@
 
 Lokale Windows-App für Diktieren und Vorlesen mit den bestätigten Stimmen **Freya** und **Tyr**. Hugin soll Whispering und PipPal vollständig ersetzen.
 
-Status am **14.10.2026**: Controller, dunkle native Oberfläche mit Raben-Icon, Eingaben, Audio und lokale Worker sind verbunden. Eigener serieller GPU-Pilot für Whisper und Freya/Tyr erfolgreich; Hör-/physische Zielmatrix- und Gesamtabnahme stehen noch aus. Whispering/PipPal sind für die autorisierte Testsitzung geordnet pausiert; Installationen, Profile und Autostarts bleiben erhalten. Quelle ist das private Repository valhalla-hq/hugin; Entwicklung folgt AGENTS.md und dem zentralen Brian-Projekt-Workflow.
+Status am **16.10.2026**: Brian bestätigt Freya/Tyr, Aufnahme-Töne sowie Google-Diktat einschließlich Überschreiben. **Diktieren in Codex und Word funktioniert noch nicht zuverlässig und bleibt offen.** Der aktuelle Stand wird auf seinen ausdrücklichen Wunsch als [geprüfte Zwischenbasis](docs/baseline-2026-10-16.md) über PR10 nach Main integriert; die beiden Fehler folgen in einer frischen PR. Dies ist noch keine vollständige Produktabnahme. Der normale Pilot läuft mit Source25d9c97 und Strg+Alt+D/V; produktive Maus-/Alt+Y-Bindungen und Autostartmigration bleiben ausstehend. Quelle ist das private Repository valhalla-hq/hugin. Aktuelle Fortsetzung: [Handoff](handoffs/2026-10-16-codex-word-followup.md).
 
 Der lokale Einstieg `C:\Users\brian\Hugin` zeigt auf den sauberen Main-Deploymentclone. Alle drei eigenen Umgebungen und echten Modell-/CUDA-Dateien sind dort aus geprüften lokalen Dateien wiederhergestellt. Die sechs ursprünglichen Planungsdateien bleiben mit identischen SHA256-Hashes unter `C:\Users\brian\Hugin-Planung-2026-10-14` erhalten. Dies aktiviert noch keine produktiven Bindungen.
 

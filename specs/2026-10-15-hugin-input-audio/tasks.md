@@ -15,9 +15,9 @@
   IA-001/002/005. Nur eigenes Literal, Baseline/Clipboard erhalten, kein Enter.
 - [x] IA-T08: Reale serielle TTS-Pipeline Freya/Tyr + Cues/Gate nativ messen;
   IA-003/004/005. GPU/Queue-/ACK-Zeiten, RAM/CPU/Abbruch und Hörurteil trennen.
-- [ ] IA-T09: Source-/Native-/Docschecks, unabhängige Spec-/Standardsreviews,
+- [x] IA-T09: Source-/Native-/Docschecks, unabhängige Spec-/Standardsreviews,
   Hosted-CI und kontrollierter Pilotneustart; alle IA.
-- [ ] IA-T10: Aufgaben/Context/exakten Handoff/PR und Remotecheckpoint
+- [x] IA-T10: Aufgaben/Context/exakten Handoff/PR und Remotecheckpoint
   aktualisieren; alle IA. Aktive Root-Ownership bei laufendem Supervisor halten.
 
 Stand Source6f4897c:390 Source-/56 Windowschecks grün, unabhängige Reviews
@@ -29,3 +29,10 @@ Brian meldet flüssige Sprache; gewünschte lautere/distinktere Töne inSource9a
 umgesetzt,82 passendeChecks+NativeReplay/Gate erneut grün. Echo/neueTonabnahme
 bleiben gesondert offen, nicht durch T08 bestanden. Details in
 docs/input-audio-2026-10-15.md.
+
+PR9 final573ca3f: alle drei Hostedchecks grün, frischer privater Scope-/Head-
+Gate, regulärer Merge8e4ceab mit identischem Tree. Main sauber FF, neuer
+einmaliger Pilot und exakter Receipt854cec59 bestätigt. Sichtbare eigene App,
+Image-/Creation-/Elternbindung und Instanzschutz belegt, Schutzdateien gleich.
+Rolloutcheckpoint aktualisiert Context und exakten Handoff; Root-Ownership
+bleibt aktiv. IA-T07 und neue Ton-/Echoabnahme bleiben ausdrücklich offen.
