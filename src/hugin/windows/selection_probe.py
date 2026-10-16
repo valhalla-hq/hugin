@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import os
 import sys
+import time
 
 if __package__ in (None, ''):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
@@ -173,7 +174,7 @@ def _edit_pattern(focus,uia):
     value=focus.GetCurrentPattern(uia.UIA_ValuePatternId).QueryInterface(uia.IUIAutomationValuePattern)
     if _flag(value.CurrentIsReadOnly):raise _SelectionFailure('target_unverifiable')
     pattern=focus.GetCurrentPattern(uia.UIA_TextPatternId).QueryInterface(uia.IUIAutomationTextPattern)
-    if type(pattern.SupportedTextSelection) is not int or pattern.SupportedTextSelection!=1:
+    if type(pattern.SupportedTextSelection) is not int or pattern.SupportedTextSelection not in (1,2):
         raise _SelectionFailure('target_unverifiable')
     return pattern
 
@@ -306,6 +307,7 @@ def _confirm_range(automation,uia,binding,identity,measured):
 class _TargetProof:
     identity: UiaTargetIdentity
     binding: _Binding
+    verified_at: float
 
 
 def _target_proof(automation,uia,target,native_target,cancelled):
@@ -323,7 +325,7 @@ def _target_proof(automation,uia,target,native_target,cancelled):
     _confirm_range(automation,uia,second,identity,current)
     _confirm_focus(automation,second,target,native_target)
     if cancelled():raise _SelectionFailure('cancelled')
-    return _TargetProof(identity,second)
+    return _TargetProof(identity,second,time.monotonic())
 
 
 def _target_failure(failure):
@@ -332,7 +334,8 @@ def _target_failure(failure):
 
 def read_uia_target(automation,uia,target,native_target,cancelled):
     try:
-        return TargetResult('target_captured',_target_proof(automation,uia,target,native_target,cancelled).identity)
+        proof=_target_proof(automation,uia,target,native_target,cancelled)
+        return TargetResult('target_captured',proof.identity,proof.verified_at)
     except _SelectionFailure as failure:
         return _target_failure(failure)
     except Exception:
@@ -368,7 +371,7 @@ def confirm_uia_target(automation,uia,target,native_target,proof):
         # these facts after the last text read, without reading further text.
         _confirm_range(automation,uia,binding,proof.identity,measured)
         _confirm_focus(automation,proof.binding,target,native_target)
-        return TargetResult('target_captured',proof.identity)
+        return TargetResult('target_captured',proof.identity,time.monotonic())
     except _SelectionFailure as failure:return _target_failure(failure)
     except Exception:return TargetResult('target_probe_failed')
 
@@ -387,12 +390,19 @@ def _com_delivery(client,uia,target,native):
     try:proof=_target_proof(automation,uia,target,native.capture_native_target,lambda:False)
     except _SelectionFailure as failure:
         _write_frame(encode_target_response(_target_failure(failure)));return
-    _write_frame(encode_target_response(TargetResult('target_captured',proof.identity)))
+    _write_frame(encode_target_response(TargetResult('target_captured',proof.identity,proof.verified_at)))
     # Exactly one private confirmation command. EOF and any other byte reject.
     if read_exact(sys.stdin.buffer,1)!=b'\x01' or sys.stdin.buffer.read(1)!=b'':
         raise ValueError('invalid delivery confirmation')
     _write_frame(encode_target_response(confirm_uia_target(automation,uia,target,
         native.capture_native_target,proof)))
+    # The immutable attestation channel ends before native/COM/interpreter
+    # unwind. The parent still owns this process family until off-owner close.
+    stdout_fd,stderr_fd=sys.stdout.fileno(),sys.stderr.fileno()
+    sys.stdout.close();sys.stderr.close()
+    # CPython's standard FileIO owns the wrapper with closefd=False. Closing
+    # that wrapper alone does not publish pipe EOF before interpreter exit.
+    os.close(stdout_fd);os.close(stderr_fd)
 
 
 def _system_typelib():

@@ -911,6 +911,9 @@ class NativeClipboard:
                         lease=self._probe().begin_delivery(target.without_uia,lambda:not still_current())
                         if lease.result.status!='target_captured':raise ClipboardFailure(lease.result.status)
                         if lease.result.identity!=target.uia:raise ClipboardFailure('target_changed')
+                        prepared=lease.prepare()
+                        if prepared.status!='target_captured':raise ClipboardFailure(prepared.status)
+                        if prepared.identity!=target.uia:raise ClipboardFailure('target_changed')
                     active=True
                     def fast_commit():
                         nonlocal submitted,attempted
@@ -919,7 +922,7 @@ class NativeClipboard:
                             attempted=True
                             if lease is not None:
                                 if not still_current():raise ClipboardFailure('cancelled')
-                                confirmed=lease.confirm()  # Private IPC only; hard <=50ms.
+                                confirmed=lease.confirm()  # Consume <=50ms-old proof; no I/O.
                                 if confirmed.status!='target_captured':raise ClipboardFailure(confirmed.status)
                                 if confirmed.identity!=target.uia:raise ClipboardFailure('target_changed')
                             # The worker still holds OpenClipboard and this

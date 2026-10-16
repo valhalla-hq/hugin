@@ -37,58 +37,44 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Next Step
 
-- Aktiver Task codex/hugin-pilot-fixes-mjolnir, integrierte PR9:
-  https://github.com/valhalla-hq/hugin/pull/9. User bestaetigt normalen
-  Codex-Alltagspaste; neuer Auftrag: markierte Auswahl ersetzen, allgemeine
-  Felder (YouTube/Chrome), zwei Aufnahme-Cues, echtes Streaming korrigieren.
-- Change-Vertrag: specs/2026-10-15-hugin-input-audio/. Gepruefter Source
-  Core6f4897c und Ton-Nachtrag9a470aca936d3dbc885935229a7eb434d0504c86;
-  Root integriert getrennte Helper-
-  Slices. UI/Stimmen/Kuerzel/Privacy/GPU-Serialisierung/Rueckweg erhalten.
-- UIA-Intervall mit beiden geprueften Originalgrenzen; striktes IPC4/Response3.
-  Verified-Edit-Profil0,25s, gemessene Codex-Overrides0,15s; keine Freigabe
-  allein durch Appnamen. Native Chrome-Teilreplacement inkl. Clipboardrestore
-  und leerer Baseline bestanden. Keine Suche/Enter. Codex-/Vollmatrix offen.
-- Zwei eigene Cues + ADC-Gate. MME liefert nativ ADC0: Produzent auf eindeutig
-  geprueften Windows-WASAPI-Default/Shared-Konvertierung korrigiert. Native
-  Cue-Gate-Probe109Callbacks/31.040B/0alteADCs, Owner geschlossen; kein Audio
-  gespeichert. Keine globale/OS-Geraeteeinstellung geaendert.
-- Ein Worker-Writer + ein wartender Providerchunk, GPU-Owner unveraendert.
-  Reale Kontrollmessung alter Server9/8 leere Refills Freya/Tyr, neu beide0,
-  alle PCM-Hashes/Bytes identisch. Cancel und Familienabschluss belegt.
-- 390 Source-/Integrationschecks und56 Windowschecks ohne Skips gruen.
-  Unabhaengige Spec-/Standards-Paesse; reproduzierter Endpoint-P2 geschlossen.
-  Kuratierte Nachweise/Kosten/Grenzen: docs/input-audio-2026-10-15.md.
-- Pilotbb700f0 durch Nutzer normal beendet; Supervisorreceipt bestaetigt
-  eigenen Familienabschluss und Altstack-Rueckstart. Nutzer hat Whispering/
-  PipPal danach normal beendet; frisch keine alten Apps/Qwen beobachtet,
-  Profil/Startup-lnks hashidentisch. Alter STT-HTTP-Standby unveraendert.
-- PR9 am unveraenderten geprueften Head573ca3fa4c8c9e4d7b09b60772b9de022b66479d
-  nach drei gruenen Hostedchecks und frischem Identitaets-/Scopegate regulaer
-  integriert. Merge8e4ceabb718edb2c8d1b80e1b07b69e0f3b933bd ist remote auf
-  main; Merge-/Headtrees identisch, Sourceancestry bewiesen. Deployment sauber FF.
-- Neuer einmaliger Pilot auf genau diesem Main gestartet. Receipt:
-  pilot-session-854cec59-a15a-44c1-8373-be2cd39273a8.json. Supervisor41332,
-  Appwrapper42772, echte App16336 frisch mit gehaltenen Prozesshandles,
-  Image/Creation/Elternkette gebunden. Sichtbares Hugin536x679, eigene Signal-
-  /Trayfenster und belegte Instanz bestaetigt. Schema2/generisches Profil/
-  zwei Codex-Overrides vorhanden; Startup-lnks und PipPal-Profil hashidentisch.
-- Nativer Tk-/Tray-UIA-Leseweg exponiert den Statuswortlaut nicht; daraus
-  keine sichtbare Bereit- oder Hoerabnahme abgeleitet. Kuratierter lokaler
-  Rolloutbeleg Root.runtime/input-audio-rollout.json, keine Sprachinhalte.
-- Dokumentarischer Rolloutcheckpoint: Draft PR10,
-  https://github.com/valhalla-hq/hugin/pull/10. Er aendert nur Context, exakten
-  Handoff und Aufgabenstatus. Naechster Schritt: Alltagstest mit neuem Pilot;
-  Root-Ownership bleibt wegen laufendem Supervisor aktiv. Alle drei Helper
-  haben ihren eigenen Remotecheckpoint und exakten Handoff bewiesen, Ownership
-  regulaer freigegeben und nur eigenen Worktree/lokalen Branch entfernt.
-  Ihre privaten Remotebranches bleiben erhalten.
-- Brian meldet nach Wiederholung fluessige Sprache. Auf Wunsch deutlichere/
-  lautere Töne: Start115ms tief doppelt, Ende180ms hell aufsteigend.82 passende
-  Checks und NativeReplay/Gate114Callbacks/31.680B/0alteADCs gruen.
-- Neue Tonabnahme/Cue-Echo und reale Auswahl-Vollmatrix sind Nutzerabnahme im Pilot;
-  normale Maus-/Alt+Y-/Autostartmigration bleibt gesperrt. Frueherer Verlust
-  eines RAM-Clipboardstands bleibt dokumentiert und ist nicht wiederhergestellt.
+- Fortgesetzter Task auf codex/hugin-pilot-fixes-mjolnir, Root-Worktree
+  C:/Users/brian/brian-projects/worktrees/hugin/hugin-pilot-fixes-mjolnir.
+  Ownership aktiv, Root alleiniger Integrator. Drei frühere Helper haben
+  getrennte Remotecheckpoints; ihre Worktrees/Ownership sind regulär freigegeben.
+- PR9 ist am geprüften Head573ca3fa4c8c9e4d7b09b60772b9de022b66479d nach
+  unabhängigen Reviews/drei grünen Hostedchecks integriert. Stable Main
+  8e4ceabb718edb2c8d1b80e1b07b69e0f3b933bd bleibt unverändert.
+- Brian bestätigt beide Stimmen Freya/Tyr und die lauteren, unterscheidbaren
+  Start-/Endtöne. Audioauftrag abgeschlossen; keine neue Audio-/UI-Funktion.
+  Historische native Messungen: docs/input-audio-2026-10-15.md.
+- Neuer Einfügekandidat: specs/2026-10-16-hugin-delivery-completion/.
+  Gültige Auswahl7..18 wurde allein wegen80ms Familienabwicklung fälschlich
+  abgelehnt. Bestätigung vorbereitet auf Worker, strikte Producerzeit und
+  höchstens50ms Frische beim einmaligen Ownercommit; kein COM/Pipewait dort.
+  Request5/Response4, reale EOFs vor COM-/Familienabschluss, exaktes venv bei
+  direktem Basisinterpreterlaunch. Mehrfachauswahlfähigkeit erlaubt genau
+  einen aktuellen Bereich; Schutz-/Identitätsprüfungen bleiben bestehen.
+- Capture-Status bleibt für begrenzte Diagnose erhalten. Fehler in der
+  Zielprüfung verwerfen keine gültigen Aufnahmebytes oder RAM-Ergebnisse.
+  Keine Rohinhalte, URLs, Titel oder IDs in Diagnose/Git.
+- 402 Source-/Integrationschecks20,879s und142 gezielteChecks1,206s grün,
+  ohne Skips. Letztere enthalten eine echte eigene Windows-Prozess-/Pipe-
+  Fixture mit synthetischem UIA; kein Chrome-/Providererfolgsbeweis.
+  Bestehender Docscheck19Anforderungen/17AC grün. Review-/Remoteabschluss
+  dieser Kandidatenfassung steht noch aus. Nachweis/Grenzen:
+  docs/delivery-completion-2026-10-16.md.
+- Draft PR10 https://github.com/valhalla-hq/hugin/pull/10 wird auf diesen
+  finalen Sourceumfang aktualisiert; alter docs-only-Titel ist überholt.
+  Kein aktueller Kandidatenrollout. Reale Google-/Codex-/Schutzfeldmatrix
+  bleibt DC-T07, Computer Use hat URL-Verifikation automatisch abgelehnt.
+  Keine UI-Sperrumgehung und keine erneuten Fokus-/Clipboard-Frageschleifen.
+- Laufzustand16.10.: kein Hugin-App-/Supervisorprozess frisch beobachtet;
+  PipPal und alter Qwen-Worker laufen. Alte Receipt854cec59 mit pilot_running
+  ist historisch/stale und keine aktuelle Prozessautorität. Alte Installationen,
+  Profile und Startup-lnks bleiben erhalten; kein fremdes Kill dieser Sitzung.
+- Strg+Alt+D/V und Escape bleiben Pilotkürzel. Normale Maus-/Alt+Y-/Autostart-
+  Migration bleibt bis zur geprüften Umstellung offen. Früherer verlorener
+  RAM-Clipboardstand bleibt dokumentiert und ist nicht wiederhergestellt.
 
 ## Active Handoff
 

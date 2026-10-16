@@ -142,7 +142,7 @@ class CaptureCueContracts(unittest.TestCase):
     def setUp(self):
         self.calls=[];self.mic=Mic(self.calls);self.cues=Cues(self.calls);self.pool=Pool()
         self.clipboard=Clipboard()
-        self.clipboard.capture_target=lambda **_:self.calls.append('uia') or NS(target='target')
+        self.clipboard.capture_target=lambda **_:self.calls.append('uia') or NS(target='target',status='target_captured')
         self.controller=Controller(load_settings(ROOT),inputs=Inputs(),microphone=self.mic,
             output=Output(self.calls),clipboard=self.clipboard,pool=self.pool,publish=lambda _:None,
             capture_executor=Immediate(),audio_executor=Immediate(),maintenance_executor=Immediate(),
