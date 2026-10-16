@@ -219,6 +219,65 @@ class FakeProcess:
 
 
 class ProbeProcessContracts(unittest.TestCase):
+    def test_missing_or_foreign_base_runtime_keeps_dependency_status_at_public_boundaries(self):
+        from unittest.mock import Mock
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);base=root/'base';base.mkdir()
+            foreign=root/'foreign-python.exe';foreign.touch()
+            for executable in (base/'missing-python.exe',foreign):
+                for operation in ('read','capture_target','begin_delivery'):
+                    with self.subTest(executable=executable.name,operation=operation):
+                        spawn=Mock(side_effect=AssertionError('invalid runtime must not spawn'))
+                        probe=SelectionProbe(spawn=spawn);lease=None
+                        try:
+                            with (patch('hugin.windows.selection.sys.platform','win32'),
+                                  patch('hugin.windows.selection.sys.prefix',str(root/'venv')),
+                                  patch('hugin.windows.selection.sys.base_prefix',str(base)),
+                                  patch('hugin.windows.selection.sys._base_executable',str(executable),create=True)):
+                                result=getattr(probe,operation)(TARGET,lambda:False)
+                            if operation=='begin_delivery':lease=result;result=lease.result
+                            self.assertEqual(result.status,'dependency_unavailable')
+                            spawn.assert_not_called()
+                        finally:
+                            if lease is not None:lease.close()
+                            probe.close()
+
+    def test_unknown_spawn_failure_status_is_not_forwarded(self):
+        from hugin.windows.clipboard import ClipboardFailure
+        for failure in (ClipboardFailure('captured'),ClipboardFailure('PRIVATE'),OSError('PRIVATE')):
+            for operation in ('read','capture_target','begin_delivery'):
+                probe=SelectionProbe();lease=None
+                try:
+                    with patch.object(probe,'_spawn_process',side_effect=failure):
+                        result=getattr(probe,operation)(TARGET,lambda:False)
+                    if operation=='begin_delivery':lease=result;result=lease.result
+                    self.assertEqual(result.status,'selection_failed' if operation=='read' else 'target_probe_failed')
+                    self.assertNotIn('PRIVATE',repr(result))
+                finally:
+                    if lease is not None:lease.close()
+                    probe.close()
+
+    def test_partial_spawn_owner_takes_precedence_and_survives_failed_cleanup(self):
+        from hugin.windows.clipboard import ClipboardFailure
+        for operation in ('read','capture_target','begin_delivery'):
+            owner=FakeProcess(b'',blocked=True,kill_fails=True)
+            failure=ClipboardFailure('dependency_unavailable');failure.owner=owner
+            probe=SelectionProbe();lease=None
+            try:
+                with patch.object(probe,'_spawn_process',side_effect=failure):
+                    result=getattr(probe,operation)(TARGET,lambda:False)
+                if operation=='begin_delivery':lease=result;result=lease.result
+                self.assertEqual(result.status,'selection_cleanup_failed' if operation=='read' else 'target_cleanup_failed')
+                with self.assertRaises(ClipboardFailure):
+                    lease.close() if lease is not None else probe.close()
+                self.assertIs(probe._process,owner)
+                self.assertEqual(probe.capture_target(TARGET,lambda:False).status,'target_cleanup_pending')
+            finally:
+                owner.kill_fails=False
+                if lease is not None:lease.close()
+                probe.close()
+            self.assertTrue(owner.closed)
+
     def test_private_framed_text_is_read_and_owned_process_closed(self):
         process = FakeProcess(encode_response('captured', 'selected 😀'))
         calls = []

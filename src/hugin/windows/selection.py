@@ -238,8 +238,7 @@ class DeliveryLease:
         request=encode_request(target,operation='delivery')
         try:probe._process=probe._spawn_process()
         except Exception as error:
-            probe._process=getattr(error,'owner',None)
-            self.result=TargetResult('target_cleanup_failed' if probe._process is not None else 'target_probe_failed')
+            self.result=TargetResult(probe._spawn_failure(error,'target_probe_failed','target_cleanup_failed'))
             return
         process=probe._process
         def write():
@@ -383,6 +382,15 @@ class SelectionProbe:
             raise
         return lease
 
+    def _spawn_failure(self,error,failed,cleanup_failed):
+        """Retain partial ownership before normalizing known launch failures."""
+        self._process=getattr(error,'owner',None)
+        if self._process is not None:return cleanup_failed
+        if (isinstance(error,ClipboardFailure) and type(error.status) is str
+                and error.status=='dependency_unavailable'):
+            return 'dependency_unavailable'
+        return failed
+
     def _read(self,target,cancelled,*,operation):
         target_mode=operation=='target'
         result_type=TargetResult if target_mode else SelectionResult
@@ -406,8 +414,7 @@ class SelectionProbe:
             try:
                 self._process=self._spawn_process()
             except Exception as failure:
-                self._process = getattr(failure, 'owner', None)
-                return result_type(cleanup_failed if self._process is not None else failed)
+                return result_type(self._spawn_failure(failure,failed,cleanup_failed))
             process = self._process
             done = threading.Event()
             outcome = {'result': result_type(failed), 'fault': False}
