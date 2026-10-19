@@ -90,6 +90,7 @@ class Uia:
     UIA_EditControlTypeId=50004;UIA_ComboBoxControlTypeId=50003;UIA_IsTextPatternAvailablePropertyId=30040
     UIA_IsValuePatternAvailablePropertyId=30043;UIA_TextPatternId=10014;UIA_ValuePatternId=10002
     IUIAutomationTextPattern=object();IUIAutomationValuePattern=object();TextUnit_Character=0
+    UIA_DocumentControlTypeId=50030;UIA_IsReadOnlyAttributeId=40015
 
 
 class TargetContracts(unittest.TestCase):
@@ -436,12 +437,12 @@ class TargetContracts(unittest.TestCase):
         self.assertNotEqual(self.read(automation).identity,first.identity)
 
     def test_protected_readonly_disabled_and_nonfield_fail_closed(self):
-        for change in ('password','readonly','disabled','document'):
+        for change in ('password','readonly','disabled','nonfield'):
             automation=Automation()
             if change=='password':automation.focus.CurrentIsPassword=True
             elif change=='readonly':automation.focus.CurrentIsReadOnly=True
             elif change=='disabled':automation.focus.CurrentIsEnabled=False
-            else:automation.focus.CurrentControlType=50030
+            else:automation.focus.CurrentControlType=50026
             self.assertEqual(self.read(automation).status,'target_unverifiable',change)
 
     def test_focus_native_range_and_cancel_changes_during_probe_are_rejected(self):

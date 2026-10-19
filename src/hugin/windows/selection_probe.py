@@ -28,6 +28,7 @@ class _Binding:
     element_id: tuple
     focus_pid: int
     pattern: object
+    readonly_attribute: int | None = None
 
 
 def _identity(element):
@@ -162,28 +163,37 @@ def read_uia_selection(automation, uia, target, native_target, cancelled, limit)
         return SelectionResult('selection_failed')
 
 
-def _edit_pattern(focus,uia):
+def _field_pattern(focus,uia):
     if not focus or not _flag(focus.CurrentHasKeyboardFocus):
         raise _SelectionFailure('target_changed')
-    if (focus.CurrentControlType not in (uia.UIA_EditControlTypeId,uia.UIA_ComboBoxControlTypeId) or not _flag(focus.CurrentIsEnabled)
+    kind=focus.CurrentControlType
+    if (kind not in (uia.UIA_EditControlTypeId,uia.UIA_ComboBoxControlTypeId,uia.UIA_DocumentControlTypeId) or not _flag(focus.CurrentIsEnabled)
             or _flag(focus.CurrentIsPassword)):
         raise _SelectionFailure('target_unverifiable')
-    for identity in (uia.UIA_IsTextPatternAvailablePropertyId,uia.UIA_IsValuePatternAvailablePropertyId):
-        if focus.GetCurrentPropertyValue(identity) is not True:
+    if focus.GetCurrentPropertyValue(uia.UIA_IsTextPatternAvailablePropertyId) is not True:
+        raise _SelectionFailure('target_unverifiable')
+    readonly_attribute=None
+    if kind==uia.UIA_DocumentControlTypeId:
+        # Documents need not expose ValuePattern. Their actual document and
+        # selected ranges must prove editability on every fresh snapshot.
+        readonly_attribute=uia.UIA_IsReadOnlyAttributeId
+    else:
+        if focus.GetCurrentPropertyValue(uia.UIA_IsValuePatternAvailablePropertyId) is not True:
             raise _SelectionFailure('target_unverifiable')
-    value=focus.GetCurrentPattern(uia.UIA_ValuePatternId).QueryInterface(uia.IUIAutomationValuePattern)
-    if _flag(value.CurrentIsReadOnly):raise _SelectionFailure('target_unverifiable')
+        value=focus.GetCurrentPattern(uia.UIA_ValuePatternId).QueryInterface(uia.IUIAutomationValuePattern)
+        if _flag(value.CurrentIsReadOnly):
+            raise _SelectionFailure('target_unverifiable')
     pattern=focus.GetCurrentPattern(uia.UIA_TextPatternId).QueryInterface(uia.IUIAutomationTextPattern)
     if type(pattern.SupportedTextSelection) is not int or pattern.SupportedTextSelection not in (1,2):
         raise _SelectionFailure('target_unverifiable')
-    return pattern
+    return pattern,readonly_attribute
 
 
-def _bind_edit(automation,uia,target):
-    """A focused Edit/ComboBox provider, never an ancestor or class whitelist."""
+def _bind_field(automation,uia,target):
+    """A focused field with explicit capabilities, never an ancestor whitelist."""
     focus=automation.GetFocusedElement();root=automation.ElementFromHandle(target.hwnd)
     if not root:raise _SelectionFailure('target_changed')
-    pattern=_edit_pattern(focus,uia)
+    pattern,readonly_attribute=_field_pattern(focus,uia)
     pid=focus.CurrentProcessId
     if type(pid) is not int or not 0<pid<1<<32 or root.CurrentProcessId!=target.pid:
         raise _SelectionFailure('target_changed')
@@ -191,12 +201,12 @@ def _bind_edit(automation,uia,target):
     for _ in range(64):
         if not current:break
         if automation.CompareElements(current,root):
-            return _Binding(_identity(focus),_identity(root),_identity(focus),pid,pattern)
+            return _Binding(_identity(focus),_identity(root),_identity(focus),pid,pattern,readonly_attribute)
         current=automation.RawViewWalker.GetParentElement(current)
     raise _SelectionFailure('target_changed')
 
 
-def _edit_enclosure(automation,binding,text_range):
+def _field_enclosure(automation,binding,text_range):
     enclosing=text_range.GetEnclosingElement();origin=None
     for _ in range(64):
         if not enclosing or _flag(enclosing.CurrentIsPassword):
@@ -247,7 +257,12 @@ def _range_snapshot(automation,binding):
         raise _SelectionFailure('target_unverifiable')
     document=binding.pattern.DocumentRange
     if not document:raise _SelectionFailure('target_unverifiable')
-    _edit_enclosure(automation,binding,document)
+    if binding.readonly_attribute is not None:
+        for span in (document,selected):
+            if span.GetAttributeValue(binding.readonly_attribute) is not False:
+                # Unsupported and mixed attribute tokens are unknown, not false.
+                raise _SelectionFailure('target_unverifiable')
+    _field_enclosure(automation,binding,document)
     _plain_range(document)
     start=selected.Clone() if ordering==0 else _endpoint(selected,0)
     end=start if ordering==0 else _endpoint(selected,1)
@@ -257,7 +272,7 @@ def _range_snapshot(automation,binding):
             ids.append(ids[0]);relations.append(relations[0]);continue
         if point.CompareEndpoints(0,document,0)<0:
             raise _SelectionFailure('target_unverifiable')
-        identity=_edit_enclosure(automation,binding,point)
+        identity=_field_enclosure(automation,binding,point)
         # Enclosure proves field ownership. Endpoint order is a separate fact:
         # providers can hide child text anchors behind the same Edit element,
         # and their end affinity may sort after DocumentRange.End. Preserve
@@ -278,7 +293,7 @@ def _measure_range(automation,binding):
         if (prefix.CompareEndpoints(0,document,0)!=0
                 or prefix.CompareEndpoints(1,point,0)!=0):
             raise _SelectionFailure('target_unverifiable')
-        _edit_enclosure(automation,binding,prefix)
+        _field_enclosure(automation,binding,prefix)
         _plain_range(prefix)
         positions.append(_prefix_units(prefix))
     if (positions[0]>positions[1]
@@ -295,7 +310,7 @@ def _confirm_range(automation,uia,binding,identity,measured):
     focus=automation.GetFocusedElement()
     if not focus or _identity(focus)!=identity.focus_id:
         raise _SelectionFailure('target_changed')
-    binding.pattern=_edit_pattern(focus,uia)
+    binding.pattern,binding.readonly_attribute=_field_pattern(focus,uia)
     final,ids,relations,_,_=_range_snapshot(automation,binding)
     if (ids!=(identity.start_id,identity.end_id)
             or relations!=(identity.start_relation,identity.end_relation)
@@ -313,11 +328,11 @@ class _TargetProof:
 def _target_proof(automation,uia,target,native_target,cancelled):
     if cancelled():raise _SelectionFailure('cancelled')
     if native_target()!=target:raise _SelectionFailure('target_changed')
-    first=_bind_edit(automation,uia,target)
+    first=_bind_field(automation,uia,target)
     identity,original=_measure_range(automation,first)
     if cancelled():raise _SelectionFailure('cancelled')
     _confirm_focus(automation,first,target,native_target)
-    second=_bind_edit(automation,uia,target)
+    second=_bind_field(automation,uia,target)
     current_identity,current=_measure_range(automation,second)
     if (identity!=current_identity
             or any(original.CompareEndpoints(endpoint,current,endpoint)!=0 for endpoint in (0,1))):
@@ -343,7 +358,7 @@ def read_uia_target(automation,uia,target,native_target,cancelled):
 
 
 def confirm_uia_target(automation,uia,target,native_target,proof):
-    """Warm single confirmation; no repeated walk from the Edit to its root."""
+    """Warm single confirmation; no repeated walk from the field to its root."""
     try:
         _confirm_focus(automation,proof.binding,target,native_target)
         root=automation.ElementFromHandle(target.hwnd)
@@ -351,9 +366,9 @@ def confirm_uia_target(automation,uia,target,native_target,proof):
             return TargetResult('target_changed')
         focus=automation.GetFocusedElement()
         if not focus or _identity(focus)!=proof.identity.focus_id:return TargetResult('target_changed')
-        pattern=_edit_pattern(focus,uia)
+        pattern,readonly_attribute=_field_pattern(focus,uia)
         binding=_Binding(proof.identity.focus_id,proof.identity.root_id,
-            proof.identity.focus_id,proof.identity.focus_pid,pattern)
+            proof.identity.focus_id,proof.identity.focus_pid,pattern,readonly_attribute)
         identity,current=_measure_range(automation,binding)
         if identity!=proof.identity:
             return TargetResult('target_changed')
@@ -362,7 +377,7 @@ def confirm_uia_target(automation,uia,target,native_target,proof):
         # not only endpoints of COM ranges that may move with document edits.
         focus=automation.GetFocusedElement()
         if not focus or _identity(focus)!=proof.identity.focus_id:return TargetResult('target_changed')
-        binding.pattern=_edit_pattern(focus,uia)
+        binding.pattern,binding.readonly_attribute=_field_pattern(focus,uia)
         final_identity,measured=_measure_range(automation,binding)
         if (final_identity!=proof.identity
                 or any(current.CompareEndpoints(endpoint,measured,endpoint)!=0 for endpoint in (0,1))):

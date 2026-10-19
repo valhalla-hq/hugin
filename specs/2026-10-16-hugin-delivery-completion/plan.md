@@ -49,3 +49,17 @@ Die laufende Diagnosesitzung ist auf eine unveränderte, ignorierte Kopie ihres
 Sources94ee13b festgelegt. Neue Sourceänderungen gelangen erst mit dem nächsten
 geprüften Start in eine Hugin-Sitzung. Vor der Abnahme: Regressionen, eigene
 native Feldmatrix, getrennte Reviews und privater Kandidatencheckpoint.
+
+## Dokumentfelder am 19.10.2026
+
+Den real gemessenen Word-Ablehnungspunkt an der vorhandenen Providergrenze
+zuerst rot absichern. Ein gemeinsamer Feldbinder besitzt Controltype,
+TextPattern und den zutreffenden Schreibschutzvertrag: ValuePattern bei
+Edit/ComboBox, expliziter TextRange-Schreibschutz bei Document. Der bestehende
+Rangeproduzent und alle Bestätigungsverbraucher übernehmen diese geparsten
+Fakten. Keine zusätzliche Klassenfreigabe, IPC-Version oder neue Eingabeart.
+Auswahl, Dokumentbereich und späteste Auswahl nach letzter Textlesung prüfen.
+Reale Word-Aufnahme/IPC und einmalige Clipboardübergabe getrennt belegen;
+Codex-Ursache erst nach eigener manueller Fokusprobe bewerten. Sourcechecks,
+native Regressionen, getrennte Spec-/Standardsreviews und exakter Handoff
+vor Kandidatencheckpoint. Keine Autostart-/Mausmigration.

@@ -84,4 +84,28 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Active Handoff
 
-- `handoffs/2026-10-16-codex-word-followup.md`
+- `handoffs/2026-10-19-word-document-codex-probe.md`
+
+## Fortsetzung am 19.10.2026
+
+Diese Beobachtungen ersetzen den historischen Laufstatus oben. PR10 ist als
+defe3d8f0ef9e564da1936a77b931476cbafc98a integriert; Main frisch geprüft sauber.
+Die alte Hugin-Pilotsitzung läuft nicht mehr. Neuer exklusiver Taskworktree:
+C:/Users/brian/brian-projects/worktrees/hugin/hugin-codex-word-fix-mjolnir,
+Branch codex/hugin-codex-word-fix-mjolnir, aktive Ownership auf Mjolnir.
+
+Word scheitert bewiesen am fokussierten Document ohne ValuePattern. Der neue
+gemeinsame Feldbinder fordert dort explizit boolesches IsReadOnly=false auf
+Dokument UND Auswahl, einschließlich letzter Bestätigung. Edit/ComboBox bleiben
+unverändert. Eigene Word16.0.20430.20146-Probe: Cursor, Teil-/Gesamtauswahl
+tatsächlich ersetzt, Clipboardrestoration gemeldet, Prüffamilien geschlossen.
+418 Source-/Integrationstests,3 native Tests, Docscheck und beide unabhängigen
+Reviews grün. Grenzen/Messungen: docs/word-document-2026-10-19.md.
+
+Codex26.1013.4894.0: Brian hat das leere Nachrichtenfeld manuell fokussiert.
+Rein lesende Aufnahme und je5 Bestätigungen bestehen auf Main UND Kandidat.
+Der echte Diktatfehler ist weiterhin nicht reproduziert oder behoben. Kein
+Codex-Paste/Absenden/automatisches Fokussieren. Weitere Proben müssen den
+tatsächlichen Ablauf samt Capture-/Delivery-Status erfassen. Kein neuer Hugin-
+Pilot gestartet; eigenes ungespeichertes Word-Testdokument bleibt offen.
+Altstack, Profile und Startup-lnks unverändert. Keine Produktionsumstellung.

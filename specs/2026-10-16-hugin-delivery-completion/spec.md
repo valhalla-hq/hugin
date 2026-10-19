@@ -100,3 +100,29 @@ Produktionsumstellung sind für diesen Schnitt getrennte Ergebnisse.
 
 Keine neue Feld-Whitelist, kein blindes Ctrl+V, kein Wiederherstellen fremden
 Fokus, kein Browserplugin und keine Umgehung gesperrter UI-Steuerung.
+
+## Fortsetzung am 19.10.2026: Dokumentfelder
+
+Die eigene leere Word-Fixture reproduziert `target_unverifiable` in
+`_edit_pattern`: Fokus-Controltype Document (50030), TextPattern vorhanden,
+ValuePattern fehlt, genau ein Auswahlbereich. DocumentRange und Auswahl liefern
+explizit `IsReadOnly=false`, keine eingebetteten Kinder und eine eigene
+Edit-Enclosure. Diese Fakten sind kein Beweis für alle Word-Dokumente oder Codex.
+
+- DC-006: Ein fokussiertes, aktiviertes, nicht passwortgeschütztes Document
+  darf ohne ValuePattern als Ziel dienen, wenn sein TextPattern genau einen
+  Bereich und explizit boolesches `IsReadOnly=false` für DocumentRange UND
+  Auswahl liefert. Gemischt, nicht unterstützt, fremde Typen, fehlende Werte
+  oder Providerfehler bleiben gesperrt. Edit/ComboBox behalten ihren bestehenden
+  ValuePattern-Vertrag. Kein Value-Inhalt wird gelesen.
+- DC-007: Derselbe Dokumentvertrag gilt bei Aufnahme, warmer Bestätigung und
+  nach der letzten Textlesung. Feld-/Root-/Prozessidentität, Enclosures,
+  UTF-16-Grenzen, Objektfreiheit und 50ms-Attestation bleiben unverändert.
+- DCA-006: Die öffentliche Providergrenze prüft Cursor, Teil-/Gesamtauswahl,
+  Unicode sowie unbekannten/gemischten/wechselnden Schreibschutz, Fokuswechsel,
+  fremde Enclosures und eingebettete Objekte. Eine eigene Word-Fixture prüft
+  den realen Aufnahme-/Bestätigungspfad; Einfügeerfolg wird separat ausgewiesen.
+  Google bleibt Regression, Codex bleibt bis zu eigenem Nachweis offen.
+
+Referenzen: [Document-Vertrag](https://learn.microsoft.com/en-us/windows/win32/winauto/uiauto-supportdocumentcontroltype)
+und [GetAttributeValue](https://learn.microsoft.com/en-us/windows/win32/api/uiautomationclient/nf-uiautomationclient-iuiautomationtextrange-getattributevalue).

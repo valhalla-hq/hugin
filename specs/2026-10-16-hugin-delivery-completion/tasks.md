@@ -37,3 +37,18 @@
   eng korrigiert; unabhängiger Wiederreview schließt ihn. 412 Source-/Integrations-
   und3 native Tests grün. Merge-/Mainnachweis erfolgt am exakten grünen PR10-Head;
   sein tatsächlicher Zustand ist in GitHub maßgeblich. Keine Gesamtabnahme.
+
+- [x] DC-T12: DC-006/007: Word-Document ohne ValuePattern nativ reproduzieren,
+  Guard zuerst rot, gemeinsamen Feldbinder und explizite Range-Editierbarkeit
+  implementieren. Cursor/Teil-/Gesamtauswahl und späte Änderungen prüfen.
+- [x] DC-T13: DCA-006: reale Word-Aufnahme/Bestätigung/Einfügen, eigene native
+  Regressionen und Sourcechecks abschließen. Grenzen zu Schutz-/Mehrseitendokumenten
+  und Google/Codex ausdrücklich dokumentieren.
+  Drei reale Clipboardübergaben (Cursor/Teil-/Gesamtauswahl) mit Restore und
+  sichtbarer Bestätigung.418 Source-/Integrationstests und3 native Tests grün.
+- [ ] DC-T14: Codex mit manuell gesetztem Fokus separat reproduzieren; keine
+  Browser-/App-Steuerungssperre umgehen und keinen Testtext absenden.
+  Manuell fokussiertes leeres Feld: Aufnahme und je5 Bestätigungen mit Main
+  UND Kandidat bestanden. Echte Diktatfehlersituation bleibt offen.
+- [ ] DC-T15: Spec-/Standardsreview, Context/Handoff und privater Draftcheckpoint
+  am unveränderten geprüften Source. Keine Produktionsumstellung behaupten.
