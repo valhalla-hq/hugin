@@ -42,7 +42,7 @@ class NativeVisualContract(unittest.TestCase):
         window.root.update()
         for widget in descendants(window.root):
             if not widget.winfo_ismapped():continue
-            if widget.winfo_class() not in ('TButton','TCombobox','TLabel','Label','Text'):continue
+            if widget.winfo_class() not in ('TButton','Button','Checkbutton','TCombobox','TLabel','Label','Text'):continue
             with self.subTest(widget=str(widget)):
                 parent=widget.master
                 while parent is not None:
@@ -53,6 +53,14 @@ class NativeVisualContract(unittest.TestCase):
                     parent=parent.master
         line_height=font.Font(root=window.root,font=window.text.cget('font')).metrics('linespace')
         self.assertGreaterEqual(window.text.winfo_height(),line_height+2*int(window.text.cget('pady'))+2)
+        for name in ('dictation','reading'):
+            card=window.scene.bbox(window._items[name])
+            for suffix in ('_title','_key'):
+                bounds=window.scene.bbox(window._labels[name+suffix])
+                self.assertGreaterEqual(bounds[0],card[0])
+                self.assertGreaterEqual(bounds[1],card[1])
+                self.assertLessEqual(bounds[2],card[2])
+                self.assertLessEqual(bounds[3],card[3])
 
     def test_three_dpi_scales_keep_text_and_actions_inside_their_cards(self):
         for scale in (1,1.5,2):
@@ -71,18 +79,15 @@ class NativeVisualContract(unittest.TestCase):
                 self.assert_visible_controls(window)
                 self.close_window(window)
 
-    def test_popup_and_disabled_text_keep_dark_readable_colors(self):
+    def test_voice_controls_and_disabled_text_keep_dark_readable_colors(self):
         window=self.make_window()
         window.render(View(text='Synthetische Textauswahl'))
         style=ttk.Style(window.root)
         self.assertEqual(style.theme_use(),'clam')
         self.assertEqual(window.root.cget('background'),BACKGROUND)
-        self.assertEqual(style.lookup('TCombobox','fieldbackground',('readonly',)),FIELD)
-        popup=window.root.tk.call('ttk::combobox::PopdownWindow',str(window.voice))
-        listbox=str(popup)+'.f.l'
-        for option,expected in (('-background',FIELD),('-foreground',TEXT),
-                                ('-selectbackground',ACCENT),('-selectforeground',TEXT)):
-            self.assertEqual(window.root.tk.call(listbox,'cget',option),expected)
+        for button in window.voice_buttons.values():
+            self.assertEqual(button.cget('foreground'),TEXT)
+            self.assertTrue(button.cget('takefocus'))
         self.assertEqual(str(window.text.cget('state')),'disabled')
         self.assertEqual(window.text.cget('background'),FIELD)
         self.assertEqual(window.text.cget('foreground'),TEXT)
@@ -95,14 +100,13 @@ class NativeVisualContract(unittest.TestCase):
         window.on_action=lambda *args:actions.append(args)
         window.render(View(status='Aufnahme',mode='CPU · Lokal',voice='tyr',
             text='Synthetischer Inhalt',activity='recording'))
-        self.assertEqual(window.mode.cget('text'),'CPU · Lokal')
-        self.assertEqual(window.status.cget('text'),'Aufnahme')
-        self.assertEqual(window.voice.current(),1)
+        self.assertEqual(window.scene.itemcget(window._labels['mode'],'text'),'CPU · Lokal')
+        self.assertEqual(window.scene.itemcget(window._labels['status'],'text'),'Aufnahme')
+        self.assertTrue(window.voice_buttons['tyr']._selected)
         self.assertEqual(window.text.get('1.0','end-1c'),'Synthetischer Inhalt')
         window.copy.invoke();window.clear.invoke()
-        next(widget for widget in descendants(window.root)
-             if widget.winfo_class()=='TButton' and widget.cget('text')=='Diagnose kopieren').invoke()
-        window.voice.current(0);window.voice.event_generate('<<ComboboxSelected>>')
+        window.diagnose.invoke()
+        window.voice_buttons['freya'].invoke()
         self.assertEqual(actions,[('copy',None),('clear',None),('diagnose',None),('voice','freya')])
         window.render(View())
         self.assertEqual(str(window.copy.cget('state')),'disabled')

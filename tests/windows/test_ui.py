@@ -21,7 +21,8 @@ class NativeWindowContract(unittest.TestCase):
         self.window.render(View(status='Aufnahme',text='Synthetischer Prüftext.',voice='tyr'))
         self.window.root.update_idletasks()
         self.assertEqual(self.window.root.state(),'withdrawn')
-        self.assertEqual(self.window.voice.current(),1)
+        self.window.root.update_idletasks()
+        self.assertTrue(self.window.voice_buttons['tyr']._selected)
         self.assertEqual(self.window.text.get('1.0','end-1c'),'Synthetischer Prüftext.')
 
     def test_expired_result_is_removed_from_visible_widget(self):

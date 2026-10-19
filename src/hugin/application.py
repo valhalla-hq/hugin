@@ -826,7 +826,7 @@ class Controller:
         snap = self.core.snapshot()
         retiring={(op.engine,op.engine_instance) for op in snap.retired_operations}
         loading = snap.gpu_slot if snap.gpu_slot and snap.gpu_slot.action == c.Action.INITIALIZE else None
-        labels = {c.State.IDLE:'Bereit',c.State.STARTING:'Mikrofon wird geöffnet',c.State.RECORDING:'Aufnahme läuft',
+        labels = {c.State.IDLE:'Bereit für dein Diktat',c.State.STARTING:'Mikrofon wird geöffnet',c.State.RECORDING:'Aufnahme läuft',
             c.State.TRANSCRIBING:'Diktat wird verarbeitet',c.State.DELIVERING:'Text wird übergeben',
             c.State.TTS_PREPARING:'Vorlesen wird vorbereitet',c.State.TTS_PLAYING:'Vorlesen läuft',
             c.State.CANCELLING:'Wird gestoppt',c.State.ERROR:'Aktion beendet',c.State.STOPPING:'Hugin wird beendet'}
