@@ -102,18 +102,31 @@ tatsächlich ersetzt, Clipboardrestoration gemeldet, Prüffamilien geschlossen.
 418 Source-/Integrationstests,3 native Tests, Docscheck und beide unabhängigen
 Reviews grün. Grenzen/Messungen: docs/word-document-2026-10-19.md.
 
-Codex26.1013.4894.0: Brian hat das leere Nachrichtenfeld manuell fokussiert.
-Rein lesende Aufnahme und je5 Bestätigungen bestehen auf Main UND Kandidat.
-Der echte Diktatfehler ist weiterhin nicht reproduziert oder behoben. Kein
-Codex-Paste/Absenden/automatisches Fokussieren. Weitere Proben müssen den
-tatsächlichen Ablauf samt Capture-/Delivery-Status erfassen. Kein neuer Hugin-
-Pilot gestartet; eigenes ungespeichertes Word-Testdokument bleibt offen.
-Altstack, Profile und Startup-lnks unverändert. Keine Produktionsumstellung.
+Brian hat danach den Kandidaten ebe832dc9bda4ae9880dd5c35c425bf414888beb
+manuell gestartet. Der Pilot läuft seit 08:28 Uhr am Sourcepfad dieses Tasks;
+App/Supervisor sind beobachtet. Am 19.10. bestätigt Brian mehrere erfolgreiche
+echte Diktat- und Überschreibtests im zuvor angeleiteten Codex-Test und beauftragt
+ausdrücklich das Sichern dieses Zwischenstands. Die Diagnose um 08:30:28 MESZ
+meldet native_target_captured/target_captured/submitted, STT bereit auf CUDA,
+keinen Fehler und kein offenes Cleanup. Damit ist der aktuelle Diktatdurchlauf
+auch sichtbar von Brian bestätigt; die historische Codex-Fehlerursache ist
+dadurch nicht rekonstruiert. Keine universelle Feld-/Produktabnahme.
 
-Draft-PR11: https://github.com/valhalla-hq/hugin/pull/11, inhaltlicher
-Commit70c874f90580e5962074ec663aaa528df23055ce, alle drei Hostedchecks grün.
-Neue lokale Diagnosestarter im Task-.runtime sind vorbereitet und ausschließlich
-im Planmodus geprüft. Sie bleiben an finalen Source-/Mainhead und geprüfte
-Rückweg-Shortcuts gebunden. Vor einem echten Start Altstack normal pausieren;
-der nächste Codex-Beleg kommt durch Brians eigene Diktateingabe. Kein
-automatisches Fokussieren/Paste in Codex, keine neue Appinstallation.
+Spätere einzelne Diagnosebeobachtung um 08:35:28 MESZ: audio_failed, IDLE,
+weiterhin delivery=submitted und pending_cleanup=false. Die konkrete Audioaktion
+ist unbekannt; Brian meldet dazu ausdrücklich keinen wahrgenommenen Audiofehler.
+Als Beobachtung behalten, nicht als reproduzierte Ursache oder fehlgeschlagene
+Textübergabe interpretieren. Keine zusätzlichen Probeaktionen im laufenden Pilot.
+
+PR11: https://github.com/valhalla-hq/hugin/pull/11 (Draft), funktionaler Commit
+70c874f90580e5962074ec663aaa528df23055ce, laufender Kandidat ebe832d; alle drei
+Hostedchecks daran grün. Der neue Savepoint ändert nur kuratierte Dokumentation.
+Produktcode und lokale Diagnosehelfer des laufenden Pilots bleiben unverändert;
+Ownership bleibt wegen der Laufabhängigkeit aktiv. Main bleibt defe3d8.
+
+Nächster beauftragter Schritt: dritter kurzer, unterscheidbarer Bestätigungston
+nach fertiger Erkennung UND erfolgreicher Textübergabe. Noch nicht implementiert;
+Anforderungen: specs/2026-10-19-dictation-completion-cue/spec.md. Kein Ton bei
+Abbruch, fehlgeschlagenem Einfügen oder RAM-only. Umsetzung in separatem
+Worktree vom gesicherten Kandidaten, nicht im laufenden Sourcepfad. Vorhandene
+Start-/Stopptöne, Stimmen, Kürzel und Altstack-Rückweg erhalten. Keine Migration.

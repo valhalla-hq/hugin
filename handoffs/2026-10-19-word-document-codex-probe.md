@@ -1,109 +1,107 @@
-# Word-Korrektur und Codex-Probe
+# Erfolgreicher Diktat-Zwischenstand und dritter Ton als Folgeauftrag
 
 ## Objective
 
-Fortsetzung des expliziten Codex-/Word-Folgeauftrags nach PR10. Word-Ablehnung
-reproduzieren, sicher korrigieren und separat nativ prüfen. Codex-Ursache
-weiter eingrenzen; keine Gesamtproduktabnahme oder Produktionsmigration.
+Brians mehrfach erfolgreich getesteten Diktat-/Überschreibstand sichern und
+den gewünschten dritten Ton nach erfolgreichem Einfügen dauerhaft aufnehmen.
+Dieser Savepoint ändert nur Dokumentation; der dritte Ton ist noch nicht
+implementiert. Hugin läuft mit den vorhandenen beiden Tönen weiter.
 
 ## Git State
 
-- Repository: `valhalla-hq/hugin` (privat).
+- Repository: `valhalla-hq/hugin` (privat), Runtime Mjolnir.
+- Control-Preflight: e3deecae6673a024aa9015a4387737fbec04c795, aktuell.
 - Branch: `codex/hugin-codex-word-fix-mjolnir`.
-- Base: main`defe3d8f0ef9e564da1936a77b931476cbafc98a` (PR10-Merge).
+- Main/Deployment: defe3d8f0ef9e564da1936a77b931476cbafc98a, sauber.
+- Funktionaler Fix: 70c874f90580e5962074ec663aaa528df23055ce.
+- Von Brian gestarteter/getesteter Kandidat:
+  ebe832dc9bda4ae9880dd5c35c425bf414888beb. Produktcode seitdem unverändert.
 - Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-codex-word-fix-mjolnir.
-- Ownership: aktiv auf Mjolnir für diesen Chat.
 - PR: https://github.com/valhalla-hq/hugin/pull/11 (Draft).
-- Geprüfter inhaltlicher Commit:70c874f90580e5962074ec663aaa528df23055ce;
-  drei Hostedchecks daran erfolgreich. Folgender Checkpoint ändert nur
-  Dokumentation; finalen Remotehead/Checkstatus frisch lesen.
-- Authorization: Brian setzt den verlinkten Hugin-Chat fort. Die dort
-  beauftragten Codex-/Word-Fälle sind der Scope. Kein Policy-/Public-/Autostartauftrag.
+- Ownership: aktiv; laufende App benötigt den Sourcepfad. Nicht freigeben,
+  verändern oder entfernen, solange diese Abhängigkeit besteht.
+- Autorisierung: Brian bestätigt erfolgreiche Tests und bittet explizit um
+  einen Savepoint sowie Aufnahme des dritten Tons. Dieser Auftrag integriert
+  nicht nach Main und ändert keine produktiven Bindungen oder Installation.
 
-## Changed Files
+Den tatsächlichen Dokumentcheckpoint/Remotehead und seine CI frisch aus GitHub
+lesen; ein Commit kann seinen eigenen Hash nicht in diesem Handoff vorwegnehmen.
 
-- src/hugin/windows/selection_probe.py: gemeinsamer Feldbinder mit explizitem
-  Document-Range-Schreibschutz, ohne ValuePattern für Documents.
-- tests/contracts/test_windows_document_target.py und test_windows_target.py:
-  neue öffentliche Document-Guards und bestehende Nichtfeldregression.
-- specs/2026-10-16-hugin-delivery-completion/: DC-006/007, DCA-006 und Folgeaufgaben.
-- docs/word-document-2026-10-19.md: realer Beleg, Messungen und Grenzen.
-- README.md, CONTEXT.md, dieser Handoff: aktueller Fortsetzungsstand.
+## Gesicherte Abnahme
+
+Brian bestätigt nach dem angeleiteten Codex-Test mehrere erfolgreiche echte
+Diktat- und Überschreibversuche. Diagnose zum Input vom 19.10. um 08:30:28 MESZ:
+native_target_captured/target_captured/submitted, IDLE, STT bereit auf CUDA,
+kein Fehler, kein offenes Cleanup. Sichtbare vollständige Übernahme von Brian
+bestätigt. Historische Codex-Fehlerursache nicht rekonstruiert; kein zusätzlicher
+Codex-Fix und keine universelle Schutz-/Feldmatrix behauptet.
+
+Spätere einzelne Beobachtung 08:35:28 MESZ: audio_failed, IDLE,
+delivery=submitted, pending_cleanup=false. Audioaktion nicht zugeordnet;
+Brian meldet ausdrücklich keinen wahrgenommenen Audiofehler. Getrennt behalten,
+nicht als bewiesene Ursache oder fehlgeschlagene Textübergabe interpretieren.
 
 ## Verification
 
-- 418 Source-/Integrationstests in 24,322s; drei native Range-/IPC-Tests in 1,281s;
-  Docscheck19 Anforderungen/17 Abnahmekriterien grün.
-- Word 16.0.20430.20146, eigenes synthetisches Dokument: Aufnahme, fünf warme
-  IPC-Bestätigungen, Einfügen am Ende sowie Ersatz von Teil-/Gesamtauswahl.
-  Drei tatsächliche Pastes sichtbar bestätigt; jeweils Clipboardrestoration
-  gemeldet und kein Recovery offen. Eigene Prüffamilien geschlossen.
-- Codex 26.1013.4894.0, von Brian manuell fokussiertes leeres Feld: Aufnahme
-  und je fünf Bestätigungen mit Main UND Kandidat erfolgreich. Rein lesend.
-  Der berichtete Diktatfehler ist damit noch nicht reproduziert oder behoben.
-- Unabhängige Spec-/Standardsreviews ohne Befund. Source-SHA256:
+- 418 Source-/Integrationstests in 24,322s und drei native Range-/IPC-Tests in
+  1,281s am unveränderten Source; Dokumentcheck 19 Anforderungen/17 Abnahmekriterien grün.
+- Eigene Word-16.0.20430.20146-Fixture: Cursor, Teil-/Gesamtauswahl tatsächlich
+  ersetzt, Clipboardrestoration gemeldet, sichtbare Ergebnisse bestätigt und
+  eigene Prüffamilien geschlossen. Geschützte/mehrseitige Dokumente nicht abgenommen.
+- Codex 26.1013.4894.0: rein lesende Aufnahme und je fünf Bestätigungen mit Main
+  und Kandidat; danach echte Nutzerabnahme am laufenden Kandidaten.
+- Beide unabhängigen Source-/Spec-Reviews ohne Befund; Produzenten-SHA256:
   588829e4aa16673711b1065b2c84fbdcd9bfc6de95495236fedf42d994dd0e93.
+- Alle drei Hostedchecks an ebe832d grün. Der neue Savepoint hat nur kuratierte
+  Dokumentänderungen; Sourcechecks deshalb nicht nochmals lokal wiederholt.
+  Dokumentcheck, voller Diff und finaler Remote-/Blobnachweis gehören zum Save.
 
-## Source And Data Boundary
+## Running State und Rückweg
 
-Keine Benutzerdokumente geöffnet; eigenes ungespeichertes Word-Dokument nur mit
-synthetischem Text. Keine Diktate, Rohlogs, UIA-IDs, Clipboardtexte oder Audio
-in Git. Lokale begrenzte Probe-Skripte unter .runtime bleiben ignoriert.
-Keine Codex-UI-Automation oder Umgehung der früheren Browserablehnung.
+Pilot seit 08:28 Uhr beobachtet, Source dieses Taskworktrees. Supervisor hält
+seine eigene Prozessfamilie und startet nach normalem Hugin-Ende die beiden
+verifizierten vorhandenen Startup-Shortcuts. Receipt allein begründet keine
+Prozess-Cleanup-Autorität. Keine App-/Workerbeendigung durch den Savepoint.
+Main bleibt unverändert; keine venv, Modelle, Profile oder Startup-lnks verändert.
 
-## Running State
+Produktcode und .runtime/diagnostic_launch.pyw, trace_selection_probe.py sowie
+pilot_candidate_session.pyw bis zum normalen Ende nicht verändern. Die letzte
+technische Zustandsdatei bleibt unter .runtime/input-status.json; ein etwaiger
+Ablehnungsort unter .runtime/field-probe-rejection.json. Keine Texte, Audio,
+UIA-IDs, Fenster-/Dokumenttitel, URLs oder Umgebung darin speichern.
 
-Die alte Pilotsitzung läuft am19.10. nicht mehr; Main ist sauber auf defe3d8.
-Der alte Pilotworktree wurde nicht verändert/entfernt, seine Ownership nicht
-manuell angefasst. Whispering ist geöffnet. Keine Hugin-App, Aufnahme oder
-Sprachworker durch diese Proben gestartet. Das eigene Word-Testdokument bleibt
-ungespeichert offen. Bestehende Profile, Startup-lnks und Altstack erhalten.
+Der bisherige Starter bindet ebe832d und wird nach dem Dokumentcheckpoint
+wegen der Headprüfung nicht erneut starten. Den zusätzlichen Starter
+.runtime/Hugin-Gesicherter-Test.cmd an den finalen Dokumenthead bei gleichem
+Produktcode binden und im Planmodus prüfen. Die bereits laufende Sitzung
+bleibt davon unabhängig erhalten.
+Das eigene ungespeicherte Word-Testdokument aus der Fixture wurde durch diesen
+Savepoint nicht geschlossen; sein aktueller UI-Zustand wurde nicht erneut geprüft.
 
-Der lokale Starter .runtime/Hugin-Codex-Word-Test.cmd im neuen Worktree ist
-für den finalen Checkpoint vorgesehen. Sein Supervisor bindet exakten Source-
-und Main-/Runtimehead, prüft unveränderte Worker-/Konfigurationsinputs und die
-beiden vorhandenen Rückweg-Shortcuts. Er wurde nur im Planmodus geprüft;
-es wurde kein Hugin oder Sprachworker gestartet. Vor dem echten Start müssen
-Whispering/PipPal normal beendet sein (alter Qwen-Worker existiert aktuell).
-Beim normalen Hugin-Ende startet der gehaltene Supervisor die vorhandenen
-Shortcutziele wieder. Keine Maus-/Alt+Y-/Autostartänderung.
+## Dritter Ton als nächster Auftrag
 
-Die lokale Diagnosesitzung behält nur die vorhandenen geschlossenen Felder
-state/input_checks/error_code/pending_cleanup/last_input_utc als letzten Stand
-in .runtime/input-status.json und gegebenenfalls einen begrenzten Ablehnungsort
-des eigenen Produzenten in .runtime/field-probe-rejection.json. Keine Texte,
-Audio, UIA-IDs, Fenster-/Dokumenttitel, URLs oder Umgebung. Diese ignorierten
-temporären Hilfen sind keine Produktänderung oder dauerhafte Installation.
-Sobald der Pilot läuft, hängt er am Sourcepfad dieses Worktrees: Source und
-Hilfen dann nicht verändern/entfernen, bevor normaler Quit/Familienabschluss
-oder eine separat geprüfte unveränderliche Sourcebindung erfolgt ist.
-
-## Open Blockers
-
-- Codex: tatsächlicher Diktatablauf mit technischem Capture-/Delivery-Status
-  muss reproduziert werden. Leere Feldproben bestehen bereits auf Main.
-- Word: geschützte/mehrseitige/objektbehaftete Dokumentmatrix und echter
-  Mikrofon-Diktatablauf nicht abgenommen. Keine universelle Word-Zusage.
-- Google: kein erneuter Live-Test; bestehende Providerregressionen grün.
-- Keine finale Maus-/Alt+Y-/Autostartumstellung; aktuelle Pilotkürzel bleiben.
+Anforderung: specs/2026-10-19-dictation-completion-cue/spec.md.
+Ein kurzer unterscheidbarer Ton genau einmal nach abgeschlossener Erkennung
+UND erfolgreicher Textübergabe, nicht bereits bei Aufnahmeende. Kein Erfolgston
+bei Abbruch, fehlgeschlagenem Einfügen oder RAM-only. Bestehende Töne, Stimmen,
+Eingaben, Clipboardrestore und Altstack-Rückweg behalten. Tonfehler dürfen
+keinen zweiten Paste oder Verlust des bereits fertigen Diktats auslösen.
 
 ## Pick Up Here
 
-1. Exakten Branch-/PR-/CI-Zustand lesen. Source und Runtime getrennt halten;
-   C:/Users/brian/Hugin bleibt Main-Deploymentclone.
-2. Den zum finalen Kandidaten passenden Starter frisch im Planmodus prüfen,
-   Altstack normal pausieren und Pilot manuell starten. Keine alten Starter
-   wiederverwenden. Benutzer führt Codex-Eingaben selbst aus: Strg+Alt+D,
-   kurzer synthetischer Satz, nochmals Strg+Alt+D; kein Enter/Absenden nötig.
-   Danach die begrenzten lokalen Statusdateien lesen.
-3. Capture-/Delivery-Status am tatsächlichen Fehler auswerten und erst danach
-   eine weitere Ursache ändern. Den Word-Fix nicht als Codex-Fix deklarieren.
+1. Aktuellen sauberen Branch-/Remote-/PR-/CI-Stand und Laufabhängigkeit lesen.
+2. Dritten Ton in einem neuen exklusiven Taskworktree vom gesicherten Kandidaten
+   planen/umsetzen; laufenden Source und Helfer erhalten. Kein Live-Rollout in
+   die aktuelle Sitzung. Anforderungen, Produzent und Delivery-Verbraucher prüfen.
+3. Eigene Guards, Audio-/Abbruch-/Cleanup-Prüfungen und späteren Hörtest ausführen.
+   Den einzelnen audio_failed-Hinweis nur bei reproduzierbarem Bezug untersuchen.
+   Maus-/Alt+Y-/Autostartumstellung bleibt ein eigener offener Abnahmeschritt.
 
 ## Starter Prompt
 
-Continue Hugin from handoffs/2026-10-19-word-document-codex-probe.md. Read AGENTS,
-CONTEXT, exact PR and Git state. Word Document-without-ValuePattern rejection
-is fixed and own cursor/partial/full paste probes passed. Codex empty-field
-capture/confirmation passes on BOTH main and candidate; original dictation
-failure remains open. Do not automate the Codex/ChatGPT UI or activate mouse,
-Alt+Y or autostart bindings. Preserve old stack and user data.
+Continue Hugin from handoffs/2026-10-19-word-document-codex-probe.md. Brian
+confirmed repeated successful real dictation/overwrite tests on ebe832d and
+requested this checkpoint plus a third completion cue. Preserve the running
+pilot source and helpers. The cue is specified but not implemented; use a new
+exclusive worktree from the saved candidate. PR11 is a private Draft; main is
+unchanged. Read current Git/CI and running state before any mutable operation.

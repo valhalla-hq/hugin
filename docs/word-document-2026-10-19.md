@@ -64,7 +64,7 @@ nicht eindeutig prüfbare Dokumente bleiben geschlossen. Google wurde nicht
 erneut gesteuert; sein bestehender Edit-Vertrag und die Providerregressionen
 bleiben erhalten. Keine produktiven Maus-/Alt+Y-Bindungen oder Autostartänderung.
 
-## Codex bleibt separat offen
+## Codex-Leseprobe vor der Nutzerabnahme
 
 Codex26.1013.4894.0: Brian hat das leere Nachrichtenfeld manuell fokussiert.
 Eine rein lesende Probe fand Edit50004, Text-/ValuePattern, eine leere Auswahl,
@@ -79,6 +79,32 @@ Stichproben erlauben keine belastbare Geschwindigkeitsverbesserungsbehauptung.
 
 Kein Codex-Paste, kein automatisches Fokussieren und kein Testtextversand.
 Der frühere Codex-Diktatfehler ist an diesem leeren Feld nicht reproduziert;
-der Word-Fix ändert den Edit-Vertrag nicht. Der nächste Beleg muss den echten
-Diktatablauf samt Capture-/Delivery-Status erfassen. Ein Codex-Fix oder eine
-vollständige Produktabnahme wird aus der Leseprobe nicht abgeleitet.
+der Word-Fix ändert den Edit-Vertrag nicht. Diese Leseprobe allein belegte noch
+keinen echten Diktatablauf oder eine vollständige Produktabnahme.
+
+## Bestätigter Diktat-Zwischenstand
+
+Brian startet den Kandidaten ebe832dc9bda4ae9880dd5c35c425bf414888beb manuell
+und bestätigt anschließend ausdrücklich mehrere erfolgreiche echte Diktat-
+und Überschreibtests im zuvor angeleiteten Codex-Test. Er beauftragt, diesen
+gut funktionierenden Zwischenstand zu sichern. Das ist eine Nutzerabnahme der
+ausgeführten Versuche, keine Behauptung der vollständigen Schutz-/Feldmatrix.
+
+Die von Brian mitgeteilte Diagnose zum Input vom 19.10.2026 um 08:30:28 MESZ
+(06:30:28 UTC) passt zur lokalen begrenzten Statusdatei der Kandidatensitzung:
+capture_native=native_target_captured, capture_field=target_captured,
+delivery=submitted, state=IDLE, error_code=null, pending_cleanup=false,
+STT bereit auf CUDA. Die tatsächlich sichtbare Übernahme bestätigt Brian
+zusätzlich. Die frühere Codex-Fehlerursache wird daraus nicht nachträglich
+abgeleitet; es gab keinen separat nachgewiesenen Codex-Sourcefix.
+
+Beim Sichern wird später ein einzelner neuer Status um 08:35:28 MESZ beobachtet:
+audio_failed bei weiter bestehendem delivery=submitted, IDLE und ohne offenes
+Cleanup. Die Audioaktion ist nicht zugeordnet. Brian meldet dazu ausdrücklich
+keinen wahrgenommenen Audiofehler. Dieser technische Hinweis bleibt getrennt
+von seiner positiven Diktatabnahme offen; ohne Reproduktion keine Ursachenbehauptung.
+
+Die laufende Sitzung und ihr Source bleiben erhalten. Der Savepoint ändert
+keinen Produktcode. Der gewünschte dritte Bestätigungston ist als
+[nächste Änderung](../specs/2026-10-19-dictation-completion-cue/spec.md)
+festgehalten und gehört noch nicht zu diesem abgenommenen Zwei-Ton-Kandidaten.
