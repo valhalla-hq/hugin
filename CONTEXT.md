@@ -283,3 +283,6 @@ behalten. Produktstand und ältere Taskpfade unverändert. Der alte Pilotreceipt
 meldet noch running, frische Prozessabfragen bestätigen die frühere Familie
 jedoch nicht mehr; normaler Abschluss/Rückkehr unbekannt. Kein App-Neustart oder
 Stop durch diesen Folgeauftrag. Arbeit auf ausdrücklichen Nutzerwunsch pausiert.
+
+Pausencheckpoint als Draft-PR17 gesichert:
+https://github.com/valhalla-hq/hugin/pull/17.

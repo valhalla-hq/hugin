@@ -18,12 +18,14 @@ and should remain as implemented.
   `d395f1e2afd02e5f0ff04a0c150b801da15fd5a7` (PR16).
 - Product source is unchanged from that base. This task only saves CONTEXT and
   this handoff. Resolve the documentation checkpoint head freshly from Git.
-- PR: create the draft after the initial meaningful checkpoint, then record its
-  URL here. No integration of PR11-16 or main rollout is implied.
+- PR: https://github.com/valhalla-hq/hugin/pull/17 (draft, documentation only).
+  No integration of PR11-16 or main rollout is implied.
 - Control/preflight: `e3deecae6673a024aa9015a4387737fbec04c795`.
 - Main/deployment: `defe3d8f0ef9e564da1936a77b931476cbafc98a`.
 - Ownership: active until the clean remote checkpoint is verified; then release
   this task through the workspace tool. Keep the checkout for continuation.
+  This handoff explicitly permits reclaiming this same task after tool-confirmed
+  release, unchanged remote-head proof and Brian's later resume request.
 
 ## User requests and source findings
 
