@@ -233,3 +233,29 @@ Separater Diagnosecheckpoint: codex/hugin-clipboard-format-mjolnir, BasisPR14,
 Worktree C:/Users/brian/brian-projects/worktrees/hugin/hugin-clipboard-format-mjolnir.
 Nur Dokumentation. Die neue Originalton-Livesitzung hängt weiterhin an ihrem
 alten Worktree; dessen Produktcode und Python-Helfer unverändert erhalten.
+
+## Obsidian-Oberfläche mit zustandsabhängiger Bewegung
+
+Brian hat Logo01, Oberfläche/Status03 und Farbe02 ausgewählt und die Umsetzung
+mit Animation ausdrücklich beauftragt. Neuer exklusiver Worktree:
+C:/Users/brian/brian-projects/worktrees/hugin/hugin-obsidian-ui-mjolnir,
+Branch codex/hugin-obsidian-ui-mjolnir, Basis52816b2 aus PR15; Ownership aktiv.
+PR16: https://github.com/valhalla-hq/hugin/pull/16. Produktstand d781864 enthält
+silbernen Raben, Obsidian-Verläufe, native Sprach-/Textsteuerung, Mikrofonpegel,
+Verarbeitungswelle, Vorlesepuls und einmalige bestätigte Einfügeanimation.
+Reduzierte Bewegung und unsichtbare Fenster stoppen den Animationstimer.
+
+452 Vertrags-/Integrationstests und27 native UI-/Startupchecks grün; unabhängige
+Reviews ohne offene Befunde. Hosted CI fand einen frühen Pillow-Import; nach
+Korrektur bestehen alle452 Tests auch ohne Site-Packages. Finalen Checkstatus
+am unveränderten PR-Head frisch lesen. Nachweise und gemessene Kosten:
+docs/obsidian-ui-2026-10-19.md. Neue echte Diktat-/Vorleseabnahme steht aus.
+
+Der bisherige Originaltonpilot endete regulär mit exit0/eigener Familie beendet;
+Altapps wurden zurückgerufen. Der neue Sourcepilot wird mit unveränderten,
+hashgeprüften lokalen Helfern vorbereitet. Tatsächlichen späteren Laufstatus in
+.runtime/pilot-session-*.json dieses neuen Worktrees frisch lesen; nach Start
+ist sein Sourcepfad unverändert zu erhalten. Main bleibt defe3d8, ältere Drafts
+unintegriert, keine produktive Bindungs-/Autostartmigration. Originaltöne und
+Clipboard-/Feldprüfungen bleiben unverändert. Der frühere unbekannte
+Clipboardformatfall gilt weiterhin nicht als reproduziert oder behoben.
