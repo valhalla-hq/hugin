@@ -84,7 +84,7 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Active Handoff
 
-- `handoffs/2026-10-19-obsidian-ui.md`
+- `handoffs/2026-10-19-ui-screenshot-pause.md`
 
 ## Fortsetzung am 19.10.2026
 
@@ -259,3 +259,27 @@ ist sein Sourcepfad unverändert zu erhalten. Main bleibt defe3d8, ältere Draft
 unintegriert, keine produktive Bindungs-/Autostartmigration. Originaltöne und
 Clipboard-/Feldprüfungen bleiben unverändert. Der frühere unbekannte
 Clipboardformatfall gilt weiterhin nicht als reproduziert oder behoben.
+
+## Pause: aktive Kacheln, Stimmfelder und Screenshot-Diktat
+
+Brian bestätigt Logo und Animation des Obsidian-Piloten. Offen sind eine
+hellblaue Hervorhebung der jeweils aktiven Diktieren-/Vorlesen-Kachel und die
+dunklen Ecken um Freya/Tyr. Die Kachelfarbe ist derzeit statisch; transparente
+runde Schaltflächen liegen auf einem abweichenden rechteckigen Hintergrund.
+Noch keine Umsetzung dieser Folgeänderungen.
+
+Neuer Bericht: Diktieren nach Screenshot-Anhang im Codexfeld scheitert. Die
+beigefügte Diagnose zeigt nur RECORDING ohne Fehler. Letzter gespeicherter
+Inputstatus14:04:26 MESZ meldet submitted ohne Fehler; Attachmentkontext unbekannt.
+Rein lesend wurden später nur erlaubte normale Textformate beobachtet. Brian
+pausiert vor einer erneuten Reproduktion. Ursache und konkretes Fehlerformat
+bleiben offen; keine Lockerung der Clipboard-/Feldprüfungen.
+
+Neuer exklusiver Task codex/hugin-ui-screenshot-fix-mjolnir basiert auf dem
+unveränderten PR16-Head d395f1e. Dieser Checkpoint enthält nur CONTEXT und den
+exakten Handoff handoffs/2026-10-19-ui-screenshot-pause.md. Nach sauberem Push
+Ownership über das Workspacewerkzeug freigeben; Checkout für Fortsetzung
+behalten. Produktstand und ältere Taskpfade unverändert. Der alte Pilotreceipt
+meldet noch running, frische Prozessabfragen bestätigen die frühere Familie
+jedoch nicht mehr; normaler Abschluss/Rückkehr unbekannt. Kein App-Neustart oder
+Stop durch diesen Folgeauftrag. Arbeit auf ausdrücklichen Nutzerwunsch pausiert.
