@@ -181,3 +181,13 @@ https://github.com/valhalla-hq/hugin/pull/13. Finalen Head und CI frisch lesen.
 Neuer Pilot wird nach regulärem Ende der vorherigen Sitzung samt Pause der
 zurückgekehrten Altapps am geprüften Klanghead gestartet. Tatsächlichen
 Laufzustand und eigene .runtime/pilot-session-*.json frisch prüfen.
+
+Der beauftragte Wechsel ist ausgeführt: Brian hat die drei alten Apps regulär
+beendet bestätigt; der alte Supervisor meldet exit0/eigene Familie beendet und
+Rückkehr ausgelöst. Keine passende alte App mehr beobachtet. Neuer Klangpilot
+am geprüften funktionalen Head288c8357df5a31812441bb6e87d8d433f4d53a7e seit
+10:13:33 MESZ im aktuellen Klangworktree gestartet. App/Supervisor frisch
+beobachtet, UI zeigt Bereit, Diagnose IDLE ohne Fehler/Cleanup; noch kein neuer
+Input. Alle drei Hostedchecks am Laufhead grün. Der neue Worktree samt Python-
+Helfern ist jetzt ebenfalls eine Liveabhängigkeit; keine Sourceänderung im
+laufenden Pfad. Echter Diktat-/Hörtest in der App durch Brian steht aus.

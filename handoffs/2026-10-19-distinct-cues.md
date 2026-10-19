@@ -40,6 +40,22 @@ und finalen Remote-/Blobnachweis vor Pickup frisch lesen.
 
 ## Running State und Datengrenze
 
+Aktuell: Neuer Klangpilot seit10:13:33 MESZ aus diesem Worktree, Laufhead
+288c8357df5a31812441bb6e87d8d433f4d53a7e. Alle drei Hostedchecks an diesem
+Head grün; finaler Dokumentcheckpoint hat identischen Produktcode. App und
+Supervisor beobachtet, UI Bereit und Diagnose IDLE/kein Fehler/kein Cleanup,
+Inputchecks not_run. Brian ist zum echten App-Diktattest aufgefordert.
+Dieser Sourcepfad und seine drei Python-Helfer bleiben bis zum normalen Ende
+unangetastet. Aktive Ownership wegen Liveabhängigkeit erhalten.
+
+Der vorherige Wechsel ist abgeschlossen: Brian bestätigte normales Beenden
+aller drei Apps; alter Supervisor meldete eigene Familie beendet/exit0 und
+Altstack-Rückkehr, danach keine passenden alten Apps mehr beobachtet. Der neue
+Supervisor hält die neue Familie und denselben verifizierten Rückweg. Kein
+Kill anhand von Namen oder PID und keine veränderten Startupverknüpfungen.
+
+Historische Beobachtung vor diesem Wechsel:
+
 Vor dem beauftragten Wechsel wurde die vorherige PR12-Sitzung seit09:55:36 im Worktree
 C:/Users/brian/brian-projects/worktrees/hugin/hugin-completion-cue-mjolnir.
 Supervisor, App und STT-Familie lesend beobachtet. Diagnose zu09:56:26 MESZ:
@@ -66,11 +82,9 @@ inspiziert; keine Fremdaudiodateien heruntergeladen oder übernommen.
 
 1. AGENTS, CONTEXT, diesen Handoff, aktuellen PR/CI und Livezustand lesen.
 2. Brian hat .runtime/Hugin-Klangfolge-Doppeltoene.wav positiv bestätigt.
-   Eigener neuer Pilotstarter .runtime/Hugin-Doppelton-Test.cmd benötigt
-   sauberen geprüften Head und Planmodusnachweis der
-   unveränderten Runtimeinputs/Altstack-Verknüpfungen.
-3. Den beauftragten Wechsel erst nach normalem Ende der PR12-Sitzung und regulärer Pause des
-   zurückgekehrten Altstacks neuen Klangpilot starten und kurz diktieren.
+   Eigener Pilotstarter .runtime/Hugin-Doppelton-Test.cmd ist vorbereitet;
+   Runtimeinputs und Altstack-Verknüpfungen im Planmodus bestätigt.
+3. Der neue Klangpilot läuft. Brian kurz diktieren lassen.
    Erster Ton tief, zweiter mittelhoch beim Aufnahmeende, Glocke erst nach
    sichtbarem Einfügen. Kein automatisches Enter/Absenden.
 4. Klangabnahme getrennt von technischen Checks dokumentieren. Keine
@@ -83,4 +97,5 @@ codex/hugin-distinct-cues-mjolnir refines the three sounds to low/middle/bell,
 based on PR12 head380c4ec. 431 tests, separate reviews and native output pass;
 Brian accepted the stronger double-strike preview; new real dictation remains. Preserve the
 running PR12 worktree/helpers and old-stack return. Read current Git/PR/CI
-and live state, verify the exact-head local starter before normal switching.
+and live state. The new pilot runs at288c835 since10:13:33; do not restart it
+or modify its source/helpers while Brian tests. Normal old-stack return remains.

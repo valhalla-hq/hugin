@@ -21,6 +21,7 @@
 - [x] CC-T08: Gezielte Regression, native Ausgabe aller drei Klänge, Hörfolge,
   getrennte Reviewlinsen, Docs-/Remotecheckpoint und neuer geprüfter Starter.
 - [x] CC-T09a: Brian hat die kräftige Doppelfolge gehört und ausgewählt. CC-006.
-- [ ] CC-T09b: Neue Sitzung am geprüften Head starten, danach echtes Diktat
-  mit Doppeltönen testen. Geordneten Wechsel beauftragt; laufende Version bis
-  dahin erhalten. CC-006.
+- [x] CC-T09b: Neue Sitzung am geprüften Head288c835 gestartet, UI Bereit,
+  kein Fehler/Cleanup. Geordneter Wechsel und Rückweg geprüft. CC-006.
+- [ ] CC-T09c: Echtes Diktat mit Doppeltönen durch Brian in der App testen.
+  Neue laufende Version und ihre Helfer bis zum normalen Ende erhalten. CC-006.
