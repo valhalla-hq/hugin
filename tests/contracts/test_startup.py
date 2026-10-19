@@ -68,7 +68,7 @@ class StartupContracts(unittest.TestCase):
                 controllers[0]._closed=controllers[0].finish_io()
         fakes={
             'hugin.audio':module('hugin.audio',Microphone=lambda *args:NS(),PCMOutput=Owner),
-            'hugin.cues':module('hugin.cues',RecordingCues=Owner),
+            'hugin.cues':module('hugin.cues',DictationCues=Owner),
             'hugin.ui':module('hugin.ui',HuginWindow=Window),
             'hugin.windows.input':module('hugin.windows.input',WindowsInputs=Owner),
             'hugin.windows.instance':module('hugin.windows.instance',InstanceGuard=Guard),

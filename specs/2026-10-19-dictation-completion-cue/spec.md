@@ -1,8 +1,8 @@
 # Dritter Diktatton: Text eingefügt
 
-Status: von Brian am 19.10.2026 beauftragt und im gesicherten Zwischenstand
-aufgenommen; noch nicht implementiert. Die laufende abgenommene Version behält
-ihre beiden vorhandenen Töne. Umsetzung als nächste separate Änderung.
+Status: von Brian am 19.10.2026 beauftragt; Umsetzung in eigenem Taskworktree
+ab dem gesicherten 5137477. Die bereits laufende abgenommene Version behält
+ihre beiden vorhandenen Töne, bis eine neue geprüfte Sitzung gestartet wird.
 
 ## Ziel
 

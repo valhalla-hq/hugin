@@ -1,4 +1,4 @@
-"""Two original bounded PCM signals; no assets, models or system sound service."""
+"""Three original bounded PCM signals; no assets, models or system sound service."""
 from __future__ import annotations
 
 import math
@@ -23,10 +23,13 @@ def _pulse(frequency, milliseconds):
 
 _START = _pulse(420,35)+bytes(24000*2*45//1000)+_pulse(420,35)
 _END = _pulse(1000,65)+bytes(24000*2*25//1000)+_pulse(1600,90)
+_COMPLETE = (_pulse(660,40)+bytes(24000*2*15//1000)+_pulse(880,40)
+    +bytes(24000*2*15//1000)+_pulse(1320,70))
+_SIGNALS = {'start':_START,'end':_END,'complete':_COMPLETE}
 
 
-class RecordingCues:
-    """One capture writer; stop reaches it directly, outside capture FIFO.
+class DictationCues:
+    """One dictation writer; stop reaches it directly, outside capture FIFO.
 
     25ms is a bounded provisional acoustic tail, not an echo-free claim.
     Native hearing/loopback acceptance remains separate from these contracts.
@@ -51,7 +54,7 @@ class RecordingCues:
         with self._lock:return self._cleanup_pending
 
     def play(self, kind, job, cancelled):
-        if kind not in ('start','end'):
+        if kind not in _SIGNALS:
             raise HuginError('protocol_invalid','capture_cue')
         with self._lock:
             if self._closed or self._cleanup_pending or self._active is not None:
@@ -70,7 +73,7 @@ class RecordingCues:
             if interrupted():return completed_or_cancelled(False)
             identity=(job,kind)
             self.output.start(identity)
-            completed=(self.output.write(_START if kind=='start' else _END,identity,interrupted)
+            completed=(self.output.write(_SIGNALS[kind],identity,interrupted)
                 and self.output.drain(identity,interrupted))
             return completed_or_cancelled(completed)
         finally:

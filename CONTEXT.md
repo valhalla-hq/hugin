@@ -84,7 +84,7 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Active Handoff
 
-- `handoffs/2026-10-19-word-document-codex-probe.md`
+- `handoffs/2026-10-19-completion-cue.md`
 
 ## Fortsetzung am 19.10.2026
 
@@ -124,9 +124,26 @@ Hostedchecks daran grün. Der neue Savepoint ändert nur kuratierte Dokumentatio
 Produktcode und lokale Diagnosehelfer des laufenden Pilots bleiben unverändert;
 Ownership bleibt wegen der Laufabhängigkeit aktiv. Main bleibt defe3d8.
 
-Nächster beauftragter Schritt: dritter kurzer, unterscheidbarer Bestätigungston
-nach fertiger Erkennung UND erfolgreicher Textübergabe. Noch nicht implementiert;
-Anforderungen: specs/2026-10-19-dictation-completion-cue/spec.md. Kein Ton bei
-Abbruch, fehlgeschlagenem Einfügen oder RAM-only. Umsetzung in separatem
-Worktree vom gesicherten Kandidaten, nicht im laufenden Sourcepfad. Vorhandene
-Start-/Stopptöne, Stimmen, Kürzel und Altstack-Rückweg erhalten. Keine Migration.
+## Dritter Bestätigungston: Umsetzung am 19.10.2026
+
+Brian beauftragt mit „weitermachen“ die Umsetzung des aufgenommenen dritten
+Tons. Neuer exklusiver Worktree:
+C:/Users/brian/brian-projects/worktrees/hugin/hugin-completion-cue-mjolnir,
+Branch codex/hugin-completion-cue-mjolnir, Basis 5137477f0f1e66408934c13a56b92629431285e5
+aus PR11. Ownership auf Mjolnir aktiv; laufender alter Sourcepfad bleibt erhalten.
+
+Implementiert: kurzer eigener Dreiklang mit 180ms PCM nach akzeptiertem
+erfolgreichem DeliveryFinished. Kein Ton bei Fehler, Abbruch oder RAM-only;
+keine zweite Textübergabe. Separater Completion-Owner hält Escape bis zur
+Controllerbestätigung. Audiostart folgt erst der erfolgreichen Eingabereservierung.
+Neue Sprachaktion/Abbruch/Quit invalidiert auch den wartenden Ton unmittelbar;
+derselbe Capture-Executor hält Cueabschluss vor einer neuen Mikrofonöffnung.
+Start-/Endtonbytes, Stimmen, Bindungen und Rückweg sind unverändert.
+
+431 Source-/Integrationstests in 18,216s grün, beide getrennten Reviews ohne
+offene Befunde. Native reine Audioprobe und vorhandene native Zero-PCM-Reset-
+Prüfung grün; keine neue Aufnahme, GPU-/UI-/Clipboardprobe. Kosten und Grenzen:
+docs/completion-cue-2026-10-19.md. Neuer menschlicher Hör-/Diktattest steht aus.
+Main bleibt defe3d8; PR11 bleibt Draft. Feature auf separatem gestapeltem
+Branch sichern, kein Rollout in die laufende Sitzung und keine Maus-/Alt+Y-/
+Autostartmigration. Aktuellen Feature-PR-/Remotehead und CI frisch prüfen.

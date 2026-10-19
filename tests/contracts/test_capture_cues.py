@@ -292,7 +292,7 @@ class CaptureCueContracts(unittest.TestCase):
 
 class CueOutputContracts(unittest.TestCase):
     def test_concurrent_reset_facts_do_not_overwrite_a_later_cleanup_failure(self):
-        from hugin.cues import RecordingCues
+        from hugin.cues import DictationCues
         entered=threading.Event();release=threading.Event();second=threading.Event();errors=[]
         class PCM:
             calls=0
@@ -300,7 +300,7 @@ class CueOutputContracts(unittest.TestCase):
                 self.calls+=1
                 if self.calls==1:entered.set();release.wait(1)
                 else:raise HuginError('audio_failed')
-        owner=RecordingCues(output=PCM())
+        owner=DictationCues(output=PCM())
         def reset(later=False):
             if later:second.set()
             try:owner.stop()
@@ -312,7 +312,7 @@ class CueOutputContracts(unittest.TestCase):
         self.assertTrue(owner.cleanup_pending,'a confirmed older reset must not erase a newer failure')
 
     def test_deadline_is_failure_even_when_driver_reports_completed_after_expiry(self):
-        from hugin.cues import RecordingCues
+        from hugin.cues import DictationCues
         now=[0.0]
         class PCM:
             def start(self,job):pass
@@ -320,13 +320,13 @@ class CueOutputContracts(unittest.TestCase):
             def drain(self,*args):now[0]=1;return True
             def stop(self):pass
             def close(self):pass
-        owner=RecordingCues(output=PCM(),clock=lambda:now[0])
+        owner=DictationCues(output=PCM(),clock=lambda:now[0])
         with self.assertRaises(HuginError):owner.play('start','job',lambda:False)
         self.assertFalse(owner.cleanup_pending)
         owner.close()
 
-    def test_two_original_cues_are_short_bounded_distinct_pcm_and_owned_until_drain(self):
-        from hugin.cues import RecordingCues
+    def test_three_original_cues_are_short_bounded_distinct_pcm_and_owned_until_drain(self):
+        from hugin.cues import DictationCues
         calls=[];blocks=[]
         class PCM:
             def start(self,job):calls.append('open')
@@ -334,20 +334,21 @@ class CueOutputContracts(unittest.TestCase):
             def drain(self,job,cancelled):calls.append('drain');return not cancelled()
             def stop(self):calls.append('reset')
             def close(self):calls.append('close')
-        owner=RecordingCues(output=PCM())
+        owner=DictationCues(output=PCM())
         self.assertTrue(owner.play('start','job',lambda:False))
         self.assertTrue(owner.play('end','job',lambda:False))
-        self.assertNotEqual(blocks[0],blocks[1])
+        self.assertTrue(owner.play('complete','job',lambda:False))
+        self.assertEqual(len(set(blocks)),3)
         for pcm in blocks:
             self.assertLessEqual(len(pcm),24000*2*.2)
             samples=struct.unpack('<'+'h'*(len(pcm)//2),pcm)
             self.assertLessEqual(max(map(abs,samples)),8000)
             self.assertEqual((samples[0],samples[-1]),(0,0))
-        self.assertEqual(calls.count('drain'),2)
+        self.assertEqual(calls.count('drain'),3)
         owner.close();self.assertTrue(owner.closed)
 
     def test_cancel_timeout_and_failed_reset_cannot_claim_success_or_drop_owner(self):
-        from hugin.cues import RecordingCues
+        from hugin.cues import DictationCues
         class PCM:
             failed=True
             def start(self,job):pass
@@ -356,7 +357,7 @@ class CueOutputContracts(unittest.TestCase):
             def stop(self):
                 if self.failed:raise HuginError('audio_failed')
             def close(self):self.stop()
-        output=PCM();owner=RecordingCues(output=output)
+        output=PCM();owner=DictationCues(output=output)
         with self.assertRaises(HuginError):owner.play('start','job',lambda:False)
         self.assertTrue(owner.cleanup_pending);self.assertFalse(owner.closed)
         with self.assertRaises(HuginError):owner.close()
