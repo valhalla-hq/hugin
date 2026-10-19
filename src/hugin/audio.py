@@ -10,6 +10,8 @@ import time
 
 from .errors import HuginError
 
+MAX_PCM_WRITE_BYTES = 65536
+
 
 class RecordingBuffer:
     def __init__(self, limit: int):
@@ -284,7 +286,7 @@ class PCMOutput:
             self._job = job
 
     def write(self, pcm: bytes, job, cancelled=lambda:False) -> bool:
-        if not isinstance(pcm,bytes) or len(pcm)>65536 or len(pcm)%2:
+        if not isinstance(pcm,bytes) or len(pcm)>MAX_PCM_WRITE_BYTES or len(pcm)%2:
             raise HuginError('protocol_invalid','playback')
         offset = 0
         while offset < len(pcm):

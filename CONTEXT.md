@@ -84,7 +84,7 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Active Handoff
 
-- `handoffs/2026-10-19-distinct-cues.md`
+- `handoffs/2026-10-19-whispering-cues.md`
 
 ## Fortsetzung am 19.10.2026
 
@@ -191,3 +191,23 @@ beobachtet, UI zeigt Bereit, Diagnose IDLE ohne Fehler/Cleanup; noch kein neuer
 Input. Alle drei Hostedchecks am Laufhead grün. Der neue Worktree samt Python-
 Helfern ist jetzt ebenfalls eine Liveabhängigkeit; keine Sourceänderung im
 laufenden Pfad. Echter Diktat-/Hörtest in der App durch Brian steht aus.
+
+## Originaltöne als neuer Auftrag
+
+Brian wünscht nach der Probe ausdrücklich genau die Originaldateien aus
+Whispering. Installiertes Whispering7.11.0 und fixierter Upstreamtag stimmen
+überein. Die Synthese wird ersetzt, kein zusätzliches Verdoppeln oder Ändern
+der Originalklänge. Neuer exklusiver Worktree hugin-whispering-cues-mjolnir,
+Branch codex/hugin-whispering-cues-mjolnir, Basis b58bb60 aus PR13; Ownership aktiv.
+
+Original-MP3s hashgeprüft lokal beschafft, av16.1.0 dekodiert ohne Gain/Kürzung
+in vorhandenes PCM24k/mono16. Externe lokale Runtimeassets additiv vorbereitet,
+Wiederholung idempotent; keine Fremdaudiodateien in Git. Produktion lädt feste
+Größen und Digests vor nativen Besitzern; Dauerdeadline lässt die ganze1,346s-
+Glocke zu. Gemeinsame Audio-Schreibgrenze65536Bytes, atomarer vorhandener
+Kopierproduzent statt Teilzieldateien. Details: docs/whispering-cues-2026-10-19.md.
+
+438 Tests plus isolierter CLI-Guard, zwei getrennte Reviews und native volle
+Originalfolge grün. Vorheriger Doppeltonepilot regulär beendet, Rückkehr bestätigt;
+danach keine passenden Altapps beobachtet. Neuer Pilot nach finalem CI-/Plan-
+Nachweis starten, echte App-Abnahme offen. Main bleibt defe3d8; keine Migration.

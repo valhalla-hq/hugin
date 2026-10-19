@@ -878,7 +878,7 @@ class Application:
 
     def run(self):
         from .audio import Microphone,PCMOutput
-        from .cues import DictationCues
+        from .cues import DictationCues,load_cue_signals
         from .ui import HuginWindow
         from .windows.input import WindowsInputs
         from .windows.instance import InstanceGuard
@@ -896,6 +896,7 @@ class Application:
         thread = None
         thread_started=False
         try:
+            cue_signals=load_cue_signals(self.settings.root)
             def command(kind,value=None):
                 if controller: controller.command(kind,value)
             def event(value):
@@ -917,7 +918,8 @@ class Application:
                 microphone=Microphone(self.settings.limits['capture_bytes']),
                 output=PCMOutput(buffer_ms=max(1,self.settings.limits['audio_buffer_ms']//2)),
                 clipboard=clipboard,
-                pool=EnginePool(self.settings.root,event),publish=window.post,signals=signals,cues=DictationCues())
+                pool=EnginePool(self.settings.root,event),publish=window.post,signals=signals,
+                cues=DictationCues(cue_signals))
             signals.start()
             inputs.start()
             thread = threading.Thread(target=controller.run,args=(window.request_stop,),name='hugin-owner',daemon=False)

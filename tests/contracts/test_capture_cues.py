@@ -1,7 +1,6 @@
 """IA-003/005: synthetic device clocks and fake owned outputs; no native audio."""
 from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
-import struct
 import threading
 from types import SimpleNamespace as NS
 import unittest
@@ -290,6 +289,9 @@ class CaptureCueContracts(unittest.TestCase):
         finally:release.set();executor.shutdown(wait=True)
 
 
+TEST_SIGNALS={'start':b'\x01\0'*100,'end':b'\x02\0'*200,'complete':b'\x03\0'*32309}
+
+
 class CueOutputContracts(unittest.TestCase):
     def test_concurrent_reset_facts_do_not_overwrite_a_later_cleanup_failure(self):
         from hugin.cues import DictationCues
@@ -300,7 +302,7 @@ class CueOutputContracts(unittest.TestCase):
                 self.calls+=1
                 if self.calls==1:entered.set();release.wait(1)
                 else:raise HuginError('audio_failed')
-        owner=DictationCues(output=PCM())
+        owner=DictationCues(TEST_SIGNALS,output=PCM())
         def reset(later=False):
             if later:second.set()
             try:owner.stop()
@@ -320,45 +322,28 @@ class CueOutputContracts(unittest.TestCase):
             def drain(self,*args):now[0]=1;return True
             def stop(self):pass
             def close(self):pass
-        owner=DictationCues(output=PCM(),clock=lambda:now[0])
+        owner=DictationCues(TEST_SIGNALS,output=PCM(),clock=lambda:now[0])
         with self.assertRaises(HuginError):owner.play('start','job',lambda:False)
         self.assertFalse(owner.cleanup_pending)
         owner.close()
 
-    def test_three_original_cues_are_short_bounded_distinct_pcm_and_owned_until_drain(self):
+    def test_supplied_cues_reach_output_unchanged_and_long_completion_can_finish(self):
         from hugin.cues import DictationCues
-        calls=[];blocks=[]
+        calls=[];blocks=[];now=[0.0]
         class PCM:
             def start(self,job):calls.append('open')
             def write(self,pcm,job,cancelled):blocks.append(pcm);return not cancelled()
-            def drain(self,job,cancelled):calls.append('drain');return not cancelled()
+            def drain(self,job,cancelled):
+                calls.append('drain')
+                now[0]+=len(TEST_SIGNALS[job[1]])/48000+.1
+                return not cancelled()
             def stop(self):calls.append('reset')
             def close(self):calls.append('close')
-        owner=DictationCues(output=PCM())
+        owner=DictationCues(TEST_SIGNALS,output=PCM(),clock=lambda:now[0])
         self.assertTrue(owner.play('start','job',lambda:False))
         self.assertTrue(owner.play('end','job',lambda:False))
         self.assertTrue(owner.play('complete','job',lambda:False))
-        self.assertEqual(len(set(blocks)),3)
-        for pcm in blocks:
-            self.assertLessEqual(len(pcm),24000*2*.3)
-            samples=struct.unpack('<'+'h'*(len(pcm)//2),pcm)
-            self.assertLessEqual(max(map(abs,samples)),16000)
-            self.assertEqual((samples[0],samples[-1]),(0,0))
-        # Wide perceptual bands protect low/middle/bright separation without
-        # fixing a tune. Byte inequality alone allowed three similar beeps.
-        pitches=[]
-        for pcm in blocks:
-            samples=struct.unpack('<'+'h'*(len(pcm)//2),pcm)
-            crossings=sum((left<0)!=(right<0) for left,right in zip(samples,samples[1:]))
-            pitches.append(crossings/(2*len(samples)/24000))
-        self.assertTrue(100<pitches[0]<350,pitches)
-        self.assertTrue(450<pitches[1]<900,pitches)
-        self.assertGreater(pitches[2],1200,pitches)
-        bell=struct.unpack('<'+'h'*(len(blocks[2])//2),blocks[2])
-        self.assertGreater(len(bell)/24000,.2,'the bell needs an audible decay')
-        early=sum(sample*sample for sample in bell[:len(bell)//3])
-        late=sum(sample*sample for sample in bell[-len(bell)//3:])
-        self.assertGreater(early,late*4,'completion must ring down rather than sustain')
+        self.assertEqual(blocks,list(TEST_SIGNALS.values()))
         self.assertEqual(calls.count('drain'),3)
         owner.close();self.assertTrue(owner.closed)
 
@@ -372,7 +357,7 @@ class CueOutputContracts(unittest.TestCase):
             def stop(self):
                 if self.failed:raise HuginError('audio_failed')
             def close(self):self.stop()
-        output=PCM();owner=DictationCues(output=output)
+        output=PCM();owner=DictationCues(TEST_SIGNALS,output=output)
         with self.assertRaises(HuginError):owner.play('start','job',lambda:False)
         self.assertTrue(owner.cleanup_pending);self.assertFalse(owner.closed)
         with self.assertRaises(HuginError):owner.close()
