@@ -1,8 +1,6 @@
 """Owned vector geometry and bounded Obsidian surfaces; no external artwork."""
 from __future__ import annotations
 
-from PIL import Image, ImageDraw, ImageFilter, ImageOps
-
 BACKGROUND = '#080b12'
 CARD = '#151a27'
 FIELD = '#0e1420'
@@ -54,6 +52,7 @@ _RAVEN = _curve((15,66), (
 
 
 def raven_mark(size, *, silver=True):
+    from PIL import Image, ImageDraw, ImageOps
     if type(size) is not int or not 16 <= size <= 1024:
         raise ValueError('mark size outside supported range')
     extent=size*3
@@ -75,6 +74,7 @@ def raven_mark(size, *, silver=True):
 
 
 def panel_surface(width, height, *, accent=False, radius=18, strength=0.0):
+    from PIL import Image, ImageDraw, ImageOps
     width=max(1,min(int(width),2048));height=max(1,min(int(height),2048))
     ramp=Image.linear_gradient('L').resize((width,height))
     top=mix('#1c263a','#304786',strength) if not accent else mix('#253b79','#3f5ab3',strength)
@@ -89,6 +89,7 @@ def panel_surface(width, height, *, accent=False, radius=18, strength=0.0):
 
 
 def hugin_icon(size=64,color=ACCENT):
+    from PIL import Image, ImageDraw
     if type(size) is not int or not 16 <= size <= 512:
         raise ValueError('icon size outside supported range')
     extent=size*3
@@ -106,6 +107,7 @@ def hugin_icon(size=64,color=ACCENT):
 
 def backdrop(width, height):
     """Low-resolution soft light plus vector ribbons, generated only on resize."""
+    from PIL import Image, ImageDraw, ImageFilter
     width=max(1,min(int(width),2048));height=max(1,min(int(height),2048))
     result=Image.new('RGBA',(width,height),BACKGROUND)
     small=(max(1,width//4),max(1,height//4))
@@ -130,6 +132,7 @@ def backdrop(width, height):
 
 def ambient_light(width,height,strength):
     """Small cached alpha light; no per-frame rasterization or growing cache."""
+    from PIL import Image, ImageDraw, ImageFilter
     width=max(1,min(int(width),1024));height=max(1,min(int(height),512))
     small=(max(1,width//3),max(1,height//3))
     light=Image.new('RGBA',small)

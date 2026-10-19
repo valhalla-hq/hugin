@@ -10,12 +10,10 @@ import time
 import tkinter as tk
 from tkinter import ttk
 
-from PIL import ImageTk
 from .errors import HuginError
 from .branding import (BACKGROUND,CARD,FIELD,BORDER,TEXT,MUTED,ACCENT,BLUE,
                        ACTIVITY_COLORS,hugin_icon,raven_mark,backdrop,panel_surface,mix,ambient_light)
 from .motion import Motion
-from .ui_controls import SoftButton
 
 
 @dataclass(frozen=True)
@@ -71,6 +69,8 @@ class HuginWindow:
         self.root.minsize(round(460*self.scale),round(min(620,available*.90)*self.scale))
         self.root.configure(background=BACKGROUND)
         self.root.protocol('WM_DELETE_WINDOW',self.hide)
+        from PIL import ImageTk
+        from .ui_controls import SoftButton
         self._window_icon=ImageTk.PhotoImage(tray_image(),master=self.root)
         self.root.iconphoto(True,self._window_icon)
         self._updates=queue.Queue(maxsize=2);self._commands=queue.Queue(maxsize=32)
@@ -179,6 +179,7 @@ class HuginWindow:
             self._layout_after=self.root.after_idle(self._layout)
 
     def _image(self,name,image,x,y):
+        from PIL import ImageTk
         self._images[name]=ImageTk.PhotoImage(image,master=self.root)
         self.scene.itemconfigure(self._items[name],image=self._images[name])
         self.scene.coords(self._items[name],round(x),round(y))
@@ -195,6 +196,7 @@ class HuginWindow:
                                  height=max(1,round(h*self.scale)))
 
     def _layout(self):
+        from PIL import ImageTk
         self._layout_after=None
         if not self._alive or not self.scene.winfo_exists():return
         pixel_w,pixel_h=self.scene.winfo_width(),self.scene.winfo_height()
