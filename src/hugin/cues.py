@@ -21,13 +21,15 @@ def _tone(frequency, milliseconds, decay, partials=((1,1),)):
         envelope=math.sin(edge*math.pi/2)**2*math.exp(-seconds/decay)
         value=sum(weight*math.sin(2*math.pi*frequency*ratio*seconds)
             for ratio,weight in partials)
-        samples.append(round(7500*envelope*value))
+        samples.append(round(15000*envelope*value))
     return struct.pack('<'+'h'*count,*samples)
 
 
-_START = _tone(196,120,.045)  # Low, soft impulse: recording begins.
-_END = _tone(660,100,.09)  # Plain middle register: recording has stopped.
-_COMPLETE = _tone(1568,280,.075,((1,.65),(2.76,.25),(4.07,.10)))  # Bell: text inserted.
+_BELL_PARTIALS = ((1,.65),(2.76,.25),(4.07,.10))
+_START = _tone(196,70,.04)+bytes(24000*2*45//1000)+_tone(196,70,.04)
+_END = _tone(660,60,.08)+bytes(24000*2*45//1000)+_tone(660,60,.08)
+_COMPLETE = (_tone(1568,100,.05,_BELL_PARTIALS)
+    +bytes(24000*2*35//1000)+_tone(2093,160,.05,_BELL_PARTIALS))
 _SIGNALS = {'start':_START,'end':_END,'complete':_COMPLETE}
 
 

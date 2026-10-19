@@ -18,7 +18,9 @@
 - [x] CC-T07: CC-006 umsetzen: dumpfer Start, mittleres Aufnahmeende,
   heller Glockenabschluss. Bestehenden PCM-Guard um getrennte Tonlagen und
   ausklingenden Schluss erweitern; Controller und Besitzer unverändert lassen.
-- [ ] CC-T08: Gezielte Regression, native Ausgabe aller drei Klänge, Hörfolge,
+- [x] CC-T08: Gezielte Regression, native Ausgabe aller drei Klänge, Hörfolge,
   getrennte Reviewlinsen, Docs-/Remotecheckpoint und neuer geprüfter Starter.
-- [ ] CC-T09: Brians Hörabnahme der neuen Klangfarben und echtes Diktat in
-  einer neuen Sitzung. Laufende Version bis dahin erhalten. CC-006.
+- [x] CC-T09a: Brian hat die kräftige Doppelfolge gehört und ausgewählt. CC-006.
+- [ ] CC-T09b: Neue Sitzung am geprüften Head starten, danach echtes Diktat
+  mit Doppeltönen testen. Geordneten Wechsel beauftragt; laufende Version bis
+  dahin erhalten. CC-006.

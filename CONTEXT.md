@@ -163,14 +163,21 @@ C:/Users/brian/brian-projects/worktrees/hugin/hugin-distinct-cues-mjolnir,
 Branch codex/hugin-distinct-cues-mjolnir, Basis PR12 bei
 380c4ec1bae265578362172e4eca89c35746c12e. Aktive Ownership auf Mjolnir.
 Die laufende Version und ihre Helfer bleiben unverändert. Neue PCM-Folge:
-dumpfer Start196Hz/120ms, mittleres Aufnahmeende660Hz/100ms, heller
-ausklingender Glockenabschluss1568Hz samt unharmonischen Teiltönen/280ms.
+zwei dumpfe Startimpulse196Hz/185ms, zwei mittlere Endimpulse660Hz/165ms,
+zwei helle Glockenanschläge1568/2093Hz samt unharmonischen Teiltönen/295ms.
+Nach Hörfeedback nominale digitale Amplitude aller drei auf15000 verdoppelt,
+weiterhin unter Guard16000. Brian akzeptiert die Doppelfolge und beauftragt
+Einbau samt anschließendem Test in der App ausdrücklich.
 Controller, Auslösezeitpunkte, Abbruch und Cleanup sind identisch zu PR12.
 CC-006 ersetzt ausdrücklich die bisherige Erhaltung der Start-/Endtonbytes.
 
-431 Source-/Integrationstests in20,417s, beide getrennten Reviews und native
-Ausgabe aller drei Töne zweimal grün, Owner sauber geschlossen. Hörfolge zum
-Vergleich ignoriert in .runtime/Hugin-Klangfolge.wav; subjektive Hörabnahme
-und echter Diktattest mit den neuen Klangfarben stehen aus. Details und
+431 Source-/Integrationstests in19,036s, beide getrennten Reviews und native
+Ausgabe der gewählten Doppelfolge grün, Owner sauber geschlossen. Hörfolge zum
+Vergleich ignoriert in .runtime/Hugin-Klangfolge-Doppeltoene.wav; Hörbeispiel
+akzeptiert, echter Diktattest mit neuen Klangfarben steht aus. Details und
 Whispering-Referenz: docs/cue-contrast-2026-10-19.md. Main bleibt defe3d8,
-PR11/12 bleiben Draft; neuer gestapelter Klang-PR und finaler Head frisch lesen.
+PR11/12 bleiben Draft; neuer gestapelter Klang-PR:
+https://github.com/valhalla-hq/hugin/pull/13. Finalen Head und CI frisch lesen.
+Neuer Pilot wird nach regulärem Ende der vorherigen Sitzung samt Pause der
+zurückgekehrten Altapps am geprüften Klanghead gestartet. Tatsächlichen
+Laufzustand und eigene .runtime/pilot-session-*.json frisch prüfen.

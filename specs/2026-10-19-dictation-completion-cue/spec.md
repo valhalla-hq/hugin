@@ -36,7 +36,11 @@ wurde. Ein eigener Ton genügt; es wird kein Whispering-Klang übernommen.
   Aufnahmebeginn, mittelhoher schlichter Ton zum Aufnahmeende, helles ausklingendes
   Klingeln nach erfolgreichem Einfügen. Die Reihenfolge wird auch ohne Blick auf
   die Oberfläche erkennbar. Eigene PCM-Synthese, höchstens 300ms je Signal und
-  unveränderte Amplituden-/Abbruchgrenzen. Hörbarkeit bleibt menschlich abzunehmen.
+  unveränderte Abbruchgrenzen. Nach der ersten Hörfolge wünscht Brian alle drei
+  Töne stärker: doppelte digitale Amplitude, weiterhin unter halber PCM16-
+  Vollaussteuerung (Guard16000). Hörbarkeit bleibt menschlich abzunehmen.
+  Nächste Hörvariante auf Brians Wunsch: jeweils zwei Anschläge, tief–tief,
+  mittel–mittel und zwei helle Glockenanschläge mit ansteigender Schlussnote.
 
 Prüfen: erfolgreicher Ablauf und Reihenfolge, ausbleibender Ton bei Fehler/
 Abbruch/RAM-only, doppelte/späte Ereignisse, neue Aufnahme während Ton,

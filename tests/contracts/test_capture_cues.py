@@ -342,7 +342,7 @@ class CueOutputContracts(unittest.TestCase):
         for pcm in blocks:
             self.assertLessEqual(len(pcm),24000*2*.3)
             samples=struct.unpack('<'+'h'*(len(pcm)//2),pcm)
-            self.assertLessEqual(max(map(abs,samples)),8000)
+            self.assertLessEqual(max(map(abs,samples)),16000)
             self.assertEqual((samples[0],samples[-1]),(0,0))
         # Wide perceptual bands protect low/middle/bright separation without
         # fixing a tune. Byte inequality alone allowed three similar beeps.

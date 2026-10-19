@@ -19,15 +19,20 @@ Hugin synthetisiert eigene PCM-Signale in demselben begrenzten Audiopfad:
 
 | Ereignis | Klang | PCM-Dauer |
 | --- | --- | --- |
-| Aufnahme beginnt | Weicher tiefer Sinusimpuls,196Hz, schneller Abfall | 120ms |
-| Aufnahme endet | Schlichter mittlerer Sinuston,660Hz | 100ms |
-| Text eingefügt | Helle Glocke,1568Hz und unharmonische Teiltöne, ausklingend | 280ms |
+| Aufnahme beginnt | Zwei weiche tiefe Sinusimpulse,196Hz,45ms Pause | 185ms |
+| Aufnahme endet | Zwei schlichte mittlere Sinustöne,660Hz,45ms Pause | 165ms |
+| Text eingefügt | Zwei helle Glockenanschläge,1568/2093Hz und unharmonische Teiltöne,35ms Pause | 295ms |
 
 Die positiven Teiltongewichte summieren sich zu eins; Frequenzen bleiben unter
-Nyquist. Fade an beiden Rändern und bestehende Amplitudengrenze bleiben erhalten.
-Neue PCM-Größen:5760/4800/13440Bytes, gesamt24000Bytes gegenüber22800 zuvor.
-Der Glockenklang ist100ms länger als der erste Abschlussentwurf; die vollständige
-Summe aller drei Signale steigt um25ms. Die bestehende500ms-Deadline bleibt gleich.
+Nyquist, maximal8518,51Hz. Fade an beiden Rändern bleibt erhalten. Nach der
+ersten Hörfolge wünschte Brian alle drei Töne stärker und dann Doppelanschläge.
+Digitale Amplitude7500 auf15000 verdoppelt; Peaks12790/13841/12541 bleiben unter
+Guard16000 und halber PCM16-Vollaussteuerung. Das entspricht ungefähr6dB mehr
+Signalpegel, keiner behaupteten Verdopplung wahrgenommener Lautstärke.
+Neue PCM-Größen:8880/7920/14160Bytes, gesamt30960Bytes gegenüber22800 zuvor.
+Die Summe der Signaldauern steigt gegenüber PR12 um170ms. Die bestehende500ms-
+Deadline bleibt gleich. Brian akzeptiert diese gehörte Doppelfolge und beauftragt
+Einbau und anschließenden Test in der App; die App-Abnahme ist separat offen.
 
 ## Verifikation
 
@@ -35,28 +40,29 @@ Summe aller drei Signale steigt um25ms. Die bestehende500ms-Deadline bleibt glei
   Klangstand rot. Er prüft breite getrennte Tonlagen per Nulldurchgängen,
   begrenzte Dauer/Amplitude und ausklingende Energie des Abschlusses. Das
   prüft technische Kontraste, keine subjektive Klangqualität.
-- 35 gezielte Capture-/Completiontests in0,231s und alle431 Source-/Integrations-
-  tests in20,417s ohne Skips grün. Keine neuen Tests, kein Controllerumbau.
+- 35 gezielte Capture-/Completiontests in0,223s und alle431 Source-/Integrations-
+  tests in19,036s ohne Skips grün. Keine neuen Tests, kein Controllerumbau.
 - Separate Spec-/Standardsreviews ohne Befund an cues.py-SHA256
-  F6F9BE47DD343C888D6CC307C5903A821E28078ED9BF134CC963B9BFAE2649E1.
-- Eigene native Outputprobe: alle drei Signale je zweimal vollständig
+  85BE897075323962847EBF416F177C12ECC13E63D3A0E430FBBA20033629EB4F.
+- Eigene native Outputprobe: die gewählte kräftige Doppelfolge vollständig
   abgespielt, Owner geschlossen, pending_cleanup=false. Keine Aufnahme,
   Eingabebindung, Clipboardaktion, GPU oder App-/Workerbeendigung.
 
-| Nativer Aufruf | Erste Runde | Zweite Runde im selben Prozess |
-| --- | --- | --- |
-| Start | 0,315555s | 0,149994s |
-| Aufnahmeende | 0,142699s | 0,129303s |
-| Glockenabschluss | 0,319046s | 0,312898s |
+| Nativer Aufruf der Doppelfolge | Dauer |
+| --- | --- |
+| Start, erster Output im Prozess | 0,269682s |
+| Aufnahmeende | 0,201039s |
+| Glockenabschluss | 0,333774s |
 
-Gesamtprobe einschließlich eigenem Kindstart und Abschluss:1,483620s;
-Prozessfamilien-CPU0,156250s, Peak Job Commit15.618.048Bytes. Alle gemessenen
+Gesamtprobe einschließlich eigenem Kindstart,650ms Pausen und Abschluss:2,898882s;
+Prozessfamilien-CPU0,171875s, Peak Job Commit15.896.576Bytes. Alle gemessenen
 Aufrufe liegen unter der unveränderten Deadline. Das ist keine Worst-Case-
 Garantie oder kalte Treiberbasis. Physischer Peak-RAM, Agenttokens und kompletter
 Diktatworkflow nicht gemessen; kein äquivalenter nativer Vorhervergleich ausgeführt.
 
 Die vergleichende WAV-Folge enthält nur die drei eigenen Signale mit650ms Pause.
-Sie, Einzel-WAVs und Probehelfer liegen ignoriert unter .runtime. Brians Urteil
-zur wahrgenommenen Dumpfheit, Tonhöhe und Glockenwirkung sowie ein echter Diktat-
-test in einer neuen Sitzung sind noch offen. Die laufende PR12-Sitzung bleibt
-unverändert; ihre neue native Diagnose meldete erfolgreiche Textübergabe ohne Fehler.
+Sie, Einzel-WAVs und Probehelfer liegen ignoriert unter .runtime. Brian hat die
+kräftige Doppelfolge akzeptiert. Ein echter Diktattest in einer neuen Sitzung
+steht noch aus; den geordneten Testwechsel hat er ausdrücklich beauftragt.
+Die PR12-Sitzung bleibt bis dahin unverändert; ihre native Diagnose meldete
+erfolgreiche Textübergabe ohne Fehler.

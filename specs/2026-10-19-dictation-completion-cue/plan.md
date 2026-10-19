@@ -27,7 +27,10 @@ Präzisierung nach dem Test am 19.10.: Nur die PCM-Erzeugung in cues.py ändern;
 Controller, Cueowner und Auslösezeitpunkte bleiben identisch. Ein gemeinsamer
 begrenzter Sinus-/Partialgenerator mit abklingender Hüllkurve erzeugt einen tiefen
 weichen Impuls, einen einfachen mittleren Ton und einen hellen Glockenklang mit
-unharmonischen Teiltönen. Kein Sample, Audiopaket oder neuer Player. Maximal
+unharmonischen Teiltönen. Nach Brians Hörfeedback digitale Amplitude aller drei
+Signale verdoppeln (weiterhin unter halber Vollaussteuerung) und jeweils zwei
+Anschläge mit kurzer Pause erzeugen; nur der zweite Glockenanschlag steigt an.
+Kein Sample, Audiopaket oder neuer Player. Maximal
 300ms PCM bleibt mit Reserve unter der bestehenden 500ms-Cue-Deadline; tatsächliche
 native Ausgabe prüfen. Einen gemeinsamen WAV-Ablauf mit Pausen zum Vergleichen
 bereitstellen. Die zuletzt gestartete PR12-Sitzung bleibt im bisherigen Worktree.
