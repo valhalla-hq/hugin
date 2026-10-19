@@ -8,7 +8,7 @@
   Shutdown-/Cleanupverhalten prüfen. CC-004/005.
 - [x] CC-T04: Source-/Integrations-/Docschecks, begrenzte native Cueprobe sowie
   eigenständiges Hörbeispiel; ungemessene Kosten und Hörgrenzen nennen. Alle CC.
-- [ ] CC-T05: Getrennte Spec-/Standardsreviews, aktueller Context/Handoff und
+- [x] CC-T05: Getrennte Spec-/Standardsreviews, aktueller Context/Handoff und
   privater überprüfter Remotecheckpoint. Keine Änderung des laufenden Piloten.
 - [ ] CC-T06: Neue Pilotsitzung nach geordnetem Wechsel, menschlicher Hörtest
   und echter Diktattest: genau drei zeitlich richtige Töne. Kein Enter/Absenden.

@@ -144,6 +144,8 @@ Start-/Endtonbytes, Stimmen, Bindungen und Rückweg sind unverändert.
 offene Befunde. Native reine Audioprobe und vorhandene native Zero-PCM-Reset-
 Prüfung grün; keine neue Aufnahme, GPU-/UI-/Clipboardprobe. Kosten und Grenzen:
 docs/completion-cue-2026-10-19.md. Neuer menschlicher Hör-/Diktattest steht aus.
-Main bleibt defe3d8; PR11 bleibt Draft. Feature auf separatem gestapeltem
-Branch sichern, kein Rollout in die laufende Sitzung und keine Maus-/Alt+Y-/
-Autostartmigration. Aktuellen Feature-PR-/Remotehead und CI frisch prüfen.
+Main bleibt defe3d8; PR11 bleibt Draft. Neuer gestapelter Feature-PR:
+https://github.com/valhalla-hq/hugin/pull/12 (Draft), funktionaler Commit
+183959e9b5890e5b91924df580d439eb6dd3d35c. Kein Rollout in die laufende Sitzung
+und keine Maus-/Alt+Y-/Autostartmigration. Finalen Dokumenthead, CI und den
+Planmodus des lokalen .runtime/Hugin-Dritter-Ton-Test.cmd frisch prüfen.

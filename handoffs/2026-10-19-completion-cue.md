@@ -15,8 +15,10 @@ vorbereiten. Kein Rollout in die laufende Sitzung.
   5137477f0f1e66408934c13a56b92629431285e5, gesicherter PR11-Stand.
 - Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-completion-cue-mjolnir.
 - Main/Deployment unverändert defe3d8f0ef9e564da1936a77b931476cbafc98a.
-- Featurecheckpoint/PR und Remotehead frisch über diesen Branch lesen; ein
-  Commit kann seinen eigenen Hash nicht vorwegnehmen. PR11 bleibt Draft.
+- Funktionaler Featurecommit: 183959e9b5890e5b91924df580d439eb6dd3d35c.
+- Feature-PR: https://github.com/valhalla-hq/hugin/pull/12 (Draft, Basis PR11).
+  Finalen Dokumentcheckpoint/Remotehead und CI frisch über diesen Branch lesen;
+  ein Commit kann seinen eigenen Hash nicht vorwegnehmen. PR11 bleibt Draft.
 - Ownership: aktiv auf Mjolnir. Neuer Worktree und alter Live-Source getrennt.
 - Autorisierung: klarer Folgeauftrag „weitermachen“ nach Dritttonanforderung;
   Umsetzung und private Sicherung. Hör-/Diktatabnahme der neuen Sitzung offen,
@@ -80,7 +82,8 @@ Maus-/Alt+Y-/Autostartmigration und vollständige Produktabnahme bleiben separat
 1. AGENTS, CONTEXT, diesen Handoff, Branch/PR/CI und Live-Abhängigkeit lesen.
 2. Erst nach normalem Ende der alten Hugin-Sitzung und regulärer Pause des
    zurückgekehrten Altstacks eine geprüfte neue Dreiton-Pilotsitzung starten.
-   Geplanten lokalen Starter an tatsächlichen sauberen geprüften Head binden;
+   Lokaler Starter: .runtime/Hugin-Dritter-Ton-Test.cmd in diesem Worktree.
+   Er bindet den tatsächlichen sauberen geprüften Head;
    unveränderte Runtimeinputs und Rückweg im Planmodus bestätigen.
 3. Brian um kurzes echtes Diktat samt Hörbeobachtung bitten. Bei negativem
    Ergebnis technische Fakten getrennt vom sichtbaren Ergebnis erfassen.
