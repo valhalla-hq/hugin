@@ -84,7 +84,7 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Active Handoff
 
-- `handoffs/2026-10-19-whispering-cues.md`
+- `handoffs/2026-10-19-clipboard-format.md`
 
 ## Fortsetzung am 19.10.2026
 
@@ -211,3 +211,25 @@ Kopierproduzent statt Teilzieldateien. Details: docs/whispering-cues-2026-10-19.
 Originalfolge grün. Vorheriger Doppeltonepilot regulär beendet, Rückkehr bestätigt;
 danach keine passenden Altapps beobachtet. Neuer Pilot nach finalem CI-/Plan-
 Nachweis starten, echte App-Abnahme offen. Main bleibt defe3d8; keine Migration.
+
+## Clipboard-Ablehnung und erfolgreiche Wiederholung
+
+Originaltonpilot d3fd28df648b577a32c7cc61a6614b58c2206c5d wurde am19.10.
+um10:31:53 MESZ gestartet; App/Supervisor weiterhin beobachtet. PR14 enthält
+den bestätigten Savepoint5137477 als Vorfahren. Clipboard- und Feldbinder sind
+dazu bytegleich. Brian meldete im Codex-Nachrichtenfeld um11:03:47 MESZ:
+capture_native/field erfolgreich, delivery=format_unsupported, clipboard_failed,
+kein offenes Cleanup. Die Ablehnung liegt vor der Clipboardmutation und Paste.
+
+Nach Diagnosekopie sind nur die vier erlaubten normalen Textformate beobachtet.
+Brian bestätigt, dass es wieder funktioniert; dieselbe laufende App meldet
+um11:07:35 MESZ submitted, IDLE, keinen Fehler/Cleanup. Keine Sourceänderung,
+kein Neustart, kein Rücksetzen und kein Löschen der Zwischenablage durch diese
+Diagnose. Exaktes vorher abgelehntes Format nicht mehr vorhanden; unbekannt.
+59 gezielte Contracttests und2 simulierte native ABI-Grenztests grün. Keinen
+Format-Whitelistfix ohne Reproduktion oder sichere Typzuordnung durchführen.
+
+Separater Diagnosecheckpoint: codex/hugin-clipboard-format-mjolnir, BasisPR14,
+Worktree C:/Users/brian/brian-projects/worktrees/hugin/hugin-clipboard-format-mjolnir.
+Nur Dokumentation. Die neue Originalton-Livesitzung hängt weiterhin an ihrem
+alten Worktree; dessen Produktcode und Python-Helfer unverändert erhalten.
