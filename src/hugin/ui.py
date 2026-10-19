@@ -22,6 +22,9 @@ class View:
     components: str = 'Sprachkomponenten werden geprüft.'
     error: str = ''
     activity: str = 'preparing'
+    audio_level: float = 0.0
+    completion_id: int = 0
+    completion_until: float = 0.0
     dictation_shortcut: str = 'Vordere Taste oder Alt+Y · erneut: fertig'
     reading_shortcut: str = 'Text markieren · hintere Taste · erneut: Stopp'
 

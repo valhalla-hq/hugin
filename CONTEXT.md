@@ -84,7 +84,7 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Active Handoff
 
-- `handoffs/2026-10-19-clipboard-format.md`
+- `handoffs/2026-10-19-obsidian-ui.md`
 
 ## Fortsetzung am 19.10.2026
 
