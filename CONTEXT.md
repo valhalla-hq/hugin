@@ -84,7 +84,7 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Active Handoff
 
-- `handoffs/2026-10-19-completion-cue.md`
+- `handoffs/2026-10-19-distinct-cues.md`
 
 ## Fortsetzung am 19.10.2026
 
@@ -149,3 +149,28 @@ https://github.com/valhalla-hq/hugin/pull/12 (Draft), funktionaler Commit
 183959e9b5890e5b91924df580d439eb6dd3d35c. Kein Rollout in die laufende Sitzung
 und keine Maus-/Alt+Y-/Autostartmigration. Finalen Dokumenthead, CI und den
 Planmodus des lokalen .runtime/Hugin-Dritter-Ton-Test.cmd frisch prüfen.
+
+## Deutlich getrennte Klangfarben
+
+Brian hat PR12 gestartet; App und Supervisor seit 09:55:36 Uhr im bisherigen
+Completion-Cue-Worktree beobachtet. Diagnose 09:56:26 MESZ: IDLE,
+native_target_captured/target_captured/submitted, error_code=null und kein
+offenes Cleanup. Brian bewertet den Stand positiv, wünscht aber erheblich
+unterschiedlichere Töne. Das ist eine Klangpräzisierung, keine vollständige Abnahme.
+
+Neuer exklusiver Worktree:
+C:/Users/brian/brian-projects/worktrees/hugin/hugin-distinct-cues-mjolnir,
+Branch codex/hugin-distinct-cues-mjolnir, Basis PR12 bei
+380c4ec1bae265578362172e4eca89c35746c12e. Aktive Ownership auf Mjolnir.
+Die laufende Version und ihre Helfer bleiben unverändert. Neue PCM-Folge:
+dumpfer Start196Hz/120ms, mittleres Aufnahmeende660Hz/100ms, heller
+ausklingender Glockenabschluss1568Hz samt unharmonischen Teiltönen/280ms.
+Controller, Auslösezeitpunkte, Abbruch und Cleanup sind identisch zu PR12.
+CC-006 ersetzt ausdrücklich die bisherige Erhaltung der Start-/Endtonbytes.
+
+431 Source-/Integrationstests in20,417s, beide getrennten Reviews und native
+Ausgabe aller drei Töne zweimal grün, Owner sauber geschlossen. Hörfolge zum
+Vergleich ignoriert in .runtime/Hugin-Klangfolge.wav; subjektive Hörabnahme
+und echter Diktattest mit den neuen Klangfarben stehen aus. Details und
+Whispering-Referenz: docs/cue-contrast-2026-10-19.md. Main bleibt defe3d8,
+PR11/12 bleiben Draft; neuer gestapelter Klang-PR und finaler Head frisch lesen.

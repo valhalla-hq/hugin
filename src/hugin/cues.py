@@ -10,21 +10,24 @@ from .audio import PCMOutput
 from .errors import HuginError
 
 
-def _pulse(frequency, milliseconds):
+def _tone(frequency, milliseconds, decay, partials=((1,1),)):
+    """Short modal tone: positive partial weights sum to one for bounded PCM."""
     count = 24000*milliseconds//1000
     fade = min(144,count//2)
     samples=[]
     for index in range(count):
         edge=min(index,count-1-index,fade)/fade
-        envelope=math.sin(edge*math.pi/2)**2
-        samples.append(round(7500*envelope*math.sin(2*math.pi*frequency*index/24000)))
+        seconds=index/24000
+        envelope=math.sin(edge*math.pi/2)**2*math.exp(-seconds/decay)
+        value=sum(weight*math.sin(2*math.pi*frequency*ratio*seconds)
+            for ratio,weight in partials)
+        samples.append(round(7500*envelope*value))
     return struct.pack('<'+'h'*count,*samples)
 
 
-_START = _pulse(420,35)+bytes(24000*2*45//1000)+_pulse(420,35)
-_END = _pulse(1000,65)+bytes(24000*2*25//1000)+_pulse(1600,90)
-_COMPLETE = (_pulse(660,40)+bytes(24000*2*15//1000)+_pulse(880,40)
-    +bytes(24000*2*15//1000)+_pulse(1320,70))
+_START = _tone(196,120,.045)  # Low, soft impulse: recording begins.
+_END = _tone(660,100,.09)  # Plain middle register: recording has stopped.
+_COMPLETE = _tone(1568,280,.075,((1,.65),(2.76,.25),(4.07,.10)))  # Bell: text inserted.
 _SIGNALS = {'start':_START,'end':_END,'complete':_COMPLETE}
 
 

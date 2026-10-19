@@ -340,10 +340,25 @@ class CueOutputContracts(unittest.TestCase):
         self.assertTrue(owner.play('complete','job',lambda:False))
         self.assertEqual(len(set(blocks)),3)
         for pcm in blocks:
-            self.assertLessEqual(len(pcm),24000*2*.2)
+            self.assertLessEqual(len(pcm),24000*2*.3)
             samples=struct.unpack('<'+'h'*(len(pcm)//2),pcm)
             self.assertLessEqual(max(map(abs,samples)),8000)
             self.assertEqual((samples[0],samples[-1]),(0,0))
+        # Wide perceptual bands protect low/middle/bright separation without
+        # fixing a tune. Byte inequality alone allowed three similar beeps.
+        pitches=[]
+        for pcm in blocks:
+            samples=struct.unpack('<'+'h'*(len(pcm)//2),pcm)
+            crossings=sum((left<0)!=(right<0) for left,right in zip(samples,samples[1:]))
+            pitches.append(crossings/(2*len(samples)/24000))
+        self.assertTrue(100<pitches[0]<350,pitches)
+        self.assertTrue(450<pitches[1]<900,pitches)
+        self.assertGreater(pitches[2],1200,pitches)
+        bell=struct.unpack('<'+'h'*(len(blocks[2])//2),blocks[2])
+        self.assertGreater(len(bell)/24000,.2,'the bell needs an audible decay')
+        early=sum(sample*sample for sample in bell[:len(bell)//3])
+        late=sum(sample*sample for sample in bell[-len(bell)//3:])
+        self.assertGreater(early,late*4,'completion must ring down rather than sustain')
         self.assertEqual(calls.count('drain'),3)
         owner.close();self.assertTrue(owner.closed)
 

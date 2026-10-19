@@ -23,10 +23,19 @@ im bestehenden Cue-Owner und blockiert eine weitere Aufnahme.
 
 ## Betroffene Grenzen
 
+Präzisierung nach dem Test am 19.10.: Nur die PCM-Erzeugung in cues.py ändern;
+Controller, Cueowner und Auslösezeitpunkte bleiben identisch. Ein gemeinsamer
+begrenzter Sinus-/Partialgenerator mit abklingender Hüllkurve erzeugt einen tiefen
+weichen Impuls, einen einfachen mittleren Ton und einen hellen Glockenklang mit
+unharmonischen Teiltönen. Kein Sample, Audiopaket oder neuer Player. Maximal
+300ms PCM bleibt mit Reserve unter der bestehenden 500ms-Cue-Deadline; tatsächliche
+native Ausgabe prüfen. Einen gemeinsamen WAV-Ablauf mit Pausen zum Vergleichen
+bereitstellen. Die zuletzt gestartete PR12-Sitzung bleibt im bisherigen Worktree.
+
 - src/hugin/application.py: akzeptierter Deliveryabschluss, Completionbesitz
   und direkte Unterbrechung; vorhandene Capture-Task-/Shutdownverfolgung nutzen.
 - src/hugin/cues.py: dritter kurzer eigener PCM-Ton, gemeinsamer Besitzer nun
-  DictationCues. Bestehende Start-/Endbytes und Grenzen bleiben erhalten;
+  DictationCues. Die neu beauftragten Klangfarben ersetzen Start-/Endbytes; Grenzen bleiben erhalten;
   alle bisherigen Klassennamenverbraucher konsistent umstellen, kein Alias.
 - Tests: Controllerablauf mit simuliertem Clipboard/Worker und kontrollierten
   Executoren; bestehende Cue-/Audio-/Cleanupregressionen. Diese Proben ersetzen

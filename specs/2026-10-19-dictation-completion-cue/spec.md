@@ -1,8 +1,9 @@
 # Dritter Diktatton: Text eingefügt
 
 Status: von Brian am 19.10.2026 beauftragt; Umsetzung in eigenem Taskworktree
-ab dem gesicherten 5137477. Die bereits laufende abgenommene Version behält
-ihre beiden vorhandenen Töne, bis eine neue geprüfte Sitzung gestartet wird.
+ab dem gesicherten 5137477. Präzisierung nach dem Dreiton-Test: Brian wünscht
+deutlich getrennte Klangcharaktere. Die laufende Version 380c4ec bleibt erhalten;
+die Klanganpassung entsteht separat und wird erst in einer neuen Sitzung aktiv.
 
 ## Ziel
 
@@ -21,8 +22,8 @@ wurde. Ein eigener Ton genügt; es wird kein Whispering-Klang übernommen.
   aus. Bei Abbruch, fehlgeschlagener/geblockter Übergabe oder ausschließlich im
   RAM gehaltenem Ergebnis bleibt er aus. Manuelles Kopieren ist kein erfolgreicher
   automatischer Diktatabschluss.
-- CC-003: Start-/Stoppton, Stimmen, Kürzel, RAM-Ergebnis, Clipboardrestore und
-  Altstack-Rückweg bleiben erhalten. Der neue Ton verwendet den bestehenden
+- CC-003: Die Auslösezeitpunkte der drei Töne, Stimmen, Kürzel, RAM-Ergebnis,
+  Clipboardrestore und Altstack-Rückweg bleiben erhalten. Die Töne verwenden den bestehenden
   begrenzten lokalen Audiopfad, ohne Modell, Download oder Systemklangänderung.
 - CC-004: Veraltete/doppelte Completion-Ereignisse erzeugen keine weiteren
   Töne. Neue Aufnahme, Abbruch und Beenden dürfen den Ton unterbrechen; er darf
@@ -31,6 +32,11 @@ wurde. Ein eigener Ton genügt; es wird kein Whispering-Klang übernommen.
 - CC-005: Ein Fehler des Bestätigungstons darf die erfolgreiche Textübergabe
   nicht rückgängig machen, einen zweiten Paste auslösen oder das RAM-Ergebnis
   verwerfen. Er bleibt als technischer Audiofehler diagnostizierbar.
+- CC-006: Drei klar unterschiedliche Klangcharaktere: dumpfer tiefer Ton zum
+  Aufnahmebeginn, mittelhoher schlichter Ton zum Aufnahmeende, helles ausklingendes
+  Klingeln nach erfolgreichem Einfügen. Die Reihenfolge wird auch ohne Blick auf
+  die Oberfläche erkennbar. Eigene PCM-Synthese, höchstens 300ms je Signal und
+  unveränderte Amplituden-/Abbruchgrenzen. Hörbarkeit bleibt menschlich abzunehmen.
 
 Prüfen: erfolgreicher Ablauf und Reihenfolge, ausbleibender Ton bei Fehler/
 Abbruch/RAM-only, doppelte/späte Ereignisse, neue Aufnahme während Ton,
@@ -38,6 +44,12 @@ Audiofehler und Cleanup. Danach eigener Hörtest zur Unterscheidbarkeit und
 kurzer Diktattest durch Brian. Keine vollständige Produktabnahme daraus ableiten.
 
 ## Umsetzungshinweise und Grenzen
+
+Änderung am 19.10. nach Brians Test: Die frühere Erhaltung der Start-/Stoppton-
+Bytes ist durch CC-006 ausdrücklich ersetzt; alle drei Klangfarben dürfen sich
+ändern. Der zweite Ton bestätigt weiterhin nur das Aufnahmeende. Whispering
+dient als Referenz für getrennte Ereignisklänge und Glockenabschluss, nicht als
+übernommenes Audioasset. Technische Pitch-/Decayguards ergänzen den Hörtest.
 
 Der bestehende lokale Cue-Owner liegt in src/hugin/cues.py; die Übergabe und
 deren Ergebnis werden in src/hugin/application.py verarbeitet. Den Produzenten
