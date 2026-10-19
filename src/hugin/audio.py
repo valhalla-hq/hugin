@@ -3,8 +3,9 @@ from __future__ import annotations
 
 import ctypes as ct
 from ctypes import wintypes as wt
-from dataclasses import dataclass
+from dataclasses import dataclass,field
 import math
+import struct
 import threading
 import time
 
@@ -61,6 +62,34 @@ class _InputGate:
     cutoff: float | None = None
     cancelled: bool = False
     fault: HuginError | None = None
+    _level: float = 0.0
+    _level_at: float | None = None
+    _meter_open: bool = True
+    _meter_lock: threading.Lock = field(default_factory=threading.Lock,repr=False)
+
+    def measure(self,data,now):
+        # Exactly the latest <=32ms of accepted mono PCM16, with fixed callback
+        # work and no retained samples, queue or UI callback.
+        window=memoryview(data)[-1024:]
+        count=len(window)//2
+        squares=sum(sample*sample for (sample,) in struct.iter_unpack('<h',window))
+        level=math.sqrt(squares/count)/32768 if count else 0.0
+        with self._meter_lock:
+            if self._meter_open and not self.cancelled:
+                self._level,self._level_at=level,now
+
+    def close_meter(self,*,cancel=False):
+        with self._meter_lock:
+            if cancel:self.cancelled=True
+            self._meter_open=False
+            self._level,self._level_at=0.0,None
+
+    def level(self,now):
+        with self._meter_lock:
+            if (not self._meter_open or self.cancelled or self._level_at is None
+                    or not 0<=now-self._level_at<=.25):
+                return 0.0
+            return self._level
 
 
 def _windows_capture_options(sd):
@@ -83,12 +112,13 @@ def _windows_capture_options(sd):
 
 
 class Microphone:
-    def __init__(self, limit: int, stream_factory=None):
+    def __init__(self, limit: int, stream_factory=None, *, clock=time.monotonic):
         self.limit = limit
         self._factory = stream_factory
         self._stream = None
         self._buffer = None
         self._gate = None
+        self._clock = clock
 
     def start(self, *, armed=True):
         if type(armed) is not bool:
@@ -105,11 +135,13 @@ class Microphone:
                 return
             if status:
                 gate.fault = HuginError('microphone_failed','capture_callback')
+                gate.close_meter()
                 raise sd.CallbackAbort
             if gate.required:
                 adc = getattr(timing,'inputBufferAdcTime',None)
                 if type(adc) not in (int,float) or adc==0 or not math.isfinite(adc):
                     gate.fault = HuginError('microphone_failed','capture_clock')
+                    gate.close_meter()
                     raise sd.CallbackAbort
                 # A callback delivered after arming may contain old ADC data.
                 # Drop the whole block when it starts before the cutoff,
@@ -117,7 +149,9 @@ class Microphone:
                 if gate.cutoff is None or adc < gate.cutoff:
                     return
             if not buffer.append(data):
+                gate.close_meter()
                 raise sd.CallbackAbort
+            gate.measure(data,self._clock())
 
         try:
             options={}
@@ -153,20 +187,21 @@ class Microphone:
     def stop(self) -> bytes:
         if self._stream is None or self._buffer is None:
             raise HuginError('microphone_failed','capture_stop')
+        self._gate.close_meter()
         try:
             self._stream.stop(ignore_errors=False)
             self._stream.close(ignore_errors=False)
         except Exception:
             raise HuginError('microphone_failed','capture_stop') from None
         self._stream = None
-        self._gate.cancelled = True
+        self._gate.close_meter(cancel=True)
         if self._gate.fault:
             raise self._gate.fault
         return self._buffer.finish()
 
     def cancel(self):
         if self._gate is not None:
-            self._gate.cancelled = True
+            self._gate.close_meter(cancel=True)
         if self._buffer is not None:
             self._buffer.cancel()
         if self._stream is not None:
@@ -176,6 +211,13 @@ class Microphone:
             except Exception:
                 raise HuginError('microphone_failed','capture_close') from None
             self._stream = None
+
+    @property
+    def audio_level(self):
+        gate=self._gate
+        if self._stream is None or gate is None or self.fault is not None:
+            return 0.0
+        return gate.level(self._clock())
 
     @property
     def fault(self):

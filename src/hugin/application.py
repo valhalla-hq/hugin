@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime,timezone
 import itertools
 import json
+import math
 import queue
 import threading
 import time
@@ -162,6 +163,10 @@ class Controller:
         self._io_cleanup_failed = set()
         self._input_checks = dict(capture_native='not_run',capture_field='not_run',delivery='not_run')
         self._completion_cue: _CompletionCue | None = None
+        self._completion_id=0
+        self._completion_until=0.0
+        self._visual_epoch=0
+        self._delivery_visual: tuple[c.Job,int] | None = None
 
     def _input_status(self,job,phase,value):
         """Normalize once at the adapter boundary; keep no raw provider data."""
@@ -234,6 +239,9 @@ class Controller:
     def command(self, kind, value=None):
         """Prompt invalidation before clipboard waits; no model work on input threads."""
         with self._lock:
+            if kind in ('dictation','read','cancel','copy','clear','voice','quit',
+                    'system_pause','system_resume','devices_changed'):
+                self._clear_completion_visual()
             job = self._snapshot.job
             cue=self._invalidate_completion_cue(kind)
             starting_stop = kind == 'dictation' and job is not None and self._snapshot.state == c.State.STARTING
@@ -254,6 +262,19 @@ class Controller:
             try:self.cues.stop(cue.job)
             except HuginError as error:self._post(_CueFailure(error),priority=0)
         self._post(_Command(kind,value),priority=-1 if kind == 'quit' else 0)
+
+    def _clear_completion_visual(self):
+        with self._lock:
+            self._visual_epoch+=1
+            self._completion_until=0.0
+
+    def _accept_completion_visual(self,job,token):
+        with self._lock:
+            # Bind presentation eligibility when delivery starts. Input can
+            # invalidate it even before its queued finish handler begins.
+            if token.is_set() or self._delivery_visual!=(job,self._visual_epoch):return
+            self._completion_id+=1
+            self._completion_until=time.monotonic()+1.2
 
     def _invalidate_completion_cue(self,kind):
         if kind not in ('dictation','read','cancel','quit','system_pause','system_resume','devices_changed'):
@@ -388,7 +409,11 @@ class Controller:
             self.handle(c.Cancel()); return
         if isinstance(event,_CueFailure):
             self._runtime_error=event.error
+            self._clear_completion_visual()
             self._publish();return  # Cue failure preserves captured speech and delivered text.
+        if isinstance(event,(c.DictationToggle,c.ReadToggle,c.Cancel,c.Shutdown,
+                c.CopyResult,c.DeleteResult,c.VoiceSelected)):
+            self._clear_completion_visual()
         if isinstance(event,(c.DictationToggle,c.ReadToggle,c.Cancel,c.Shutdown)):
             # Recheck after queued input races registration; domain-level
             # failures also cancel the cue after the dictation job has ended.
@@ -403,8 +428,13 @@ class Controller:
         with self._lock:
             self._snapshot = self.core.snapshot()
             if self._snapshot.job: self._token(self._snapshot.job)
-        cue=(self._reserve_completion_cue(completed_job,completion_token)
-            if completed_job is not None and self._snapshot.job!=completed_job else None)
+        completed=completed_job is not None and self._snapshot.job!=completed_job
+        if completed:self._accept_completion_visual(completed_job,completion_token)
+        if isinstance(event,c.DeliveryFinished):
+            with self._lock:
+                if self._delivery_visual is not None and self._delivery_visual[0]==event.job:
+                    self._delivery_visual=None
+        cue=self._reserve_completion_cue(completed_job,completion_token) if completed else None
         accepted_audio = False
         for effect in effects:
             if isinstance(effect,c.SetEscape):
@@ -604,6 +634,7 @@ class Controller:
                 except Exception as error: self._post(_Failure(_safe_error(error,'audio')))
             self.audio_executor.submit(drain)
         elif isinstance(effect,c.StageDelivery):
+            with self._lock:self._delivery_visual=(effect.job,self._visual_epoch)
             token = self._token(effect.job)
             def current():
                 with self._lock:return not token.is_set() and self._snapshot.job == effect.job
@@ -807,7 +838,9 @@ class Controller:
              'gestört' if item.blocked else 'wird geladen' if loading and item.engine == loading.engine
              else 'bereit' if item.ready else 'bei Bedarf') for item in snap.components)
         pilot = getattr(self.inputs,'pilot',False)
-        activity = 'error' if error else {c.State.IDLE:'idle',c.State.RECORDING:'recording',c.State.TTS_PLAYING:'playing'}.get(snap.state,'preparing')
+        activity = 'error' if error else {c.State.IDLE:'idle',c.State.RECORDING:'recording',
+            c.State.TRANSCRIBING:'processing',c.State.DELIVERING:'processing',
+            c.State.TTS_PLAYING:'playing'}.get(snap.state,'preparing')
         status=labels[snap.state]
         if loading and loading.job == snap.job and snap.job:
             status=('Whisper' if loading.engine == c.Engine.STT else 'Qwen')+' wird geladen'
@@ -817,10 +850,20 @@ class Controller:
         if not self.inputs.running or self.inputs.error: status='Eingaben nicht bereit'
         elif self.signals is not None and not self.signals.ready and not self._stop:
             status='Windows-Verbindung nicht bereit'
+        audio_level=0.0
+        if not error and snap.state==c.State.RECORDING:
+            try:observed=getattr(self.microphone,'audio_level',0.0)
+            except Exception:observed=0.0
+            if type(observed) in (int,float) and math.isfinite(observed) and 0<=observed<=1:
+                audio_level=float(observed)
+        with self._lock:
+            completion_id=self._completion_id
+            completion_until=0.0 if error else self._completion_until
         view = View(status=status,voice=snap.voice,text=snap.result.text if snap.result else '',
             detail='Erneut drücken, um das Diktat abzuschließen.' if snap.state == c.State.RECORDING else '',
             mode='Lokal · Pilot' if pilot else 'Lokal',components=components,
-            error=MESSAGES.get(error,'') if error else '',activity=activity)
+            error=MESSAGES.get(error,'') if error else '',activity=activity,audio_level=audio_level,
+            completion_id=completion_id,completion_until=completion_until)
         if pilot:
             from dataclasses import replace
             view=replace(view,dictation_shortcut='Strg+Alt+D · erneut: fertig',
