@@ -50,5 +50,8 @@
   Browser-/App-Steuerungssperre umgehen und keinen Testtext absenden.
   Manuell fokussiertes leeres Feld: Aufnahme und je5 Bestätigungen mit Main
   UND Kandidat bestanden. Echte Diktatfehlersituation bleibt offen.
-- [ ] DC-T15: Spec-/Standardsreview, Context/Handoff und privater Draftcheckpoint
+- [x] DC-T15: Spec-/Standardsreview, Context/Handoff und privater Draftcheckpoint
   am unveränderten geprüften Source. Keine Produktionsumstellung behaupten.
+  Beide Reviews ohne Befund. DraftPR11 am inhaltlichen Commit70c874f,
+  drei Hostedchecks grün; nachfolgender Dokumentcheckpoint und finaler
+  Remote-/Blobnachweis werden separat am tatsächlichen Head geprüft.

@@ -109,3 +109,11 @@ Codex-Paste/Absenden/automatisches Fokussieren. Weitere Proben müssen den
 tatsächlichen Ablauf samt Capture-/Delivery-Status erfassen. Kein neuer Hugin-
 Pilot gestartet; eigenes ungespeichertes Word-Testdokument bleibt offen.
 Altstack, Profile und Startup-lnks unverändert. Keine Produktionsumstellung.
+
+Draft-PR11: https://github.com/valhalla-hq/hugin/pull/11, inhaltlicher
+Commit70c874f90580e5962074ec663aaa528df23055ce, alle drei Hostedchecks grün.
+Neue lokale Diagnosestarter im Task-.runtime sind vorbereitet und ausschließlich
+im Planmodus geprüft. Sie bleiben an finalen Source-/Mainhead und geprüfte
+Rückweg-Shortcuts gebunden. Vor einem echten Start Altstack normal pausieren;
+der nächste Codex-Beleg kommt durch Brians eigene Diktateingabe. Kein
+automatisches Fokussieren/Paste in Codex, keine neue Appinstallation.

@@ -13,8 +13,10 @@ weiter eingrenzen; keine Gesamtproduktabnahme oder Produktionsmigration.
 - Base: main`defe3d8f0ef9e564da1936a77b931476cbafc98a` (PR10-Merge).
 - Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-codex-word-fix-mjolnir.
 - Ownership: aktiv auf Mjolnir für diesen Chat.
-- PR: erste inhaltliche Änderung wird als neue Draft-PR gesichert; exakten
-  Remotehead und PR-Link vor Fortsetzung frisch lesen.
+- PR: https://github.com/valhalla-hq/hugin/pull/11 (Draft).
+- Geprüfter inhaltlicher Commit:70c874f90580e5962074ec663aaa528df23055ce;
+  drei Hostedchecks daran erfolgreich. Folgender Checkpoint ändert nur
+  Dokumentation; finalen Remotehead/Checkstatus frisch lesen.
 - Authorization: Brian setzt den verlinkten Hugin-Chat fort. Die dort
   beauftragten Codex-/Word-Fälle sind der Scope. Kein Policy-/Public-/Autostartauftrag.
 
@@ -57,6 +59,25 @@ manuell angefasst. Whispering ist geöffnet. Keine Hugin-App, Aufnahme oder
 Sprachworker durch diese Proben gestartet. Das eigene Word-Testdokument bleibt
 ungespeichert offen. Bestehende Profile, Startup-lnks und Altstack erhalten.
 
+Der lokale Starter .runtime/Hugin-Codex-Word-Test.cmd im neuen Worktree ist
+für den finalen Checkpoint vorgesehen. Sein Supervisor bindet exakten Source-
+und Main-/Runtimehead, prüft unveränderte Worker-/Konfigurationsinputs und die
+beiden vorhandenen Rückweg-Shortcuts. Er wurde nur im Planmodus geprüft;
+es wurde kein Hugin oder Sprachworker gestartet. Vor dem echten Start müssen
+Whispering/PipPal normal beendet sein (alter Qwen-Worker existiert aktuell).
+Beim normalen Hugin-Ende startet der gehaltene Supervisor die vorhandenen
+Shortcutziele wieder. Keine Maus-/Alt+Y-/Autostartänderung.
+
+Die lokale Diagnosesitzung behält nur die vorhandenen geschlossenen Felder
+state/input_checks/error_code/pending_cleanup/last_input_utc als letzten Stand
+in .runtime/input-status.json und gegebenenfalls einen begrenzten Ablehnungsort
+des eigenen Produzenten in .runtime/field-probe-rejection.json. Keine Texte,
+Audio, UIA-IDs, Fenster-/Dokumenttitel, URLs oder Umgebung. Diese ignorierten
+temporären Hilfen sind keine Produktänderung oder dauerhafte Installation.
+Sobald der Pilot läuft, hängt er am Sourcepfad dieses Worktrees: Source und
+Hilfen dann nicht verändern/entfernen, bevor normaler Quit/Familienabschluss
+oder eine separat geprüfte unveränderliche Sourcebindung erfolgt ist.
+
 ## Open Blockers
 
 - Codex: tatsächlicher Diktatablauf mit technischem Capture-/Delivery-Status
@@ -70,9 +91,11 @@ ungespeichert offen. Bestehende Profile, Startup-lnks und Altstack erhalten.
 
 1. Exakten Branch-/PR-/CI-Zustand lesen. Source und Runtime getrennt halten;
    C:/Users/brian/Hugin bleibt Main-Deploymentclone.
-2. Einen zum exakten Kandidaten passenden manuell gestarteten Piloten mit
-   bestehendem Altstack-Rückweg vorbereiten; keine alten headgebundenen Starter
-   ungeprüft wiederverwenden. Benutzer führt Codex-Eingaben selbst aus.
+2. Den zum finalen Kandidaten passenden Starter frisch im Planmodus prüfen,
+   Altstack normal pausieren und Pilot manuell starten. Keine alten Starter
+   wiederverwenden. Benutzer führt Codex-Eingaben selbst aus: Strg+Alt+D,
+   kurzer synthetischer Satz, nochmals Strg+Alt+D; kein Enter/Absenden nötig.
+   Danach die begrenzten lokalen Statusdateien lesen.
 3. Capture-/Delivery-Status am tatsächlichen Fehler auswerten und erst danach
    eine weitere Ursache ändern. Den Word-Fix nicht als Codex-Fix deklarieren.
 
