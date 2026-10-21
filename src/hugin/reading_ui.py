@@ -46,7 +46,7 @@ class ReadingPanel:
             padx=0,pady=0,state='disabled',takefocus=False)
         self.scroll=ttk.Scrollbar(self.scene,command=self.text.yview)
         self.text.configure(yscrollcommand=self.scroll.set)
-        self.text.tag_configure('reading_word',background=BLUE,foreground=FIELD)
+        self.text.tag_configure('reading_word',foreground='#ffffff',font=('Segoe UI',12,'bold'))
         self._controls={widget:self.scene.create_window(0,0,window=widget,anchor='nw')
                         for widget in (*self.buttons,self.text,self.scroll)}
 
@@ -113,7 +113,9 @@ class ReadingPanel:
             def place(widget,x,y,w,h):
                 self.scene.coords(self._controls[widget],round(x),round(y))
                 self.scene.itemconfigure(self._controls[widget],width=max(1,round(w)),height=max(1,round(h)))
-            self.text.configure(font=('Segoe UI',-max(10,round(16*s))))
+            font_size=-max(10,round(16*s))
+            self.text.configure(font=('Segoe UI',font_size))
+            self.text.tag_configure('reading_word',font=('Segoe UI',font_size,'bold'))
             place(self.text,30*s,60*s,width-76*s,height-130*s)
             place(self.scroll,width-40*s,60*s,10*s,height-130*s)
             button_w,button_h,gap=round(112*s),round(32*s),round(8*s)

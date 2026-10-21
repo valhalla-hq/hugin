@@ -61,7 +61,7 @@ The repeated standard sentence aligns with both voices; Tyr's numbers fixture
 aligns 17 words; Freya's produces a zero-duration lexical word and honest fallback.
 A real Controller/native silent-clock run marks 54 words across 2 sections with
 0.55ms observed drain-to-next-start gap. Initial cold preparation 26.965s includes
-both worker/model loads; actual heard synchronization remains a user probe.
+both worker/model loads; this measurement itself did not establish heard timing.
 
 ## Integration, running state and next work
 
@@ -73,20 +73,30 @@ The clean stable main clone fast-forwarded under a freshly acquired InstanceGuar
 source tree is 6974b5699053b8db06e5981ba26ee99448f7e1a6. Hugin launched normally
 with stable pythonw/launch/root and --show at 17:32:15 local. Its own visible
 window was checked and showed Qwen loading for reading. No UI input was sent.
-This confirms deployment/start, not heard word accuracy or user acceptance.
+This observation confirms deployment/start only. Brian subsequently confirmed
+that word marking and timing fit both Freya and Tyr in his hearing test.
 
 Never terminate via remembered PID. Whispering/PipPal stay disabled. Stable
 root is C:/Users/brian/Hugin junction to C:/Users/brian/brian-projects/_repos/hugin.
 No setting/runtime/startup change. Parent/helper ownership remains active for
 this savepoint; no cleanup or release has been claimed.
 
-Next: receive Brian's real Freya/Tyr hearing/word-follow result, including
-pause/resume and hide/show, then save acceptance and close the task. The async
-hearing question is pending in the current chat. Source rollback is main
-11216cc after normal Quit. Packaging and next-login proof remain separate.
+Next: finish Brian's visual follow-up, which replaces the filled highlight with
+bold white current-word text like PipPal. The source read is local PipPal
+webui/css/theme.css (current-word rule) and webui/js/overlay.js (current class).
+Candidate touches only reading_ui.py's tag/font styling; accepted audio/word
+selection remains unchanged. Five existing hidden native word-panel checks pass
+after the styling edit (1.138s). An owned synthetic panel was visually checked:
+the active word is white and bold, without a filled highlight. Native font
+readback at normal and small scales confirms matching normal/bold font sizes.
+The preview uses a standard discoverable wrapper only for inspection; the
+production panel wrapper and focus behavior are unchanged. Finish independent
+review, checked PR34 integration and normal restart. Source rollback for this styling is
+PR33 fd81c169; whole-feature rollback is 11216cc after normal Quit.
+Packaging and next-login proof remain separate.
 
 Starter: Continue Hugin word highlighting from this exact handoff. PR33 is
-merged and deployed; verify fresh state and Brian's hearing result before
-changing code. Use this active parent worktree and preserve the accepted
+merged, deployed and hearing-accepted. Complete the requested bold-word styling
+from this active parent worktree and preserve the accepted
 input/clipboard/startup behavior. Do not repeat completed GPU/native probes
 without new evidence or claim perceptual acceptance from those probes.

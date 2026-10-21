@@ -11,6 +11,10 @@ reading-panel exclusion of alignment work. The source document is not modified.
   Pause freezes it; resume continues; hide/show restores the current word.
   Stop, new job, voice change and dictation clear stale text/marks and retain
   existing priority/cancellation. Follow the active word into view.
+- REQ-004: Following Brian's successful Freya/Tyr listening acceptance, render
+  the active word in bold white text without a filled background, inspired by
+  PipPal's current-word typography. Keep its font size aligned with the panel's
+  normal text at every scale; preserve the accepted timing and text offsets.
 - REQ-003: Preserve Freya/Tyr speech and the original selected text. On unavailable
   or rejected alignment retain useful section display and speech, explicitly
   showing that word marking is unavailable rather than inventing timestamps.
@@ -42,4 +46,5 @@ warm Tyr 0.721s; process-family peak committed memory 4,808,503,296 bytes.
 This establishes the installed API on approved synthetic references, not timing
 accuracy or GPU performance. Production reuses the STT worker and GPU slot;
 there is no additional model or resident CPU owner. Token probabilities are not
-treated as calibrated timing confidence. Actual voice timing remains to verify.
+treated as calibrated timing confidence. Brian confirmed perceived timing with
+both voices after PR33 deployment; this does not prove all texts or model paths.

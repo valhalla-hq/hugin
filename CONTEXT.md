@@ -1,7 +1,8 @@
 # Hugin Context
 
 Status: audio-based word highlighting is integrated through PR33 and deployed.
-Real GPU/clock checks and both independent reviews passed; hearing acceptance is pending.
+Real GPU/clock checks and both independent reviews passed. Brian accepted timing
+with both voices; his requested bold-word presentation refinement is in progress.
 Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
 
 ## Current intent and authorization
@@ -30,8 +31,10 @@ The previously accepted source is PR31 late field capture, merged as 4e18f746;
 PR32 recorded Brian's successful click-away/return dictation test. After Brian's
 normal Quit, exclusive GPU/clock probes passed and closed their resources.
 PR33 was deployed under InstanceGuard to the clean stable clone; Hugin started
-at 17:32:15 local on 2026-10-21. Its own window was observed loading Qwen for
-reading. Actual heard word agreement remains pending in the current chat.
+at 17:32:15 local on 2026-10-21. Brian then confirmed that word timing fits both
+Freya and Tyr. He requests a visual refinement following PipPal: the current
+word should be bold rather than shown on a filled highlight. Candidate changes
+only the word tag to white bold text, with matching font size at each panel scale.
 No stored PID is termination authority. Whispering and PipPal remain disabled and must not auto-return.
 
 Accepted: screenshot plus dictation in Codex, clipboard fallback for Ctrl+V,
