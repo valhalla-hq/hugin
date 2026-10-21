@@ -50,15 +50,27 @@ fake first-failing I/O reproduced it; Quit is now processed before readiness,
 and publication remains usable during cleanup. Four cleanup guards pass; full
 557-check suite passed 23.701s plus docs check. Independent spec and standards
 delta reviews cleared 1cdad90afc3ca6b804f5e573e9340f421b259501. PR37:
-https://github.com/valhalla-hq/hugin/pull/37. Final docs/hosted gate and merge remain.
+https://github.com/valhalla-hq/hugin/pull/37.
 
-Next: final documentation review, hosted checks, exact-head merge and guarded
-stable update. Source reviews and real measurements are complete.
+Both final evidence reviews cleared ee4e73b52c3659c6a5df32ad2cd0288e25840de8;
+all three hosted checks passed. PR identity, unchanged head, 11-file scope and
+checks were re-read immediately before merge. PR37 merged at 17:09:11Z as
+3c988de490796d6f5a31d29afe4960412a15fd0e. Under freshly acquired InstanceGuard,
+the clean stable clone fast-forwarded from 9ec85225 to that exact main. Source
+tree is 4b932d8298423b1ff4b7f3c4e7ab8e604c0cda3b. Normal pythonw/launch/root --show
+start was at 19:09:21 local, 21 October 2026. The freshly discovered own Hugin
+window showed Bereit für dein Diktat. No app input was sent. The user was asked
+to compare both voices and a second warm text; response is pending. Startup
+links, preferences and disabled Whispering/PipPal were not changed.
+
+Next: receive listening feedback. Source review, checked integration, real
+measurements and deployment are complete. Ownership remains active for this
+saved continuation; no worktree cleanup or hearing acceptance is claimed.
 Return path: base main after normal Quit. Listening acceptance remains necessary
 for changed sentence prosody; native silent playback proves only scheduling.
 
 Starter: Continue faster reading start from this exact handoff and the matching
-spec. Preserve accepted word timing and style A. Integrate/deploy the checked scope
-after the final documentation/hosted gate; do not repeat completed probes without
-new changes or a failing result. No repeated model downloads
+spec. Preserve accepted word timing and style A. PR37 is integrated and running;
+receive the pending hearing feedback. Do not repeat completed probes without new
+changes or a failing result. No repeated model downloads
 or startup changes, and no return of Whispering/PipPal.
