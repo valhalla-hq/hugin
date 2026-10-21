@@ -87,6 +87,13 @@ class Component:
 
 
 @dataclass(frozen=True)
+class ReadingSection:
+    index: int
+    total: int
+    text: str
+
+
+@dataclass(frozen=True)
 class Snapshot:
     state: State
     job: Job | None
@@ -99,6 +106,9 @@ class Snapshot:
     components: tuple[Component, ...]
     error: Failure | None
     escape_reserved: bool
+    reading_section: ReadingSection | None
+    reading_total: int
+    reading_paused: bool
 
 
 class Event:
@@ -113,6 +123,17 @@ class DictationToggle(Event):
 @dataclass(frozen=True)
 class ReadToggle(Event):
     pass
+
+
+@dataclass(frozen=True)
+class PauseReading(Event):
+    request_id: str
+
+
+@dataclass(frozen=True)
+class SectionStarted(Event):
+    job: Job
+    section: ReadingSection
 
 
 @dataclass(frozen=True)
@@ -284,6 +305,13 @@ class PlayAudio(Effect):
     job: Job
     pcm: bytes
     sequence: int
+    section: ReadingSection
+
+
+@dataclass(frozen=True)
+class PauseAudio(Effect):
+    job: Job
+    paused: bool
 
 
 @dataclass(frozen=True)
@@ -389,6 +417,9 @@ class Coordinator:
         self._tts_chunks: deque[str] = deque()
         self._audio_sequence = 0
         self._tts_terminal = False
+        self._section: ReadingSection | None = None
+        self._reading_section: ReadingSection | None = None
+        self._reading_paused = False
         self._delivery_attempted = False
         self._shutdown = False
         self._dispatching = False
@@ -402,7 +433,9 @@ class Coordinator:
         retired = (self._slot,) if self._slot and self._slot.job is not None and self._slot.job != self._job else ()
         return Snapshot(self._state, self._job, self._cancelling, self._generation,
                         self._voice, self._result, self._slot, retired,
-                        tuple(self._components.values()), self._error, self._job is not None)
+                        tuple(self._components.values()), self._error, self._job is not None,
+                        self._reading_section, self._section.total if self._section else 0,
+                        self._reading_paused)
 
     def dispatch(self, event: Event) -> tuple[Effect, ...]:
         if self._dispatching:
@@ -434,6 +467,7 @@ class Coordinator:
         self._stopping_capture = False
         self._delivery_attempted = False
         self._tts_chunks.clear()
+        self._clear_reading()
         self._audio_sequence = 0
         self._tts_terminal = False
         self._job_voice = self._voice if kind == JobKind.READING else None
@@ -452,7 +486,12 @@ class Coordinator:
         self._job_voice = None
         self._selection_pending = None
         self._tts_chunks.clear()
+        self._clear_reading()
         self._state = State.ERROR if self._error else State.IDLE
+
+    def _clear_reading(self):
+        self._section = self._reading_section = None
+        self._reading_paused = False
 
     def _cancel(self, effects: list[Effect]) -> None:
         job = self._job
@@ -467,6 +506,7 @@ class Coordinator:
         self._job_voice = None
         self._selection_pending = None
         self._tts_chunks.clear()
+        self._clear_reading()
         self._state = State.CANCELLING
         if job.kind == JobKind.READING:
             effects.extend((CancelSelection(job), ResetAudio(job)))
@@ -518,7 +558,7 @@ class Coordinator:
         return None
 
     def _schedule(self, effects: list[Effect]) -> None:
-        if self._shutdown or self._job is None or self._slot is not None or self._payload is None:
+        if self._shutdown or self._job is None or self._slot is not None or self._payload is None or self._reading_paused:
             return
         engine = Engine.STT if self._job.kind == JobKind.DICTATION else Engine.TTS
         component = self._components[engine]
@@ -649,6 +689,20 @@ class Coordinator:
         if isinstance(event, Cancel):
             self._cancel(effects)
             return
+        if isinstance(event, PauseReading):
+            if (self._job and self._job.request_id == event.request_id and
+                    self._job.kind == JobKind.READING and self._reading_section is not None):
+                self._reading_paused = not self._reading_paused
+                effects.append(PauseAudio(self._job,self._reading_paused))
+                if not self._reading_paused:self._schedule(effects)
+            return
+        if isinstance(event, SectionStarted):
+            if (event.job == self._job and self._section is not None and
+                    event.section.total == self._section.total and
+                    1 <= event.section.index <= self._section.index and
+                    (self._reading_section is None or event.section.index > self._reading_section.index)):
+                self._reading_section = event.section
+            return
         if isinstance(event, VoiceSelected):
             if event.voice not in ('freya', 'tyr'):
                 self._error = Failure('config_invalid', 'preferences')
@@ -699,7 +753,9 @@ class Coordinator:
                 self._fail(HuginError('selection_empty'), 'selection', effects)
             else:
                 self._tts_chunks = self._split_selection(event.text)
+                total = len(self._tts_chunks)
                 self._payload = self._tts_chunks.popleft()
+                self._section = ReadingSection(1,total,self._payload)
                 self._schedule(effects)
             return
         if isinstance(event, AudioReset):
@@ -807,6 +863,7 @@ class Coordinator:
             elif current and operation.action == Action.SYNTHESIZE:
                 if self._tts_chunks:
                     self._payload = self._tts_chunks.popleft()
+                    self._section = ReadingSection(self._section.index+1,self._section.total,self._payload)
                 else:
                     self._tts_terminal = True
                     effects.append(DrainAudio(operation.job, self._audio_sequence))
@@ -842,4 +899,4 @@ class Coordinator:
             else:
                 self._audio_sequence += 1
                 self._state = State.TTS_PLAYING
-                effects.append(PlayAudio(operation.job, event.pcm, self._audio_sequence))
+                effects.append(PlayAudio(operation.job, event.pcm, self._audio_sequence,self._section))

@@ -253,7 +253,7 @@ class _WaveOut:
             fn = getattr(self.api,name)
             fn.argtypes = [ct.c_void_p,ct.POINTER(_Header),wt.UINT]
             fn.restype = wt.UINT
-        for name in ('waveOutReset','waveOutClose'):
+        for name in ('waveOutReset','waveOutClose','waveOutPause','waveOutRestart'):
             fn = getattr(self.api,name);fn.argtypes=[ct.c_void_p];fn.restype=wt.UINT
         self.handle = ct.c_void_p()
         self.buffers = []
@@ -297,6 +297,9 @@ class _WaveOut:
         if self.buffers:
             raise HuginError('audio_failed','playback_reset')
 
+    def pause(self,paused):
+        self._check((self.api.waveOutPause if paused else self.api.waveOutRestart)(self.handle))
+
     def close(self):
         self.reset()
         self._check(self.api.waveOutClose(self.handle))
@@ -316,6 +319,7 @@ class PCMOutput:
         self._factory = factory or _WaveOut
         self._player = None
         self._job = None
+        self._paused = False
         self._lock = threading.RLock()
 
     def start(self, job):
@@ -327,7 +331,14 @@ class PCMOutput:
             self._player = self._factory(self.rate)
             self._job = job
 
-    def write(self, pcm: bytes, job, cancelled=lambda:False) -> bool:
+    def pause(self,job,paused) -> bool:
+        with self._lock:
+            if self._job != job or self._player is None:return False
+            self._player.pause(paused)
+            self._paused = paused
+            return True
+
+    def write(self, pcm: bytes, job, cancelled=lambda:False, *, started=None) -> bool:
         if not isinstance(pcm,bytes) or len(pcm)>MAX_PCM_WRITE_BYTES or len(pcm)%2:
             raise HuginError('protocol_invalid','playback')
         offset = 0
@@ -338,10 +349,11 @@ class PCMOutput:
                 if self._job != job or self._player is None:
                     return False
                 self._player.collect()
-                available = self.capacity-self._player.queued_bytes
+                available = 0 if self._paused else self.capacity-self._player.queued_bytes
                 count = min(len(pcm)-offset,self._block_bytes,max(0,available))//2*2
                 if count:
                     self._player.submit(pcm[offset:offset+count])
+                    if offset == 0 and started is not None:started()
                     offset += count
                     continue
             time.sleep(.005)
@@ -353,7 +365,7 @@ class PCMOutput:
                 if self._job != job or self._player is None:
                     return False
                 self._player.collect()
-                if not self._player.queued_bytes:
+                if not self._paused and not self._player.queued_bytes:
                     return True
             time.sleep(.005)
         return False
@@ -361,6 +373,7 @@ class PCMOutput:
     def stop(self):
         with self._lock:
             self._job = None
+            self._paused = False
             if self._player is not None:
                 self._player.reset()
 

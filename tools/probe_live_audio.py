@@ -206,8 +206,8 @@ def probe(root, *, run=False, cancel=False):
 
     class Output(PCMOutput):
         closed = False
-        def write(self, pcm, job, cancelled=lambda:False):
-            accepted = super().write(pcm, job, cancelled)
+        def write(self, pcm, job, cancelled=lambda:False, *, started=None):
+            accepted = super().write(pcm, job, cancelled,started=started)
             if accepted and current['cancel'] and current['cancel_started'] is None:
                 current['cancel_started'] = time.monotonic()
                 controller.command('cancel')

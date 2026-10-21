@@ -1,6 +1,6 @@
 # Hugin Context
 
-Status: accepted pilot baseline integrated; next reading stage authorized
+Status: accepted pilot baseline integrated; reading panel candidate under verification
 Owner: Brian
 Repository: private `valhalla-hq/hugin`; runtime Mjolnir.
 Data boundary: curated source, configuration, locks and approved synthetic voice
@@ -53,20 +53,29 @@ launcher before any later restart; never blindly replay an old starter.
 
 ## Active work
 
-Exclusive closeout branch: codex/hugin-baseline-closeout-mjolnir.
-Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-baseline-closeout-mjolnir.
-PR19 merged at checked head 9968193a19b633245be4ab85c6465e72cf34f795;
-main/deployment is 81c2ffc8cf8585152b369cdae8492d093b7b2a4f. PR11 is marked
-merged through ancestry; incorporated PR12-18 are closed. Runtime/worker inputs
-remain identical, live pilot stays d1331da. Final receipt is a documentation-only
-follow-up. Ownership release requires the standard exact handoff marker below.
-Older handoffs are historical checkpoints, not current launch instructions.
+PR19 and the PR20 documentation receipt are merged; main/deployment is
+8fdd3e4bb2282014bdb6b841a08cfec77d51e416. PR11 is merged through ancestry;
+incorporated PR12-18 are closed. Closeout and inactive PR11-17 source ownerships
+were released through the workspace tool; their recovery files remain. The live
+screenshot pilot stays d1331da with ownership active and all helpers intact.
+
+Exclusive new branch: codex/hugin-reading-panel-mjolnir.
+Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-reading-panel-mjolnir.
+Spec/plan/tasks: specs/2026-10-21-reading-panel/. Adds section orientation,
+native pause/resume, session visibility, no-activation display and job-bound
+controls. Worker playback-credit lifetime now permits a deliberate long pause;
+cancel/fault cleanup remains bounded. No word-time estimator or text history.
+Do not advance deployment worker sources while the old live pilot can start
+workers there. PR21 holds the candidate: 471 full checks, 19 native/geometry
+checks and separate spec/standards reviews pass. Resolve final exact-head CI and
+integration from PR21, then wait for normal old-pilot exit before deployment.
+The real Freya/Tyr and monitor user pilot remains open.
 Preflight/control: e3deecae6673a024aa9015a4387737fbec04c795.
 Ownership remains active until clean remote checkpoint/release proof.
 
 ## Active Handoff
 
-- `handoffs/2026-10-21-baseline-closeout.md`
+- `handoffs/2026-10-21-reading-panel.md`
 
 ## Next stage agreed by Brian
 

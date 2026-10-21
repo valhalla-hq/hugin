@@ -1,5 +1,6 @@
 """Protocol/process simulations only; these do not verify any model provider."""
 from pathlib import Path
+from dataclasses import replace
 import subprocess
 import sys
 import tempfile
@@ -208,6 +209,8 @@ class SimulatedWorkerTests(unittest.TestCase):
                 release.wait(timeout=5)
                 finished.set()
         client=self.client('tts',callback)
+        # A deliberate local pause may exceed initialization readiness time.
+        client.settings=replace(client.settings,limits={**client.settings.limits,'ready_seconds':.05})
         future=client.synthesize('Terminal race','freya',str(uuid.uuid4()),1)
         try:
             self.assertTrue(entered.wait(timeout=5))

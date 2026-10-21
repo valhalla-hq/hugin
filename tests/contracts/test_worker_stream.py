@@ -1,6 +1,7 @@
 """Deterministic engine/transport simulations; no GPU or native audio claim."""
 import io
 import threading
+import time
 import unittest
 import uuid
 from types import SimpleNamespace
@@ -13,6 +14,25 @@ from test_audio import FIFO
 
 
 class StreamContracts(unittest.TestCase):
+    def test_completed_provider_can_wait_for_paused_credit_beyond_ready_timeout(self):
+        server,identity=self.server()
+        server.settings.limits['ready_seconds']=.02
+        waiting=threading.Event();release=threading.Event();result=[]
+        class Engine:
+            def synthesize(self,*args):yield b'\0\0'
+        def credit(abort=None):
+            waiting.set();return release.wait(1)
+        server._wait_credit=credit
+        owner=threading.Thread(target=lambda:result.append(server._operate(Engine(),self.command(),identity)))
+        owner.start()
+        try:
+            self.assertTrue(waiting.wait(1));time.sleep(.08)
+            self.assertTrue(owner.is_alive(),'paused credit is not failed initialization')
+            self.assertEqual(result,[])
+        finally:
+            release.set();owner.join(1)
+        self.assertEqual(result,[(None,2,True)])
+
     def server(self, output=None):
         settings = SimpleNamespace(limits=dict(frame_bytes=65536,
             audio_buffer_ms=250, control_bytes=65536, ready_seconds=2,
