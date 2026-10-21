@@ -49,7 +49,7 @@ class Output:
 
 class Clipboard:
     def __init__(self): self.submissions = []; self.copies = []; self.cancel_at_commit = None
-    def capture_native_target(self): return NS(target='target', status='target_captured')
+    def capture_native_target(self): return NS(target='target', status='native_target_captured')
     def capture_target(self, **kwargs): return NS(target='target', status='target_captured')
     def capture_selection(self, cancelled): return NS(text='Synthetischer Test.', status='captured')
     def deliver(self, text, target, still_current, *, authorize, commit):
@@ -127,6 +127,109 @@ class ApplicationContracts(unittest.TestCase):
         self.assertEqual(self.controller.core.snapshot().result.text, 'synthetic marker')
         # Delivery is complete, but GPU native ownership remains until terminal.
         self.assertEqual(self.controller.core.snapshot().gpu_slot, op)
+
+    def test_recording_focus_changes_resolve_recovered_field_at_final_text(self):
+        focused=['first field'];ready=[False];captures=[];destinations=[]
+        self.clipboard.capture_native_target=lambda:NS(target=focused[0],status='native_target_captured')
+        def capture(*,expected,cancelled):
+            captures.append(expected)
+            if expected!=focused[0]:return NS(target=None,status='target_changed')
+            return NS(target=expected if ready[0] else None,
+                      status='target_captured' if ready[0] else 'target_unverifiable')
+        self.clipboard.capture_target=capture
+        original=self.clipboard.deliver
+        def deliver(text,target,*args,**kwargs):
+            destinations.append(target)
+            return original(text,target,*args,**kwargs)
+        self.clipboard.deliver=deliver
+        self.controller.command('dictation');self.pump()
+        focused[0]='outside field'
+        focused[0]='last chosen field'
+        self.controller.command('dictation');self.pump()
+        stop_phase=json.loads(self.controller.diagnostic())['input_checks']['capture_field']
+        self.pool.future.set_result({'engine_instance':'actual-stt','device':'cpu'});self.pump()
+        ready[0]=True
+        request,generation=self.pool.inference[-1]
+        self.controller.worker_event(dict(type='result',engine='stt',engine_instance='actual-stt',
+            request_id=request,generation=generation,text='late field test'));self.pump()
+        self.assertEqual(captures,['last chosen field'])
+        self.assertEqual(self.clipboard.submissions,['late field test'])
+        self.assertEqual(destinations,['last chosen field'])
+        self.assertEqual(stop_phase,'not_run')
+        self.assertEqual(json.loads(self.controller.diagnostic())['input_checks']['delivery'],'submitted')
+
+    def test_changed_target_after_stop_is_copied_without_insertion(self):
+        focused=['stop field'];captures=[]
+        self.clipboard.capture_native_target=lambda:NS(target=focused[0],status='native_target_captured')
+        def capture(*,expected,cancelled):
+            captures.append(expected)
+            return NS(target=expected if expected==focused[0] else None,
+                      status='target_captured' if expected==focused[0] else 'target_changed')
+        self.clipboard.capture_target=capture
+        self.dictation_ready()
+        focused[0]='different window'
+        request,generation=self.pool.inference[-1]
+        self.controller.worker_event(dict(type='result',engine='stt',engine_instance='actual-stt',
+            request_id=request,generation=generation,text='retain after change'));self.pump()
+        self.assertEqual(captures,['stop field'])
+        self.assertEqual(self.clipboard.submissions,[])
+        self.assertEqual(self.clipboard.copies,['retain after change'])
+        checks=json.loads(self.controller.diagnostic())['input_checks']
+        self.assertEqual((checks['capture_field'],checks['clipboard'],checks['delivery']),
+                         ('target_changed','copied','not_attempted'))
+
+    def test_cancelled_recognition_never_starts_late_field_probe(self):
+        captures=[]
+        self.clipboard.capture_target=lambda **kwargs:captures.append(kwargs)
+        self.dictation_ready()
+        request,generation=self.pool.inference[-1]
+        self.controller.command('cancel');self.pump()
+        self.controller.worker_event(dict(type='result',engine='stt',engine_instance='actual-stt',
+            request_id=request,generation=generation,text='stale result'));self.pump()
+        self.assertEqual(captures,[])
+        self.assertEqual(self.clipboard.submissions,[])
+        self.assertEqual(self.clipboard.copies,[])
+
+    def test_same_native_window_binds_current_uia_field_at_delivery(self):
+        from dataclasses import replace
+        from test_windows_clipboard import FakeClipboard
+        from hugin.windows.clipboard import ClipboardService, NativeClipboard, UiaTargetIdentity
+        backend=FakeClipboard()
+        base=replace(backend.target,control_class='Chrome_WidgetWin_1',
+                     caret=None,selection=None,native_editable=False)
+        first=UiaTargetIdentity((1,),(2,),(1,),(1,),base.pid,(0,0),0,0)
+        last=UiaTargetIdentity((3,),(2,),(3,),(3,),base.pid,(4,4),0,0)
+        focused=[first];captures=[];destinations=[]
+        def probe(*args):
+            captures.append(focused[0])
+            return NS(status='target_captured',identity=focused[0])
+        # Exercise the production native-basis comparison without Windows I/O.
+        native=NativeClipboard.__new__(NativeClipboard)
+        native.capture_native_target=lambda:base
+        native._selection_probe=NS(capture_target=probe)
+        backend.capture_native_target=lambda:base
+        backend.capture_target=native.capture_target
+        backend.target=replace(base,uia=first)
+        original_commit=backend.commit_paste
+        def commit(expected,target,*args,**kwargs):
+            destinations.append(target)
+            return original_commit(expected,target,*args,**kwargs)
+        backend.commit_paste=commit
+        service=ClipboardService(backend=backend)
+        service.approve_verified_edits(.02)
+        self.controller.clipboard=service
+        self.dictation_ready()
+        self.assertEqual(captures,[])
+        focused[0]=last
+        backend.target=replace(base,uia=last)
+        request,generation=self.pool.inference[-1]
+        self.controller.worker_event(dict(type='result',engine='stt',engine_instance='actual-stt',
+            request_id=request,generation=generation,text='current cursor'));self.pump()
+        self.assertEqual(captures,[last])
+        self.assertEqual(destinations,[replace(base,uia=last)])
+        self.assertEqual(backend.pastes,1)
+        self.assertEqual(backend.data[13].decode('utf-16-le'),'current cursor\0')
+        self.assertIsNone(self.controller.core.snapshot().error)
 
     def test_cancel_at_final_clipboard_seam_prevents_injection(self):
         self.dictation_ready()
@@ -230,15 +333,15 @@ class ApplicationContracts(unittest.TestCase):
         self.assertEqual(self.controller.view().status,'Whisper wird geladen')
         self.assertIn('Whisper: wird geladen',self.controller.view().components)
 
-    def test_target_probe_stops_microphone_before_waiting_and_keeps_owner_pumping(self):
+    def test_delivery_field_probe_keeps_microphone_stopped_and_owner_pumping(self):
         entered,release,pumped=threading.Event(),threading.Event(),threading.Event()
         waiting=[False]
         def capture(**kwargs):
             entered.set();release.wait(2)
             return NS(target='target',status='target_captured')
-        self.clipboard.capture_native_target=lambda:NS(target='target',status='target_captured')
+        self.clipboard.capture_native_target=lambda:NS(target='target',status='native_target_captured')
         self.clipboard.capture_target=capture
-        self.controller.capture_executor=ThreadPoolExecutor(1)
+        self.controller.delivery_executor=ThreadPoolExecutor(1)
         self.controller.publish=lambda view:pumped.set() if waiting[0] else None
         owner=threading.Thread(target=self.controller.run,args=(lambda:None,))
         owner.start()
@@ -247,6 +350,15 @@ class ApplicationContracts(unittest.TestCase):
             deadline=time.monotonic()+1
             while not self.controller.microphone.owned and time.monotonic()<deadline:time.sleep(.005)
             self.controller.command('dictation')
+            deadline=time.monotonic()+1
+            while not self.pool.starts and time.monotonic()<deadline:time.sleep(.005)
+            self.assertFalse(entered.is_set(),'field probe must wait for final text')
+            self.pool.future.set_result({'engine_instance':'actual-stt','device':'cpu'})
+            deadline=time.monotonic()+1
+            while not self.pool.inference and time.monotonic()<deadline:time.sleep(.005)
+            request,generation=self.pool.inference[-1]
+            self.controller.worker_event(dict(type='result',engine='stt',engine_instance='actual-stt',
+                request_id=request,generation=generation,text='delayed field probe'))
             self.assertTrue(entered.wait(1))
             self.assertFalse(self.controller.microphone.owned,'target probe must not extend the recording')
             waiting[0]=True;self.controller.command('clear')

@@ -1,6 +1,6 @@
 # Hugin Context
 
-Status: PR29 integrated/deployed; latest physical dictation paths and Ctrl+V pass; earlier intermittent field-proof failure remains unexplained.
+Status: late field-capture correction passes local checks and both independent reviews; checked integration pending. Live app remains on the prior code.
 Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
 Data boundary: curated source/configuration/locks and approved synthetic voice
 references only. No raw dictation, clipboard/image content, recordings,
@@ -11,7 +11,7 @@ credentials, model weights, virtual environments or local startup backups in Git
 Brian confirmed repeated successful dictation/insertion, reading, stopping and
 switching from reading to dictation with the PR26 panel buttons. PR26 and its
 PR27 acceptance record are merged. Current deployed main is
-7f288d4bf2021712f4e4d3283058a22311c31376 (PR29).
+7ac3cc6526d5cd85b5439b31cd273c8730e9ec91 (PR30 documentation; PR29 application code).
 
 He now explicitly requests permanent mouse Back/XBUTTON1 = dictation and
 Forward/XBUTTON2 = reading, removing PipPal/Whispering login startup, and
@@ -29,7 +29,7 @@ this increment with the entire V1 acceptance matrix.
 - Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-mouse-startup-mjolnir.
 - Implementation base: 460534fff76741427f6c380405916be1c7947f10.
 - Integrated implementation: PR28, source fbf64afc282edc0356038474ffb3f1379a01666f.
-- Current follow-up: record PR29 deployment and physical acceptance; investigate intermittent field-proof rejection on recurrence.
+- Current follow-up: move full field capture to delivery, after Brian's reported click-away/return failure.
 - Control/preflight: 05181f9a99374ff8b298c626f903304f36ac8926.
 - Ownership: active until final checkpoint/release; runtime uses stable deployment.
 - Active handoff: `handoffs/2026-10-21-mouse-startup.md`.
@@ -151,3 +151,35 @@ failed-field facts before a correction. Keep task ownership active. Production
 packaging, full target matrix and actual next login remain open; old apps stay
 disabled. Only these curated context/handoff updates are being checkpointed;
 the ignored diagnostic script and raw probe output stay out of Git.
+
+## Current correction: late field capture
+
+Brian reports clicking elsewhere during dictation then returning to the field
+before stop can fail, and requests the last chosen cursor plus comparison with
+Whispering. The repeated physical flow passed. Another 45-second/55-sample
+read-only observation saw Group -> Edit and later Document -> Edit. A rejected
+Document's read-only attribute was unknown/mixed while its selection was false.
+This remains separate from proof of the historical failing capture.
+
+Pinned Whispering7.11.0 write_text sends clipboard Ctrl+V at delivery; it does
+not retain an earlier UIA field. The new change adopts late field resolution,
+retaining the exact native stop basis and every final UIA/native commit guard.
+Full field capture moves once from the audio-stop worker to the delivery worker
+after final text. The old early capture path is removed. No retries, focus
+restoration, whitelist expansion, clipboard behavior or input-shortcut changes.
+The native basis is exact, but the old pre-recognition UIA identity is no longer
+pinned. A Chromium surface with one native HWND/focus and no native caret or
+selection may therefore use a different UIA field/caret selected even after stop.
+This consequence follows the requested latest-cursor behavior and is explicitly
+tested; do not claim every same-window field change after stop is rejected.
+
+Spec/plan/tasks: specs/2026-10-21-late-field-capture/. A controller regression
+reproduced early unavailability permanently blocking later valid insertion;
+it now passes. After-stop native-target change, persistent failure, no native
+basis, cancellation and owner responsiveness are covered. The same-native/UIA
+field-switch guard passes through Controller, ClipboardService and the native
+capture boundary with synthetic I/O. 504 contracts and integration tests pass
+in 22.627s; two real owned hidden RichEdit UIA fixtures pass in 0.590s without
+user focus/clipboard changes. Docs check passes. Independent spec and standards
+reviews have no open findings. No real Codex acceptance of the new code yet.
+Preserve the live installation until checked integration and normal Hugin Quit.
