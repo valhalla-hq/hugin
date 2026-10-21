@@ -41,9 +41,16 @@ class _ProbeSession:
                 if self.controller is not None:
                     self.controller.command('quit')
                     deadline = time.monotonic() + 15
-                    while not self.controller.shutdown_ready() and time.monotonic() < deadline:
-                        self.controller.pump_once(.005); self.controller.tick()
-                    if not self.controller.shutdown_ready() or not self.controller.finish_io():
+                    # A retry must process Quit even when worker shutdown was
+                    # already ready: Quit also re-arms failed native I/O closes.
+                    while True:
+                        handled = self.controller.pump_once(.005)
+                        self.controller.tick()
+                        if not handled and self.controller.shutdown_ready():
+                            break
+                        if time.monotonic() >= deadline:
+                            return False
+                    if not self.controller.finish_io():
                         return False
                 self.io_closed = True
             except (Exception, KeyboardInterrupt):
@@ -173,8 +180,8 @@ def run(root):
     def publish(view):
         if view.reading_word:
             marks.add((view.reading_index, view.reading_word))
-        if view.error:
-            raise RuntimeError('probe_controller_error')
+        # The run loop checks errors; publication must remain usable for cleanup
+        # after a native close failure has left the controller's error visible.
 
     def metrics():
         return {w.engine: w.process.metrics() for w in instances if w.process is not None}
