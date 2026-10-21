@@ -1,6 +1,6 @@
 # Hugin Context
 
-Status: late field-capture correction passes local checks and both independent reviews; checked integration pending. Live app remains on the prior code.
+Status: late field-capture correction is merged, deployed and accepted by Brian's physical Codex click-away/return test.
 Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
 Data boundary: curated source/configuration/locks and approved synthetic voice
 references only. No raw dictation, clipboard/image content, recordings,
@@ -11,7 +11,7 @@ credentials, model weights, virtual environments or local startup backups in Git
 Brian confirmed repeated successful dictation/insertion, reading, stopping and
 switching from reading to dictation with the PR26 panel buttons. PR26 and its
 PR27 acceptance record are merged. Current deployed main is
-7ac3cc6526d5cd85b5439b31cd273c8730e9ec91 (PR30 documentation; PR29 application code).
+4e18f7460e3004f7b25ecb09a08b0fca8fc986da (PR31 late field capture).
 
 He now explicitly requests permanent mouse Back/XBUTTON1 = dictation and
 Forward/XBUTTON2 = reading, removing PipPal/Whispering login startup, and
@@ -181,5 +181,25 @@ field-switch guard passes through Controller, ClipboardService and the native
 capture boundary with synthetic I/O. 504 contracts and integration tests pass
 in 22.627s; two real owned hidden RichEdit UIA fixtures pass in 0.590s without
 user focus/clipboard changes. Docs check passes. Independent spec and standards
-reviews have no open findings. No real Codex acceptance of the new code yet.
-Preserve the live installation until checked integration and normal Hugin Quit.
+reviews have no open findings. Physical Codex acceptance is recorded below.
+PR31 https://github.com/valhalla-hq/hugin/pull/31 merged source
+22d513c5e471d8a7c5669beed49a1ca737a0d19a as
+4e18f7460e3004f7b25ecb09a08b0fca8fc986da at 14:34:53 UTC. Both independent
+reviews confirmed that exact source head. Hosted runs 39617479727,
+39617490293 and 39617490238 succeeded. Remote main and source context/handoff
+blobs were verified. Task and stable clone were clean at the merge commit
+before this documentation follow-up.
+After Brian confirmed normal Quit, the stable clone fast-forwarded and Hugin
+restarted at 16:36:02 local time. Activation, preferences, all three environment
+manifests and desktop-setup manifest hashes are unchanged. UI readback shows
+Bereit fuer dein Diktat, Alt+Y and the existing mouse/panel controls.
+On 21 October 2026 Brian confirmed that the requested physical flow works:
+start dictation, click elsewhere, return to the Codex text field and stop;
+the text is inserted correctly. The trigger was offered as Alt+Y or mouse Back;
+his answer does not establish which one or that both were repeated. This closes
+the bounded return-to-field acceptance, not the full target/device matrix or a
+claim that every historical intermittent failure is explained. No further code
+change or restart is required for this acceptance record. Keep ownership active
+for the existing broader task. Rollback is previous main 7ac3cc6 after normal
+Quit. Packaging and actual next-login acceptance remain separate; Whispering
+and PipPal stay disabled.
