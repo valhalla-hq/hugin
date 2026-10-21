@@ -4,7 +4,7 @@ import os
 
 from hugin.config import verify_voice_assets
 from hugin.errors import HuginError
-from hugin.word_timing import (AlignmentResult, MAX_SECTION_PCM_BYTES, MAX_TEXT,
+from hugin.word_timing import (AlignmentResult, WordTiming, MAX_SECTION_PCM_BYTES, MAX_TEXT,
     bind_word_timing, lexeme_spans)
 from .assets import verify_files
 
@@ -109,11 +109,15 @@ class WhisperEngine:
         import av
         tokenizer = Tokenizer(self.model.hf_tokenizer, self.model.model.is_multilingual,
             task='transcribe', language='de' if language == 'German' else 'en')
-        tokens = tokenizer.encode(text)
+        # Outer whitespace has no spoken token. Including it can consume the
+        # first word's DTW interval. Keep an explicit offset into unchanged text.
+        source_offset=len(text)-len(text.lstrip())
+        spoken_text=text.strip()
+        tokens = tokenizer.encode(spoken_text)
         # CT2 adds no_timestamps and EOT around the supplied text sequence.
         if len(tokenizer.sot_sequence) + len(tokens) + 2 > 448:
             return AlignmentResult('unavailable_tokens', ())
-        if tokenizer.decode(tokens) != text:
+        if tokenizer.decode(tokens) != spoken_text:
             return AlignmentResult('unavailable_text', ())
         audio24 = self.np.frombuffer(pcm24, dtype='<i2').reshape(1, -1)
         frame = av.AudioFrame.from_ndarray(audio24, format='s16', layout='mono')
@@ -136,7 +140,10 @@ class WhisperEngine:
         if cancelled(): return AlignmentResult('unavailable_cancelled', ())
         if not isinstance(records, list) or len(records) != 1:
             return AlignmentResult('rejected_path', ())
-        return bind_word_timing(text, records[0], tokens, len(pcm24) // 2)
+        result=bind_word_timing(spoken_text, records[0], tokens, len(pcm24) // 2)
+        return AlignmentResult(result.status,tuple(WordTiming(
+            word.start+source_offset,word.end+source_offset,word.start_sample,word.end_sample)
+            for word in result.words))
 
     def offload(self):
         self.synchronize()

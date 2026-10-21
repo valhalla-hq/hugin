@@ -699,6 +699,11 @@ class ApplicationContracts(unittest.TestCase):
         observe(100);self.pump();self.assertEqual(self.controller.view().reading_word,(0,5))
         count=len(published)
         observe(3000);self.pump();self.assertEqual(len(published),count)
+        job=self.controller.core.snapshot().job
+        self.controller.command('read_pause',job.request_id);self.pump()
+        observe(6000);self.pump();self.assertEqual(self.controller.view().reading_word,(0,5))
+        self.controller.command('read_pause',job.request_id);self.pump()
+        observe(6000);self.pump();self.assertEqual(self.controller.view().reading_word,(6,11))
         observe(5000);self.pump();self.assertIsNone(self.controller.view().reading_word)
         observe(6000);self.pump();self.assertEqual(self.controller.view().reading_word,(6,11))
         observe(None);self.pump();self.assertEqual(self.controller.view().reading_marking,'unavailable_position')
@@ -727,7 +732,7 @@ class ApplicationContracts(unittest.TestCase):
         self.assertTrue(self.controller.view().reading_paused)
         self.assertIn(('pause',job.request_id,True),self.calls)
         self.controller.handle(c.AudioFinished(job,1));self.pump()
-        self.assertIsNone(self.controller.core.snapshot().gpu_slot)
+        self.assertEqual(self.controller.core.snapshot().gpu_slot.action,c.Action.SYNTHESIZE)
         self.controller.command('read_pause',job.request_id);self.pump()
         second=self.controller.core.snapshot().gpu_slot
         self.assertIsNotNone(second)
@@ -738,6 +743,7 @@ class ApplicationContracts(unittest.TestCase):
         self.assertEqual(self.controller.view().reading_index,2)
         self.controller.command('read_stop',job.request_id);self.pump()
         self.assertEqual(self.controller.view().reading_text,'')
+        self.pool.inference_futures[-1].set_result({'code':None,'cancelled':True});self.pump()
         self.controller.command('read');self.pump()
         new=self.controller.core.snapshot().job
         self.assertNotEqual(new,job)

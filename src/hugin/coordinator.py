@@ -443,6 +443,7 @@ class Coordinator:
         self._audio_sequence = 0
         self._section: ReadingSection | None = None
         self._reading_section: ReadingSection | None = None
+        self._playing_section: ReadingSection | None = None
         self._reading_paused = False
         self._section_pcm = bytearray()
         self._alignment_audio = b''
@@ -465,9 +466,9 @@ class Coordinator:
                         tuple(self._components.values()), self._error, self._job is not None,
                         self._reading_section, self._section.total if self._section else 0,
                         self._reading_paused,self._reading_word,
-                        'preparing' if self._reading_phase in ('synthesize','align','ready') else
-                        self._reading_section.marking if self._reading_section and self._position_available else
-                        'unavailable_position' if self._reading_section else '')
+                        (self._reading_section.marking if self._position_available else 'unavailable_position')
+                        if self._playing_section is not None and self._reading_section==self._playing_section else
+                        'preparing' if self._reading_phase in ('synthesize','align','ready') else '')
 
     def dispatch(self, event: Event) -> tuple[Effect, ...]:
         if self._dispatching:
@@ -521,7 +522,7 @@ class Coordinator:
         self._state = State.ERROR if self._error else State.IDLE
 
     def _clear_reading(self):
-        self._section = self._reading_section = None
+        self._section = self._reading_section = self._playing_section = None
         self._reading_paused = False
         self._section_pcm.clear()
         self._alignment_audio = b''
@@ -529,17 +530,18 @@ class Coordinator:
         self._reading_word = None
         self._position_available = True
 
-    def _next_section(self,effects):
-        self._reading_word = None
+    def _prepare_next_section(self,effects):
+        """At most one successor may be prepared beside the playing section."""
         self._alignment_audio = b''
         if self._tts_chunks:
             self._payload = self._tts_chunks.popleft()
             self._section = ReadingSection(self._section.index+1,self._section.total,self._payload)
             self._reading_phase = 'synthesize'
-            self._state = State.TTS_PREPARING
+            if self._playing_section is None:self._state = State.TTS_PREPARING
             self._schedule(effects)
         else:
-            self._finish_job()
+            self._reading_phase = 'finished'
+            if self._playing_section is None:self._finish_job()
 
     def _cancel(self, effects: list[Effect]) -> None:
         job = self._job
@@ -609,10 +611,11 @@ class Coordinator:
         if self._shutdown or self._job is None or self._slot is not None or self._reading_paused:
             return
         if self._job.kind == JobKind.READING and self._reading_phase == 'ready':
-            self._reading_phase = 'playing'
+            if self._playing_section is not None:return
+            self._playing_section = self._section
             self._audio_sequence += 1
             effects.append(PlayAudio(self._job,self._alignment_audio,self._audio_sequence,self._section))
-            self._alignment_audio = b''
+            self._prepare_next_section(effects)
             return
         if self._payload is None:return
         alignment = self._job.kind == JobKind.READING and self._reading_phase == 'align'
@@ -753,15 +756,14 @@ class Coordinator:
                 if not self._reading_paused:self._schedule(effects)
             return
         if isinstance(event, SectionStarted):
-            if (event.job == self._job and self._reading_phase == 'playing' and
-                    event.section == self._section):
+            if event.job == self._job and event.section == self._playing_section:
                 self._reading_section = event.section
                 self._state = State.TTS_PLAYING
                 self._reading_word = None
                 self._position_available = True
             return
         if isinstance(event, WordProgress):
-            if (event.job == self._job and self._reading_phase == 'playing' and
+            if (event.job == self._job and self._playing_section is not None and
                     self._reading_section is not None and event.section_index == self._reading_section.index
                     and not self._reading_paused and type(event.available) is bool):
                 if event.word is None or any((word.start,word.end)==event.word for word in self._reading_section.words):
@@ -839,9 +841,14 @@ class Coordinator:
             return
         if isinstance(event, AudioFinished):
             if (event.job == self._job and event.job.kind == JobKind.READING and
-                    self._reading_phase == 'playing' and type(event.through_sequence) is int and
+                    self._playing_section is not None and type(event.through_sequence) is int and
                     event.through_sequence == self._audio_sequence):
-                self._next_section(effects)
+                self._playing_section = None
+                self._reading_word = None
+                if self._reading_phase=='finished':self._finish_job()
+                else:
+                    self._state = State.TTS_PREPARING
+                    self._schedule(effects)
             return
         if isinstance(event, DeliveryCommit):
             if event.job == self._job and self._state == State.DELIVERING and not self._delivery_attempted:
@@ -933,7 +940,7 @@ class Coordinator:
                     self._payload = AlignmentInput(self._alignment_audio,self._section.text)
                     self._reading_phase = 'align'
                 else:
-                    self._next_section(effects)
+                    self._prepare_next_section(effects)
             elif current and operation.action == Action.ALIGN:
                 self._reading_phase = 'ready'
             component = self._components[operation.engine]

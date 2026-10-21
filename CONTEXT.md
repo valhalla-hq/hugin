@@ -1,7 +1,7 @@
 # Hugin Context
 
 Status: audio-based word highlighting is implemented in an exclusive candidate;
-real GPU/voice checks, independent integration review and rollout are pending.
+real GPU/clock checks passed; final independent review and rollout are pending.
 Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
 
 ## Current intent and authorization
@@ -26,11 +26,11 @@ Routine checked private integration and normal deployment remain authorized.
 ## Accepted deployment and preservation
 
 C:/Users/brian/Hugin points to C:/Users/brian/brian-projects/_repos/hugin.
-Running source is PR31 late field capture, merged as 4e18f746; PR32 only recorded
+The stopped accepted source is PR31 late field capture, merged as 4e18f746; PR32 only recorded
 Brian's successful click-away/return dictation test and is current deployed main.
-Do not replace running source/runtime. Normal tray Quit precedes candidate
-validation on the exclusive GPU and deployment; no stored PID is termination
-authority. Whispering and PipPal remain disabled and must not auto-return.
+Brian confirmed normal tray Quit. Exclusive candidate GPU/clock probes passed
+and closed their resources; actual heard word agreement remains pending.
+No stored PID is termination authority. Whispering and PipPal remain disabled and must not auto-return.
 
 Accepted: screenshot plus dictation in Codex, clipboard fallback for Ctrl+V,
 Alt+Y and mouse Back for dictation, Ctrl+Alt+V and mouse Forward for reading,
@@ -44,8 +44,9 @@ handoffs/2026-10-21-mouse-startup.md; do not treat that as this feature's handof
 
 ## Current implementation boundaries
 
-One prepared section: TTS actual terminal -> existing STT ALIGN actual terminal
--> native playback/drain. Central GPU ownership and cancellation remain serial.
+One prepared successor beside the playing section: TTS actual terminal ->
+existing STT ALIGN actual terminal -> playback after predecessor drain.
+Central GPU ownership and cancellation remain serial.
 Text sections <=240 characters; PCM <=60 seconds; alignment <=30 seconds and
 448 decoder positions, with explicit unavailable/rejected section-only fallback.
 No truncation, new model/dependency or full-document audio cache. Original word

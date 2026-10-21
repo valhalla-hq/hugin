@@ -48,6 +48,9 @@ class ReadingOwnership(unittest.TestCase):
         effects=core.dispatch(c.PauseReading(job.request_id))
         self.assertTrue(core.snapshot().reading_paused)
         self.assertTrue(any(isinstance(e,c.PauseAudio) and e.paused for e in effects))
+        preparing=core.snapshot().gpu_slot
+        core.dispatch(c.EngineAudio(preparing,b'\0\0'))
+        core.dispatch(c.EngineTerminal(preparing))
         core.dispatch(c.AudioFinished(job,effect.sequence))
         self.assertIsNone(core.snapshot().gpu_slot)
         effects=core.dispatch(c.PauseReading(job.request_id))

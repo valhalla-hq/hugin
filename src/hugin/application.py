@@ -159,6 +159,7 @@ class Controller:
         self._queued_head = None
         self._audio_job = None
         self._audio_samples = 0
+        self._audio_progress_epoch = 0
         self._snapshot = self.core.snapshot()
         self._runtime_error = None
         self._overflow = threading.Event()
@@ -672,7 +673,9 @@ class Controller:
                             for timing in effect.section.words:
                                 if timing.start_sample<=relative<timing.end_sample:
                                     word=(timing.start,timing.end);break
-                        marker=(word,available)
+                        # Pause can overtake an already queued progress event.
+                        # Resume must publish the current native position again.
+                        marker=(self._audio_progress_epoch,word,available)
                         if marker!=previous:
                             previous=marker
                             self._post(c.WordProgress(effect.job,effect.section.index,word,available))
@@ -688,6 +691,7 @@ class Controller:
             self.audio_executor.submit(play)
         elif isinstance(effect,c.PauseAudio):
             try:
+                self._audio_progress_epoch+=1
                 token=self._token(effect.job)
                 if not token.is_set() and not self.output.pause(effect.job.request_id,effect.paused) and not token.is_set():
                     raise HuginError('audio_failed','audio_pause')
@@ -922,7 +926,8 @@ class Controller:
             c.State.TTS_PREPARING:'reading',c.State.TTS_PLAYING:'reading',
         }.get(snap.state,'')
         status=labels[snap.state]
-        if snap.gpu_slot and snap.gpu_slot.action==c.Action.ALIGN and snap.gpu_slot.job==snap.job:
+        if (snap.state==c.State.TTS_PREPARING and snap.gpu_slot
+                and snap.gpu_slot.action==c.Action.ALIGN and snap.gpu_slot.job==snap.job):
             status='Wörter werden zugeordnet'
         if snap.reading_paused:
             status='Vorlesen pausiert'

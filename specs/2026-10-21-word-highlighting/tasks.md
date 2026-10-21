@@ -4,6 +4,11 @@
 - [x] Finalize measured design and add failing production-boundary guards.
 - [x] Implement owned preparation and validated original-word intervals.
 - [x] Implement native playback progress and word-following panel.
-- [ ] Validate cancel/pause/hide/new-job/resource and compatibility boundaries.
+- [x] Validate cancel/pause/hide/new-job/resource and compatibility boundaries.
 - [ ] Independent review, full checks, private integration and normal restart.
 - [ ] Real Freya/Tyr word-highlighting acceptance.
+
+Final integrated checks: 546 passed in 23.637s; 5 native UI checks and 1 silent audio check passed.
+Real GPU/Controller measurements and known Freya fallback are recorded in
+docs/word-highlighting-2026-10-21.md. Independent review pause-race finding has a
+red/green regression guard and producer-epoch fix. Final delta review pending.

@@ -380,13 +380,13 @@ class CoordinatorContracts(unittest.TestCase):
             self.assertEqual(begin.operation.engine_instance, init.operation.engine_instance)
             self.assertNotIn(begin.operation.request_id, request_ids)
             request_ids.add(begin.operation.request_id)
-            play = prepared(self.core, begin.operation)
+            effects=[]
+            play = prepared(self.core, begin.operation,effects=effects)
             audio_sequence += 1
             self.assertEqual(play.sequence, audio_sequence)
-            self.assertIsNone(self.core.snapshot().gpu_slot)
             self.assertEqual(self.effects(AudioFinished(capture.job, audio_sequence-1), BeginEngine), [])
-            effects = self.core.dispatch(AudioFinished(capture.job, audio_sequence))
             next_operations = [item for item in effects if isinstance(item, BeginEngine)]
+            self.core.dispatch(AudioFinished(capture.job, audio_sequence))
             if not next_operations: break
             begin, = next_operations
             self.assertEqual(begin.operation.action, Action.SYNTHESIZE)

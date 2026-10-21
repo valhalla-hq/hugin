@@ -91,6 +91,11 @@ class AlignmentEngineTests(unittest.TestCase):
         self.assertEqual(self.align(engine).status,'unavailable_text')
         engine.model.encode.assert_not_called()
 
+    def test_unspoken_outer_whitespace_does_not_consume_alignment_but_offsets_stay_original(self):
+        engine=self.fixture()
+        result=self.align(engine,text=' \n word\t ')
+        self.assertEqual(result.words,(WordTiming(3,7,0,12000),))
+
     def test_cancel_before_load_and_after_encoder_never_enters_next_model_step(self):
         engine = self.fixture()
         self.assertEqual(self.align(engine,cancelled=lambda:True).status,'unavailable_cancelled')

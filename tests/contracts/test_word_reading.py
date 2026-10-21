@@ -11,7 +11,7 @@ def begin(core,text='Hallo Welt.'):
     return job,core.snapshot().gpu_slot
 
 
-def prepared(core,synthesis,pcm=b'\0\0',result=None):
+def prepared(core,synthesis,pcm=b'\0\0',result=None,effects=None):
     """Drive the public worker events, retaining every native terminal barrier."""
     core.dispatch(c.EngineAudio(synthesis,pcm))
     core.dispatch(c.EngineTerminal(synthesis))
@@ -21,10 +21,33 @@ def prepared(core,synthesis,pcm=b'\0\0',result=None):
         operation=core.snapshot().gpu_slot
     assert operation.action==c.Action.ALIGN
     core.dispatch(c.EngineAlignment(operation,result or AlignmentResult('rejected_path',())))
-    return next(e for e in core.dispatch(c.EngineTerminal(operation)) if isinstance(e,c.PlayAudio))
+    completed=core.dispatch(c.EngineTerminal(operation))
+    if effects is not None:effects.extend(completed)
+    return next(e for e in completed if isinstance(e,c.PlayAudio))
 
 
 class WordReadingContracts(unittest.TestCase):
+    def test_one_next_section_prepares_during_playback_without_early_display_or_extra_prefetch(self):
+        core=c.Coordinator(instance_id='prefetch-word')
+        job,synthesis=begin(core,'Ein kurzer Satz. '*70)
+        first=prepared(core,synthesis)
+        core.dispatch(c.SectionStarted(job,first.section))
+        following=core.snapshot().gpu_slot
+        self.assertIsNotNone(following,'next section should prepare while current audio plays')
+        self.assertEqual(following.action,c.Action.SYNTHESIZE)
+        core.dispatch(c.EngineAudio(following,b'\0\0'))
+        core.dispatch(c.EngineTerminal(following))
+        alignment=core.snapshot().gpu_slot
+        core.dispatch(c.EngineAlignment(alignment,AlignmentResult('rejected_path',())))
+        effects=core.dispatch(c.EngineTerminal(alignment))
+        self.assertFalse(any(isinstance(e,(c.PlayAudio,c.BeginEngine)) for e in effects))
+        self.assertEqual(core.snapshot().reading_section,first.section)
+        self.assertIsNone(core.snapshot().gpu_slot)
+        effects=core.dispatch(c.AudioFinished(job,first.sequence))
+        second,=[e for e in effects if isinstance(e,c.PlayAudio)]
+        self.assertEqual(second.section.index,2)
+        self.assertEqual(core.snapshot().gpu_slot.action,c.Action.SYNTHESIZE)
+
     def test_audio_cannot_play_until_synthesis_terminal_and_alignment_terminal(self):
         core=c.Coordinator(instance_id='word-fixture')
         job,synthesis=begin(core)
