@@ -94,7 +94,7 @@ class HuginWindow:
         self._view=None;self._alive=True
         self.motion=Motion()
         self.reduced_motion=tk.BooleanVar(master=self.root,value=False)
-        self.reading_panel_enabled=tk.BooleanVar(master=self.root,value=True)
+        self.reading_panel_enabled=True
         self.scene=tk.Canvas(self.root,background=BACKGROUND,highlightthickness=0,
                              borderwidth=0,takefocus=False)
         self.scene.pack(fill='both',expand=True)
@@ -135,13 +135,10 @@ class HuginWindow:
             command=lambda:self._reading_action('read_pause'))
         self.read_stop=SoftButton(self.scene,text='Stopp',scale=self.scale,wake=self._wake_animation,
             command=lambda:self._reading_action('read_stop'))
-        self._buttons.extend((self.read_pause,self.read_stop))
-        self.reading_toggle=tk.Checkbutton(self.scene,text='Mitleseleiste anzeigen',
-            variable=self.reading_panel_enabled,command=self._reading_visibility,
-            background=BACKGROUND,foreground=MUTED,activebackground=BACKGROUND,
-            activeforeground=TEXT,selectcolor=FIELD,relief='flat',borderwidth=0,
-            highlightthickness=1,highlightbackground=BACKGROUND,highlightcolor=BLUE,
-            font=('Segoe UI',9),takefocus=True,padx=0,pady=0)
+        self.reading_toggle=SoftButton(self.scene,text='Mitleseleiste ausblenden',
+            command=lambda:self._reading_visibility(not self.reading_panel_enabled),
+            scale=self.scale,wake=self._wake_animation)
+        self._buttons.extend((self.read_pause,self.read_stop,self.reading_toggle))
         self.motion_toggle=tk.Checkbutton(self.scene,text='Bewegung reduzieren',
             variable=self.reduced_motion,command=self._motion_changed,
             background=BACKGROUND,foreground=MUTED,activebackground=BACKGROUND,
@@ -341,7 +338,7 @@ class HuginWindow:
         footer_y+=error_h
         self._label('escape','Esc · Abbrechen',pad,footer_y+3,size=8,color=MUTED)
         self._place('motion',pad,footer_y+34,180,23)
-        self._place('reading_toggle',w-pad-190,footer_y+34,190,23)
+        place_button('reading_toggle',self.reading_toggle,w-pad-190,footer_y+30,190,28)
         control_w=(tile_w-26)/2
         place_button('read_pause',self.read_pause,pad+tile_w+gap+10,tiles_y+34,control_w,26,parent='reading')
         place_button('read_stop',self.read_stop,pad+tile_w+gap+16+control_w,tiles_y+34,control_w,26,parent='reading')
@@ -585,21 +582,22 @@ class HuginWindow:
         for item in (self._speaker,*self._glyphs[3:5]):
             self.scene.itemconfigure(item,state='hidden' if active else 'normal')
 
-    def _reading_visibility(self):
+    def _reading_visibility(self,enabled):
+        self.reading_panel_enabled=enabled
+        self.reading_toggle.configure(text='Mitleseleiste ausblenden' if enabled else 'Mitleseleiste einblenden')
         if self._view:self._render_reading_panel(self._view)
 
     def _render_reading_panel(self,view):
-        try:self.reading_panel.render(view,self.reading_panel_enabled.get())
+        try:self.reading_panel.render(view,self.reading_panel_enabled)
         except OSError:
             # Optional native placement must not stop speech or dictation.
             # Main-window pause/stop remain available; no risky focus fallback.
             self.reading_panel.clear()
-            self.reading_panel_enabled.set(False)
+            self.reading_panel_enabled=False
             self.reading_toggle.configure(text='Mitleseleiste nicht verfügbar',state='disabled')
 
     def _hide_reading(self):
-        self.reading_panel_enabled.set(False)
-        self.reading_panel.clear()
+        self._reading_visibility(False)
 
     def hide(self):
         self._visible=False
