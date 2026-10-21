@@ -344,3 +344,11 @@ keine Behebung behaupten und laufenden Source nicht aendern.
 Details: docs/screenshot-formats-2026-10-21.md. Exakter aktiver Handoff:
 handoffs/2026-10-21-screenshot-formats.md. Main bleibt defe3d8; keine Integration
 des alten Draftstapels und keine Bindungs-/Autostartmigration.
+
+Draft-PR18: https://github.com/valhalla-hq/hugin/pull/18, gestapelt auf PR17.
+Implementierung3bf2ef3 sauber gepusht samt CONTEXT/exaktem Handoff. Nativer
+Produkt-Metadatenhelper bestaetigt den aktuellen achtteiligen Bildformatsatz
+in0,1469s und schliesst seinen Prozess vollstaendig. Er liest keine Bildinhalte
+und veraendert die Zwischenablage nicht. Finale synthetische Wiederholung
+wartet auf erneut bereitgestellte Diagnosekopie; der spaetere Bildinhalt wird
+nicht fuer den Test ueberschrieben. Ownership bleibt fuer diesen Task aktiv.

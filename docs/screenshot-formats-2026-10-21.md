@@ -41,6 +41,9 @@ worker dependencies are unchanged.
 - 462 contract/integration tests with Python 3.12.10 and `-S`: pass, 20.769 s.
 - 60 focused policy, ABI and clipboard checks: pass, 0.009 s.
 - Separate specification/standards reviews found no product-path issue.
+- Native production metadata helper: pass on the current eight-format raster
+  bundle in 0.1469 s with owned process closed; no image data read or writes.
+- Docs validator: 19 requirements/17 acceptance criteria, no problems; diff clean.
 - Native synthetic OLE bitmap/PNG-stream/policy roundtrip: pending final run.
   The fixture publishes only after a final expected-sequence check and never
   adopts a later snapshot sequence as restoration authority. Its opt-in setup

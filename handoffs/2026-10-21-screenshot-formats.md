@@ -17,7 +17,9 @@ never automate Codex input.
 - Base: `codex/hugin-ui-screenshot-fix-mjolnir`, PR17,
   `c37874315876083b806951d659121f75dcd0e8e8`.
 - HEAD: resolve this checkpoint's exact local and remote HEAD freshly.
-- PR: not yet created; create the stacked draft after the first meaningful commit.
+- PR18: https://github.com/valhalla-hq/hugin/pull/18, stacked draft on PR17.
+- Implementation checkpoint: `3bf2ef3d27b2d2dbe805d93b6600615642120788`;
+  clean matching remote and both context files were verified after push.
 - Ownership: active on Mjolnir through the workspace tool.
 - Preflight/control: `e3deecae6673a024aa9015a4387737fbec04c795`.
 - Deployment/main: `defe3d8f0ef9e564da1936a77b931476cbafc98a`, unchanged.
@@ -43,7 +45,10 @@ paste. The spec, curated evidence, CONTEXT and this exact handoff record scope.
   provider's stream exit position. Earlier failure was a fixture defect, not
   justification for weakening product guards. Original text was restored on
   those completed runs; a later probe refused because the clipboard held an image.
-- Final docs check, exact-head hosted CI and human Codex acceptance are pending.
+- Native production metadata helper: pass for the current eight-format raster
+  bundle, 0.1469 s, owned helper closed. No image contents read or clipboard writes.
+- Docs validator: 19 requirements/17 acceptance criteria, no problems; diff clean.
+- Exact-head hosted CI and human Codex acceptance are pending.
 
 See `docs/screenshot-formats-2026-10-21.md` for exact observed formats, design,
 source contracts and limits. The earlier focus rejection remains a distinct
