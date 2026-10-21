@@ -1,6 +1,6 @@
 # Hugin Context
 
-Status: accepted pilot baseline; reviewed integration in progress
+Status: accepted pilot baseline integrated; next reading stage authorized
 Owner: Brian
 Repository: private `valhalla-hq/hugin`; runtime Mjolnir.
 Data boundary: curated source, configuration, locks and approved synthetic voice
@@ -55,10 +55,18 @@ launcher before any later restart; never blindly replay an old starter.
 
 Exclusive closeout branch: codex/hugin-baseline-closeout-mjolnir.
 Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-baseline-closeout-mjolnir.
-Exact handoff: handoffs/2026-10-21-baseline-closeout.md.
+PR19 merged at checked head 9968193a19b633245be4ab85c6465e72cf34f795;
+main/deployment is 81c2ffc8cf8585152b369cdae8492d093b7b2a4f. PR11 is marked
+merged through ancestry; incorporated PR12-18 are closed. Runtime/worker inputs
+remain identical, live pilot stays d1331da. Final receipt is a documentation-only
+follow-up. Ownership release requires the standard exact handoff marker below.
 Older handoffs are historical checkpoints, not current launch instructions.
 Preflight/control: e3deecae6673a024aa9015a4387737fbec04c795.
 Ownership remains active until clean remote checkpoint/release proof.
+
+## Active Handoff
+
+- `handoffs/2026-10-21-baseline-closeout.md`
 
 ## Next stage agreed by Brian
 
