@@ -1,5 +1,18 @@
 # Hugin baseline closeout handoff
 
+## Verified integration receipt
+
+PR19 https://github.com/valhalla-hq/hugin/pull/19 merged on 21 October at
+10:49:29 MESZ. Checked head9968193a19b633245be4ab85c6465e72cf34f795; merge/main
+81c2ffc8cf8585152b369cdae8492d093b7b2a4f. All three hosted checks passed
+(runs39572034934,39571975727,39572034873). Main contains every PR11-18 head;
+PR11 is merged and PR12-18 are closed. Deployment preflight fast-forwarded main
+after exact unchanged runtime/worker-input proof. The current pilot remains at
+d1331da; its wide-window behavior does not change until a later checked restart.
+This documentation-only receipt also restores the standard Active Handoff marker
+required by the ownership tool. Release then open the next task from fresh main.
+The older checklist below records the completed integration procedure.
+
 ## Objective and authority
 
 Brian explicitly requested all finished Hugin work completed/saved before the
