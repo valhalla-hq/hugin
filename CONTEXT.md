@@ -1,28 +1,32 @@
 # Hugin Context
 
-Status: audio-based word highlighting is hearing-accepted. Brian's selected
-stable-layout style A (normal font with a soft blue fill) is reviewed, integrated
-through PR35 and running. Six native word-panel checks and hosted checks pass.
+Status: Brian accepts the stable-layout style A and audio-based word timing.
+He now requests faster first speech with equally accurate marking and no
+distracting section gaps. The refined section policy passes 557 checks and real
+Freya/Tyr comparison: warm start 42.5–47.6% earlier, all fixture words aligned,
+native scheduling gaps <=0.74ms. PR37 is prepared for checked integration;
+deployment and listening feedback follow. Main deployment remains unchanged.
 Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
 
 ## Current intent and authorization
 
-Brian requests current-word highlighting in the existing movable reading panel.
-He explicitly prioritizes agreement with audio and accepts additional preparation.
-Use actual-audio forced alignment with the existing Whisper worker; do not invent
-word durations. This supersedes the earlier deferral of exact word highlighting.
+Reduce the first prepared section and grow successors conservatively. Preserve
+actual-audio forced alignment, native playback position and one-section lookahead.
+Measure old/new in the same real workers before claiming a faster or gapless start.
 Routine checked private integration and normal deployment remain authorized.
 
 ## Active work and handoff
 
-- Branch: codex/hugin-word-highlighting-mjolnir.
-- Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-word-highlighting-mjolnir.
+- Branch: codex/hugin-reading-start-mjolnir.
+- Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-reading-start-mjolnir.
 - Feature main/deployment: 8eee62192a399a0a1cf98f4d3b5193f3b0b5768a (PR35).
-- Exact handoff: handoffs/2026-10-21-word-highlighting.md.
-- Spec/plan/tasks: specs/2026-10-21-word-highlighting/.
+- Exact handoff: handoffs/2026-10-21-reading-start.md.
+- Spec/plan/tasks: specs/2026-10-21-reading-start/.
 - Evidence/limits: docs/word-highlighting-2026-10-21.md.
+- New measurements: docs/reading-start-2026-10-21.md.
 - Control: 05181f9a99374ff8b298c626f903304f36ac8926.
-- Ownership remains active; helpers have their own exclusive worktrees.
+- Ownership remains active. Previous completed feature history remains in
+  handoffs/2026-10-21-word-highlighting.md.
 
 ## Accepted deployment and preservation
 

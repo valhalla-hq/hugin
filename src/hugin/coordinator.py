@@ -659,26 +659,46 @@ class Coordinator:
 
     @staticmethod
     def _split_selection(text: str) -> deque[str]:
-        """Preserve content, preferring sentence then whitespace boundaries.
+        """Start with less prepared speech, then grow the one-section lookahead.
 
-        Whitespace-only spans have no spoken content and need no engine call.
-        Each scan examines at most 240 characters; a long token is split rather
-        than silently truncated or sent beyond the worker's character bound.
+        A tiny opening sentence must not lead straight into a large successor:
+        prefer natural boundaries in the last third of each budget and
+        grow by half the preceding section (with a 120-character floor).
+        Absorb a final <=40-character remainder instead of isolating its words.
+        Earlier word boundaries and whole tokens take precedence over this soft
+        budget; only a token exceeding the existing hard limit may be split.
+        These bounds are a measured preparation policy, not estimated word times.
+        Whitespace-only spans need no engine call. No spoken content is truncated
+        and no section exceeds 240 characters.
         """
         chunks: deque[str] = deque()
         offset = 0
+        budget = 120
         while offset < len(text):
-            end = min(offset + 240, len(text))
+            end = min(offset + budget, len(text))
             window = text[offset:end]
-            if end < len(text):
-                sentence = list(re.finditer(r'[.!?]["\'”’\)\]]*\s+|\n+', window))
+            if len(text) - offset <= min(240, budget + 40):
+                end = len(text)
+            elif end < len(text):
+                sentence = [match for match in re.finditer(r'[.!?]["\'”’\)\]]*\s+|\n+', window)
+                            if match.end() >= budget * 2 // 3]
                 whitespace = list(re.finditer(r'\s+', window)) if not sentence else []
-                boundaries = sentence or whitespace
-                if boundaries:
-                    end = offset + boundaries[-1].end()
+                if sentence:
+                    # Once a suitably sized sentence ends, leave the next
+                    # sentence with its own continuation (for example a greeting).
+                    end = offset + sentence[0].end()
+                elif whitespace:
+                    end = offset + whitespace[-1].end()
+                else:
+                    # Preserve a single long word even if it exceeds the faster
+                    # start budget. The previous 240-character hard bound remains.
+                    hard_end = min(offset + 240, len(text))
+                    boundary = re.search(r'\s+', text[offset:hard_end])
+                    end = offset + boundary.end() if boundary else hard_end
             chunk = text[offset:end]
             if chunk.strip():
                 chunks.append(chunk)
+                budget = min(240, max(120, len(chunk) * 3 // 2))
             offset = end
         return chunks
 
