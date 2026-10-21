@@ -34,15 +34,19 @@ class Microphone:
 
 class Output:
     def __init__(self, calls): self.calls = calls
-    def start(self, job): self.calls.append('player'); self.job=job
-    def write(self, pcm, job, cancelled, *, started=None):
+    def start(self, job): self.calls.append('player'); self.job=job; self.samples=0
+    def write(self, pcm, job, cancelled, *, started=None, progress=None):
         self.calls.append('audio')
         if cancelled():return False
         if started is not None:started()
+        if progress is not None:progress(self.samples)
+        self.samples+=len(pcm)//2
         return True
     def pause(self,job,paused):
         self.calls.append(('pause',job,paused));return getattr(self,'job',None)==job
-    def drain(self, job, cancelled): return getattr(self,'job',None)==job and not cancelled()
+    def drain(self, job, cancelled, *, progress=None):
+        if progress is not None:progress(self.samples)
+        return getattr(self,'job',None)==job and not cancelled()
     def stop(self): self.calls.append('reset')
     def close(self): pass
 
@@ -68,7 +72,9 @@ class Clipboard:
 
 
 class Pool:
-    def __init__(self): self.workers = {}; self.starts = []; self.inference = []; self.inference_futures=[]
+    def __init__(self):
+        self.workers = {}; self.starts = []; self.inference = []; self.inference_futures=[]
+        self.alignments=[];self.alignment_futures=[]
     def start(self, engine):
         self.starts.append(engine)
         self.workers[engine] = NS(engine_instance='actual-' + engine, process=None,close=lambda:None)
@@ -78,6 +84,9 @@ class Pool:
         self.inference.append((request_id, generation)); return Future()
     def synthesize(self, text, voice, request_id, generation, language=None):
         self.inference.append((request_id, generation)); future=Future();self.inference_futures.append(future);return future
+    def align(self,pcm,text,request_id,generation,language=None):
+        self.alignments.append((pcm,text,request_id,generation))
+        future=Future();self.alignment_futures.append(future);return future
     def cancel(self, *args): return True
 
 
@@ -88,6 +97,20 @@ class Immediate:
         except Exception as error: future.set_exception(error)
         return future
     def shutdown(self, **kwargs): pass
+
+
+def prepare_section(controller,pool,pump,pcm=b'\0\0',result=None):
+    from hugin.word_timing import AlignmentResult
+    synthesis=controller.core.snapshot().gpu_slot
+    controller.handle(c.EngineAudio(synthesis,pcm));pump()
+    pool.inference_futures[-1].set_result({'code':None,'cancelled':False});pump()
+    if controller.core.snapshot().gpu_slot.action==c.Action.INITIALIZE:
+        pool.future.set_result({'engine_instance':'actual-stt','device':'cpu'});pump()
+    _,_,request,generation=pool.alignments[-1]
+    controller.worker_event(dict(type='alignment',engine='stt',engine_instance='actual-stt',
+        request_id=request,generation=generation,result=result or AlignmentResult('rejected_path',())))
+    pump()
+    pool.alignment_futures[-1].set_result({'code':None,'cancelled':False});pump()
 
 
 class ApplicationContracts(unittest.TestCase):
@@ -649,14 +672,43 @@ class ApplicationContracts(unittest.TestCase):
     def test_spoken_reading_then_zero_pcm_reading_both_finish(self):
         self.controller.command('read');self.pump()
         self.pool.future.set_result({'engine_instance':'actual-tts','device':'cuda'});self.pump()
-        operation=self.controller.core.snapshot().gpu_slot
-        self.controller.handle(c.EngineAudio(operation,b'\0\0'))
-        self.pool.inference_futures[-1].set_result({'code':None,'cancelled':False});self.pump()
+        prepare_section(self.controller,self.pool,self.pump)
         self.assertEqual(self.controller.core.snapshot().state,c.State.IDLE)
         self.controller.command('read');self.pump()
         # A valid empty stream follows the spoken stream in the same worker.
         self.pool.inference_futures[-1].set_result({'code':None,'cancelled':False});self.pump()
         self.assertEqual(self.controller.core.snapshot().state,c.State.IDLE)
+
+    def test_marking_uses_native_samples_with_gaps_and_no_duplicate_word_updates(self):
+        from hugin.word_timing import AlignmentResult,WordTiming
+        self.clipboard.capture_selection=lambda cancelled:NS(text='Hallo Welt.',status='captured')
+        published=[]
+        self.controller.publish=lambda view:published.append(view.reading_word)
+        self.controller.command('read');self.pump()
+        self.pool.future.set_result({'engine_instance':'actual-tts','device':'cuda'});self.pump()
+        progress=[]
+        def write(pcm,job,cancelled,*,started=None,**kwargs):
+            if started:started()
+            progress.append(kwargs['progress']);return True
+        self.controller.output.write=write
+        self.controller.output.drain=lambda *args,**kwargs:False
+        result=AlignmentResult('aligned',(WordTiming(0,5,100,5000),WordTiming(6,11,6000,12000)))
+        prepare_section(self.controller,self.pool,self.pump,b'\0\0'*12000,result)
+        observe=progress[0]
+        observe(99);self.pump();self.assertIsNone(self.controller.view().reading_word)
+        observe(100);self.pump();self.assertEqual(self.controller.view().reading_word,(0,5))
+        count=len(published)
+        observe(3000);self.pump();self.assertEqual(len(published),count)
+        job=self.controller.core.snapshot().job
+        self.controller.command('read_pause',job.request_id);self.pump()
+        observe(6000);self.pump();self.assertEqual(self.controller.view().reading_word,(0,5))
+        self.controller.command('read_pause',job.request_id);self.pump()
+        observe(6000);self.pump();self.assertEqual(self.controller.view().reading_word,(6,11))
+        observe(5000);self.pump();self.assertIsNone(self.controller.view().reading_word)
+        observe(6000);self.pump();self.assertEqual(self.controller.view().reading_word,(6,11))
+        observe(None);self.pump();self.assertEqual(self.controller.view().reading_marking,'unavailable_position')
+        self.controller.command('cancel');self.pump()
+        observe(7000);self.pump();self.assertEqual(self.controller.view().reading_text,'')
 
     def test_reading_view_follows_output_and_stale_controls_cannot_stop_new_reading(self):
         text='Synthetischer Mitlesetext. '*35
@@ -667,11 +719,11 @@ class ApplicationContracts(unittest.TestCase):
         self.assertEqual(self.controller.view().reading_job,job.request_id)
         self.assertEqual(self.controller.view().reading_text,'')
         held=[]
-        def delayed_write(pcm,identity,cancelled,*,started=None):
+        def delayed_write(pcm,identity,cancelled,*,started=None,progress=None):
             held.append(started);return not cancelled()
         self.controller.output.write=delayed_write
-        first=self.controller.core.snapshot().gpu_slot
-        self.controller.handle(c.EngineAudio(first,b'\0\0'));self.pump()
+        self.controller.output.drain=lambda *args,**kwargs:False
+        prepare_section(self.controller,self.pool,self.pump)
         self.assertEqual(self.controller.view().reading_index,0)
         held.pop()();self.pump()
         self.assertEqual(self.controller.view().reading_index,1)
@@ -679,13 +731,13 @@ class ApplicationContracts(unittest.TestCase):
         self.controller.command('read_pause',job.request_id);self.pump()
         self.assertTrue(self.controller.view().reading_paused)
         self.assertIn(('pause',job.request_id,True),self.calls)
-        self.pool.inference_futures[-1].set_result({'code':None,'cancelled':False});self.pump()
-        self.assertIsNone(self.controller.core.snapshot().gpu_slot)
+        self.controller.handle(c.AudioFinished(job,1));self.pump()
+        self.assertEqual(self.controller.core.snapshot().gpu_slot.action,c.Action.SYNTHESIZE)
         self.controller.command('read_pause',job.request_id);self.pump()
         second=self.controller.core.snapshot().gpu_slot
         self.assertIsNotNone(second)
         self.assertEqual(self.controller.view().reading_index,1)
-        self.controller.handle(c.EngineAudio(second,b'\0\0'));self.pump()
+        prepare_section(self.controller,self.pool,self.pump)
         self.assertEqual(self.controller.view().reading_index,1)
         held.pop()();self.pump()
         self.assertEqual(self.controller.view().reading_index,2)
@@ -706,7 +758,8 @@ class ApplicationContracts(unittest.TestCase):
         self.controller.command('read');self.pump()
         self.pool.future.set_result({'engine_instance':'actual-tts','device':'cuda'});self.pump()
         op=self.controller.core.snapshot().gpu_slot;job=op.job
-        self.controller.handle(c.EngineAudio(op,b'\0\0'));self.pump()
+        self.controller.output.drain=lambda *args,**kwargs:False
+        prepare_section(self.controller,self.pool,self.pump)
         self.controller.command('read_pause',job.request_id);self.pump()
         self.controller.command('dictation');self.pump()
         self.assertEqual(self.controller.core.snapshot().job.kind,c.JobKind.DICTATION)
@@ -717,7 +770,8 @@ class ApplicationContracts(unittest.TestCase):
         self.controller.command('read');self.pump()
         self.pool.future.set_result({'engine_instance':'actual-tts','device':'cuda'});self.pump()
         op=self.controller.core.snapshot().gpu_slot
-        self.controller.handle(c.EngineAudio(op,b'\0\0'));self.pump()
+        self.controller.output.drain=lambda *args,**kwargs:False
+        prepare_section(self.controller,self.pool,self.pump)
         self.controller.output.pause=lambda *args:False
         self.controller.command('read_pause',op.job.request_id);self.pump()
         self.assertIsNone(self.controller.core.snapshot().job)

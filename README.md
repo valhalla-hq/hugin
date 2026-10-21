@@ -2,7 +2,7 @@
 
 Lokale Windows-App für Diktieren und Vorlesen mit den bestätigten Stimmen **Freya** und **Tyr**. Hugin soll Whispering und PipPal vollständig ersetzen.
 
-Status am **21.10.2026**: Diktat, Vorlesen, Screenshot-Zwischenablage, Obsidian-Oberfläche, verschiebbare Mitleseleiste und Panel-Buttons sind integriert. Brian hat die Buttonabläufe einschließlich des Wechsels vom Vorlesen zum Diktat bestätigt. Maussteuerung und stiller Windows-Autostart sind eingerichtet. Die folgende Diktat-Korrektur ersetzt den bisherigen Zwischenablageinhalt und hält fertigen Text für Strg+V bereit. [Einrichtung und Rückweg](docs/desktop-startup.md), [aktueller Handoff](handoffs/2026-10-21-mouse-startup.md). Vollständige Geräte-/Zielmatrix, nächster echter Login und Produktionspaket bleiben gesonderte Nachweise.
+Status am **21.10.2026**: Diktat, Vorlesen, Screenshot-Zwischenablage, Obsidian-Oberfläche, verschiebbare Mitleseleiste und Panel-Buttons sind integriert. Brian hat die Buttonabläufe einschließlich des Wechsels vom Vorlesen zum Diktat bestätigt. Maussteuerung und stiller Windows-Autostart sind eingerichtet. Die folgende Diktat-Korrektur ersetzt den bisherigen Zwischenablageinhalt und hält fertigen Text für Strg+V bereit. [Einrichtung und Rückweg](docs/desktop-startup.md), [aktueller Handoff](handoffs/2026-10-21-word-highlighting.md). Vollständige Geräte-/Zielmatrix, nächster echter Login und Produktionspaket bleiben gesonderte Nachweise.
 
 Der lokale Einstieg `C:\Users\brian\Hugin` zeigt auf den sauberen Main-Deploymentclone. Alle drei eigenen Umgebungen und echten Modell-/CUDA-Dateien sind dort aus geprüften lokalen Dateien wiederhergestellt. Die sechs ursprünglichen Planungsdateien bleiben mit identischen SHA256-Hashes unter `C:\Users\brian\Hugin-Planung-2026-10-14` erhalten. Die explizite Einrichtung aktiviert die dauerhaften Maus-/Tastenbindungen.
 
@@ -19,7 +19,9 @@ mit "Mitleseleiste einblenden/ausblenden" steuern. Ausblenden gilt auch fuer
 weitere Texte bis zum bewussten Einblenden; beim App-Neustart ist sie wieder
 aktiviert. Die abgerundete Leiste laesst sich am Kopfbereich verschieben und
 behaelt ihre Position waehrend der App-Sitzung. Details und verbleibende Hoerprobe:
-[Mitleseleiste](docs/reading-panel-2026-10-21.md).
+[Mitleseleiste](docs/reading-panel-2026-10-21.md). Die nächste Erweiterung ordnet
+die Wörter dem erzeugten Audio zu und hebt sie anhand der tatsächlichen
+Wiedergabe hervor. Vorbereitung und Prüfgrenzen: [Wortmarkierung](docs/word-highlighting-2026-10-21.md).
 
 - Hintere Daumentaste / Zurück (XBUTTON1) oder Alt+Y: Diktat starten/stoppen und Text einfügen.
 - Vordere Daumentaste / Vorwärts (XBUTTON2) oder Strg+Alt+V: markierten Text vorlesen/stoppen.

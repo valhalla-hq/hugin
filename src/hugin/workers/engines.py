@@ -4,6 +4,8 @@ import os
 
 from hugin.config import verify_voice_assets
 from hugin.errors import HuginError
+from hugin.word_timing import (AlignmentResult, WordTiming, MAX_SECTION_PCM_BYTES, MAX_TEXT,
+    bind_word_timing, lexeme_spans)
 from .assets import verify_files
 
 
@@ -86,6 +88,62 @@ class WhisperEngine:
                 raise HuginError('worker_failed', 'gpu_synchronize')
         elif self.device == 'cuda':
             raise HuginError('worker_failed', 'gpu_synchronize')
+
+    def align(self, pcm24, text, language, cancelled):
+        """Known-text alignment on this engine's existing inference owner."""
+        if (not isinstance(text, str) or not text.strip() or len(text) > MAX_TEXT
+                or language not in ('German','English') or not isinstance(pcm24, (bytes,bytearray))
+                or not pcm24 or len(pcm24) % 2
+                or len(pcm24) > MAX_SECTION_PCM_BYTES):
+            raise HuginError('protocol_invalid', 'align')
+        if len(pcm24) > 30 * 24000 * 2:
+            return AlignmentResult('unavailable_duration', ())
+        if len(pcm24) < 480 * 2:
+            return AlignmentResult('rejected_path', ())
+        if not lexeme_spans(text):
+            return AlignmentResult('unavailable_text', ())
+        if cancelled(): return AlignmentResult('unavailable_cancelled', ())
+        self._load()
+        if cancelled(): return AlignmentResult('unavailable_cancelled', ())
+        from faster_whisper.tokenizer import Tokenizer
+        import av
+        tokenizer = Tokenizer(self.model.hf_tokenizer, self.model.model.is_multilingual,
+            task='transcribe', language='de' if language == 'German' else 'en')
+        # Outer whitespace has no spoken token. Including it can consume the
+        # first word's DTW interval. Keep an explicit offset into unchanged text.
+        source_offset=len(text)-len(text.lstrip())
+        spoken_text=text.strip()
+        tokens = tokenizer.encode(spoken_text)
+        # CT2 adds no_timestamps and EOT around the supplied text sequence.
+        if len(tokenizer.sot_sequence) + len(tokens) + 2 > 448:
+            return AlignmentResult('unavailable_tokens', ())
+        if tokenizer.decode(tokens) != spoken_text:
+            return AlignmentResult('unavailable_text', ())
+        audio24 = self.np.frombuffer(pcm24, dtype='<i2').reshape(1, -1)
+        frame = av.AudioFrame.from_ndarray(audio24, format='s16', layout='mono')
+        frame.sample_rate = 24000
+        resampler = av.AudioResampler(format='fltp', layout='mono', rate=16000)
+        frames = resampler.resample(frame) + resampler.resample(None)
+        if not frames: return AlignmentResult('rejected_path', ())
+        audio = self.np.concatenate([part.to_ndarray().reshape(-1) for part in frames])
+        if cancelled(): return AlignmentResult('unavailable_cancelled', ())
+        features = self.model.feature_extractor(audio)
+        num_frames = len(audio) // 160
+        if not 2 <= num_frames <= 3000 or features.shape[-1] - 1 < num_frames:
+            return AlignmentResult('rejected_path', ())
+        # CT2 supports this real-length feature window (also used by the local
+        # API probe). Avoid encoding thirty seconds of padding for short speech.
+        # At the validated 30s cap only the extractor's extra padding frame drops.
+        encoded = self.model.encode(features[:, :3000])
+        if cancelled(): return AlignmentResult('unavailable_cancelled', ())
+        records = self.model.find_alignment(tokenizer, [tokens], encoded, num_frames)
+        if cancelled(): return AlignmentResult('unavailable_cancelled', ())
+        if not isinstance(records, list) or len(records) != 1:
+            return AlignmentResult('rejected_path', ())
+        result=bind_word_timing(spoken_text, records[0], tokens, len(pcm24) // 2)
+        return AlignmentResult(result.status,tuple(WordTiming(
+            word.start+source_offset,word.end+source_offset,word.start_sample,word.end_sample)
+            for word in result.words))
 
     def offload(self):
         self.synchronize()

@@ -243,8 +243,19 @@ _Header._fields_ = [('data',ct.c_void_p),('length',wt.DWORD),('recorded',wt.DWOR
     ('next',ct.POINTER(_Header)),('reserved',ct.c_size_t)]
 
 
+class _TimeValue(ct.Union):
+    # MMTIME's largest union member is the eight BYTE SMPTE structure.
+    _fields_ = [('ms',wt.DWORD),('sample',wt.DWORD),('cb',wt.DWORD),
+                ('smpte',wt.BYTE*8)]
+
+
+class _MMTime(ct.Structure):
+    _fields_ = [('wType',wt.UINT),('u',_TimeValue)]
+
+
 class _WaveOut:
     def __init__(self, rate):
+        self.rate = rate
         self.api = ct.WinDLL('winmm',use_last_error=True)
         self.api.waveOutOpen.argtypes = [ct.POINTER(ct.c_void_p),wt.UINT,ct.POINTER(_Format),
             ct.c_size_t,ct.c_size_t,wt.DWORD]
@@ -255,6 +266,8 @@ class _WaveOut:
             fn.restype = wt.UINT
         for name in ('waveOutReset','waveOutClose','waveOutPause','waveOutRestart'):
             fn = getattr(self.api,name);fn.argtypes=[ct.c_void_p];fn.restype=wt.UINT
+        self.api.waveOutGetPosition.argtypes=[ct.c_void_p,ct.POINTER(_MMTime),wt.UINT]
+        self.api.waveOutGetPosition.restype=wt.UINT
         self.handle = ct.c_void_p()
         self.buffers = []
         self.queued_bytes = 0
@@ -300,6 +313,20 @@ class _WaveOut:
     def pause(self,paused):
         self._check((self.api.waveOutPause if paused else self.api.waveOutRestart)(self.handle))
 
+    def position(self):
+        """A driver observation only; unsupported counters never stop speech."""
+        observed=_MMTime(wType=2)  # TIME_SAMPLES; drivers may substitute units.
+        try:
+            if self.api.waveOutGetPosition(self.handle,ct.byref(observed),ct.sizeof(observed)):
+                return None
+        except Exception:
+            return None
+        if observed.wType==2:return int(observed.u.sample)
+        if observed.wType==4:
+            return int(observed.u.cb)//2 if observed.u.cb%2==0 else None
+        if observed.wType==1:return int(observed.u.ms)*self.rate//1000
+        return None
+
     def close(self):
         self.reset()
         self._check(self.api.waveOutClose(self.handle))
@@ -320,6 +347,9 @@ class PCMOutput:
         self._player = None
         self._job = None
         self._paused = False
+        self._submitted_samples = 0
+        self._position_samples = 0
+        self._paused_position = None
         self._lock = threading.RLock()
 
     def start(self, job):
@@ -334,11 +364,35 @@ class PCMOutput:
     def pause(self,job,paused) -> bool:
         with self._lock:
             if self._job != job or self._player is None:return False
+            if self._paused == paused:return True
             self._player.pause(paused)
+            if paused:self._paused_position=self._position_locked(job)
             self._paused = paused
             return True
 
-    def write(self, pcm: bytes, job, cancelled=lambda:False, *, started=None) -> bool:
+    def _position_locked(self,job):
+        if self._job != job or self._player is None:return None
+        if self._paused:return self._paused_position
+        try:
+            position=self._player.position()
+        except Exception:
+            return None
+        if type(position) is not int or position<self._position_samples:return None
+        self._position_samples=min(position,self._submitted_samples)
+        return self._position_samples
+
+    def position(self,job) -> int | None:
+        with self._lock:return self._position_locked(job)
+
+    def _report(self,job,progress,position):
+        # No callback may inherit the audio lock: controller commands can need
+        # this owner while the callback acquires the controller's own lock.
+        with self._lock:
+            if self._job != job or self._player is None:return False
+        if progress is not None:progress(position)
+        with self._lock:return self._job==job and self._player is not None
+
+    def write(self, pcm: bytes, job, cancelled=lambda:False, *, started=None,progress=None) -> bool:
         if not isinstance(pcm,bytes) or len(pcm)>MAX_PCM_WRITE_BYTES or len(pcm)%2:
             raise HuginError('protocol_invalid','playback')
         offset = 0
@@ -353,20 +407,26 @@ class PCMOutput:
                 count = min(len(pcm)-offset,self._block_bytes,max(0,available))//2*2
                 if count:
                     self._player.submit(pcm[offset:offset+count])
-                    if offset == 0 and started is not None:started()
+                    self._submitted_samples+=count//2
+                    first=offset==0
                     offset += count
-                    continue
+                position=self._position_locked(job) if progress is not None else None
+            if count and first and started is not None:started()
+            if not self._report(job,progress,position):return False
+            if count:continue
             time.sleep(.005)
         return True
 
-    def drain(self, job, cancelled=lambda:False) -> bool:
+    def drain(self, job, cancelled=lambda:False, *, progress=None) -> bool:
         while not cancelled():
             with self._lock:
                 if self._job != job or self._player is None:
                     return False
                 self._player.collect()
-                if not self._paused and not self._player.queued_bytes:
-                    return True
+                done=not self._paused and not self._player.queued_bytes
+                position=self._position_locked(job) if progress is not None else None
+            if not self._report(job,progress,position):return False
+            if done:return True
             time.sleep(.005)
         return False
 
@@ -374,6 +434,8 @@ class PCMOutput:
         with self._lock:
             self._job = None
             self._paused = False
+            self._submitted_samples = self._position_samples = 0
+            self._paused_position = None
             if self._player is not None:
                 self._player.reset()
 

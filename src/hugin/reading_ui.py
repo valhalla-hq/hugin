@@ -23,7 +23,7 @@ class ReadingPanel:
         self.window.configure(background=CARD)
         self.window.title('Hugin · Mitlesen')
         self.window.protocol('WM_DELETE_WINDOW',on_hide)
-        self._view=None;self._job='';self._shown=False;self._placement=None
+        self._view=None;self._job='';self._shown=False;self._placement=None;self._word=None
         self._position=None;self._geometry=None;self._drag=None;self._layout_size=None
         self.on_action=on_action;self.on_unavailable=on_unavailable;self.scale=scale
         self.scene=tk.Canvas(self.window,background=CARD,highlightthickness=0,borderwidth=0)
@@ -46,6 +46,7 @@ class ReadingPanel:
             padx=0,pady=0,state='disabled',takefocus=False)
         self.scroll=ttk.Scrollbar(self.scene,command=self.text.yview)
         self.text.configure(yscrollcommand=self.scroll.set)
+        self.text.tag_configure('reading_word',background=BLUE,foreground=FIELD)
         self._controls={widget:self.scene.create_window(0,0,window=widget,anchor='nw')
                         for widget in (*self.buttons,self.text,self.scroll)}
 
@@ -56,9 +57,34 @@ class ReadingPanel:
         if self._job:self.on_action(kind,self._job)
 
     def _set_text(self,text):
+        self._clear_word()
         self.text.configure(state='normal')
         self.text.delete('1.0','end');self.text.insert('1.0',text)
         self.text.configure(state='disabled');self.text.yview_moveto(0)
+
+    def _clear_word(self):
+        self.text.tag_remove('reading_word','1.0','end');self._word=None
+
+    def _mark_word(self,view):
+        span=view.reading_word
+        if (view.reading_marking!='aligned' or not isinstance(span,tuple) or len(span)!=2
+                or any(type(value) is not int for value in span)
+                or not 0<=span[0]<span[1]<=len(view.reading_text)):
+            self._clear_word();return span is None
+        key=(view.reading_job,view.reading_index,view.reading_text,span)
+        if self._word!=key:
+            self._clear_word()
+            def index(offset):
+                prefix=view.reading_text[:offset]
+                # Windows Tk 8.6 columns count UTF-16 units, unlike Python's
+                # code-point offsets. Ask this Tcl runtime at each new mark.
+                column=self.text.tk.call('string','length',prefix.rsplit('\n',1)[-1])
+                return f'{prefix.count(chr(10))+1}.{column}'
+            start,end=map(index,span)
+            self.text.tag_add('reading_word',start,end)
+            self.text.see(start)
+            self._word=key
+        return True
 
     def _fit(self,work):
         # Scale the owned surface, controls and pixel fonts together on smaller
@@ -139,11 +165,17 @@ class ReadingPanel:
             self.clear();return
         old=self._view
         self._view=view;self._job=view.reading_job
+        if old is None or (old.reading_job,old.reading_index)!=(view.reading_job,view.reading_index):
+            self._clear_word()
         title='Vorlesen pausiert' if view.reading_paused else 'Mitlesen'
         section=f'Abschnitt {view.reading_index} von {view.reading_total}' if view.reading_index else 'Wird vorbereitet'
-        self.scene.itemconfigure(self._heading,text=f'{title}  ·  {section}')
         if old is None or old.reading_text!=view.reading_text:
             self._set_text(view.reading_text or 'Der erste Abschnitt wird vorbereitet …')
+        valid=self._mark_word(view)
+        if view.reading_marking=='preparing':title='Wörter werden zugeordnet'
+        elif view.activity=='playing' and (view.reading_marking!='aligned' or not valid):
+            title='Wortmarkierung nicht verfügbar'
+        self.scene.itemconfigure(self._heading,text=f'{title}  ·  {section}')
         self.pause.configure(text='Fortsetzen' if view.reading_paused else 'Pause',
                              state='normal' if view.reading_index else 'disabled')
         if not self._shown:
@@ -155,6 +187,7 @@ class ReadingPanel:
             self._shown=True
 
     def clear(self):
+        if self._view is None and not self._shown:return
         self.window.withdraw();self._shown=False;self._job='';self._view=None;self._drag=None
         self._set_text('');self.scene.itemconfigure(self._heading,text='')
 

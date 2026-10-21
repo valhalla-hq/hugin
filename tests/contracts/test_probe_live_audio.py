@@ -84,7 +84,7 @@ class LiveAudioProbeContracts(unittest.TestCase):
             self.assertEqual(first.parent, root/'.runtime/live-audio-probe')
             self.assertEqual(list(first.iterdir()), [])
             with self.assertRaises(HuginError) as failure:
-                probe._worker(root/'foreign.json', ['--root', str(root)])
+                probe._worker(root/'foreign.json', ['--root', str(root),'--engine','tts'])
             self.assertEqual(failure.exception.code, 'config_invalid')
 
     def test_executor_close_cannot_claim_exit_while_owned_task_is_blocked(self):
@@ -131,7 +131,8 @@ class LiveAudioProbeContracts(unittest.TestCase):
                     def close(self):self.reset();self.handle = None
                 class Worker:
                     engine = 'tts';device = 'cuda';closed = False;failed = False
-                    def __init__(self):
+                    def __init__(self,engine):
+                        self.engine=engine
                         self.engine_instance = str(uuid.uuid4())
                         self.cancelled = threading.Event();self.thread = None
                         self.process = SimpleNamespace(poll=lambda:0 if self.closed else None,
@@ -141,11 +142,12 @@ class LiveAudioProbeContracts(unittest.TestCase):
                         if self.thread is not None:self.thread.join(1)
                         if self.thread is not None and self.thread.is_alive():raise HuginError('worker_timeout', 'synthetic_cleanup')
                         self.closed = True
-                        (directory/'worker.json').write_text(json.dumps({'schema_version':1, 'operations':provider}), encoding='utf-8')
+                        if self.engine=='tts':
+                            (directory/'worker.json').write_text(json.dumps({'schema_version':1, 'operations':provider}), encoding='utf-8')
                 class Pool:
                     def __init__(self, root, callback, **kwargs):self.callback = callback;self.workers = {}
                     def start(self, engine, **kwargs):
-                        worker = Worker();self.workers[engine] = worker
+                        worker = Worker(engine);self.workers[engine] = worker
                         future = Future();future.set_result(dict(device='cuda', engine_instance=worker.engine_instance))
                         return future
                     def synthesize(self, text, voice, request_id, generation, language):
@@ -161,11 +163,6 @@ class LiveAudioProbeContracts(unittest.TestCase):
                                 self.callback(dict(type='audio', engine='tts', engine_instance=worker.engine_instance,
                                     request_id=request_id, generation=generation, pcm=pcm, sample_rate=24000, offset=count))
                                 count += len(pcm)
-                                # The third fixture operation is deliberately
-                                # held for controller cancellation, instead of
-                                # racing an instantaneous fake stream to EOF.
-                                if len(provider) == 2 and index == 0:
-                                    assert worker.cancelled.wait(1)
                             provider.append(dict(chunks=[], pcm_bytes=count, sha256=digest.hexdigest()))
                             terminal = dict(type='terminal', engine='tts', engine_instance=worker.engine_instance,
                                 request_id=request_id, generation=generation, cancelled=worker.cancelled.is_set(),
@@ -175,6 +172,12 @@ class LiveAudioProbeContracts(unittest.TestCase):
                         worker.thread = threading.Thread(target=produce)
                         worker.thread.start()
                         return future
+                    def align(self,pcm,text,request_id,generation,language):
+                        from hugin.word_timing import AlignmentResult
+                        worker=self.workers['stt']
+                        self.callback(dict(type='alignment',engine='stt',engine_instance=worker.engine_instance,
+                            request_id=request_id,generation=generation,result=AlignmentResult('rejected_path',())))
+                        future=Future();future.set_result(dict(code=None,cancelled=False));return future
                     def cancel(self, *args):self.workers['tts'].cancelled.set();return True
                 with patch.object(probe, '_run_directory', return_value=directory), \
                      patch.object(probe, '_head', return_value='synthetic-head'), \
@@ -184,7 +187,8 @@ class LiveAudioProbeContracts(unittest.TestCase):
                 self.assertTrue(report['cleanup_confirmed'], report.get('cleanup_error'))
                 self.assertEqual(len(report['operations']), 3)
                 self.assertEqual([item['voice'] for item in report['operations']], ['freya', 'tyr', 'tyr'])
-                self.assertTrue(report['operations'][-1]['terminal']['cancelled'])
+                self.assertTrue(report['operations'][-1]['playback_cancelled'])
+                self.assertFalse(report['operations'][-1]['terminal']['cancelled'])
                 self.assertTrue(all(item['provider_pcm_exact'] for item in report['operations'][:2]))
                 self.assertTrue(all(item['peak_queued_bytes'] <= 6000 for item in report['operations']))
                 self.assertFalse(probe._HELD)

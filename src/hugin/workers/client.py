@@ -15,6 +15,7 @@ import uuid
 
 from hugin.config import load_settings
 from hugin.errors import HuginError
+from hugin.word_timing import MAX_SECTION_PCM_BYTES, MAX_TEXT, parse_alignment
 from hugin.protocol import (Identity, Frame, TranscriptReceiver, read_control,
     write_control, read_frame, write_frame, invalid)
 
@@ -149,10 +150,29 @@ class WorkerClient:
         if not pcm or len(pcm) % 2 or len(pcm) > self.settings.limits['capture_bytes']:
             raise HuginError('resource_limit', 'transcribe')
         identity, future = self._begin('transcribe', request_id, generation)
+        return self._transfer_pcm(pcm, identity, future, 'transcribe')
+
+    def align(self, pcm24: bytes, text: str, request_id: str, generation: int,
+              language=None):
+        with self._close_lock:
+            language = language or self.settings.language
+            if (self.engine != 'stt' or not self.ready or not isinstance(pcm24, bytes)
+                    or not isinstance(text, str) or not text.strip() or len(text) > MAX_TEXT
+                    or language not in ('German','English')):
+                raise HuginError('protocol_invalid', 'align')
+            if (not pcm24 or len(pcm24) % 2
+                    or len(pcm24) > min(MAX_SECTION_PCM_BYTES, self.settings.limits['capture_bytes'])):
+                raise HuginError('resource_limit', 'align')
+            identity, future = self._begin('align', request_id, generation)
+            with self.condition:
+                self.active.update(alignment_text=text, alignment_samples=len(pcm24)//2)
+            return self._transfer_pcm(pcm24, identity, future, 'align', text=text, language=language)
+
+    def _transfer_pcm(self, pcm, identity, future, kind, **fields):
         # Hashing/copying and pipe writes stay off the caller's input/UI thread.
         def transfer():
             try:
-                self._send('transcribe', identity, length=len(pcm), sha256=hashlib.sha256(pcm).hexdigest())
+                self._send(kind, identity, length=len(pcm), sha256=hashlib.sha256(pcm).hexdigest(), **fields)
                 with self.condition:
                     cancelled = self.active is not None and self.active['cancelled']
                 if cancelled:
@@ -245,7 +265,7 @@ class WorkerClient:
         base = {'schema_version','type','engine','engine_instance','request_id','generation'}
         extra = {'ready': {'device','sample_rate'}, 'result_begin': {'length','sha256'},
             'result_end': {'length','sha256'}, 'terminal': {'cancelled','code','audio_bytes','elapsed_seconds'},
-            'fault': {'code','phase','retry'}}
+            'fault': {'code','phase','retry'}, 'alignment': {'status','words'}}
         kind = event.get('type')
         if (type(event.get('schema_version')) is not int or event.get('schema_version') != 1 or event.get('engine') != self.engine
                 or identity.engine_instance != self.engine_instance or not isinstance(kind,str) or kind not in extra
@@ -282,6 +302,15 @@ class WorkerClient:
                     publish = dict(type='result', engine=self.engine,
                                    **identity.fields(), text=receiver.finish(event['length'],event['sha256']))
                 active['result_ended'] = True
+            elif kind == 'alignment':
+                if active['kind'] != 'align' or active['result_ended']:
+                    raise invalid()
+                result = parse_alignment(dict(status=event['status'], words=event['words']),
+                    active.pop('alignment_text'), active.pop('alignment_samples'))
+                active['result_ended'] = True
+                if not active['cancelled']:
+                    publish = dict(type='alignment', engine=self.engine,
+                        **identity.fields(), result=result)
             elif kind == 'terminal':
                 if (type(event['cancelled']) is not bool or type(event['audio_bytes']) is not int
                         or event['audio_bytes'] < 0 or event['audio_bytes'] % 2
@@ -300,7 +329,7 @@ class WorkerClient:
                     if self.failed or active['received'] != event['audio_bytes']:
                         raise invalid()
                 if not event['cancelled'] and not active['cancelled']:
-                    if active['kind'] == 'transcribe' and event['code'] is None and not active['result_ended']:
+                    if active['kind'] in ('transcribe','align') and event['code'] is None and not active['result_ended']:
                         raise invalid()
                     if active['kind'] == 'synthesize':
                         # This is our local audio callback, not remote transport
@@ -327,7 +356,7 @@ class WorkerClient:
                     publish = event
             else:
                 if (event['code'] not in ('worker_failed','resource_limit','protocol_invalid','unsupported','asset_integrity')
-                        or event['phase'] not in ('worker_protocol','initialize','transcribe','synthesize','offload','gpu_synchronize')
+                        or event['phase'] not in ('worker_protocol','initialize','transcribe','align','synthesize','offload','gpu_synchronize')
                         or event['retry'] not in ('later','restart')):
                     raise invalid()
                 publish = event
@@ -451,6 +480,9 @@ class EnginePool:
 
     def transcribe(self, pcm, request_id, generation):
         return self.workers['stt'].transcribe(pcm,request_id,generation)
+
+    def align(self, pcm24, text, request_id, generation, language=None):
+        return self.workers['stt'].align(pcm24,text,request_id,generation,language)
 
     def synthesize(self, text, voice, request_id, generation, language=None):
         return self.workers['tts'].synthesize(text,voice,request_id,generation,language)

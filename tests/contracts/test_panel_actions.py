@@ -92,13 +92,18 @@ class PanelActions(unittest.TestCase):
                 self.setUp()
                 self.controller.command('read');self.pump()
                 self.pool.future.set_result({'engine_instance':'actual-tts','device':'cpu'});self.pump()
-                operation=self.controller.core.snapshot().gpu_slot
+                self.controller.output.drain=lambda *args,**kwargs:False
+                started=[]
+                def write(pcm,job,cancelled,**kwargs):
+                    started.append(kwargs['started']);return True
+                self.controller.output.write=write
+                app.prepare_section(self.controller,self.pool,self.pump)
                 self.assertEqual(self.controller.core.snapshot().state,c.State.TTS_PREPARING)
                 token=self.controller.view().panel_token
                 original=self.controller.output.stop
                 def stop():
                     self.controller.output.stop=original
-                    self.controller.handle(c.EngineAudio(operation,b'\0\0'))
+                    started.pop()();self.pump()
                     self.assertEqual(self.controller.core.snapshot().state,c.State.TTS_PLAYING)
                     original()
                 self.controller.output.stop=stop
