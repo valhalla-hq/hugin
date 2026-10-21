@@ -14,10 +14,13 @@ import threading
 from collections.abc import Callable
 
 from hugin.errors import HuginError
+from hugin.bindings import BINDINGS
 
 WM_XBUTTONDOWN, WM_XBUTTONUP = 0x020B, 0x020C
 WM_HOTKEY, WM_QUIT, WM_CONTROL = 0x0312, 0x0012, 0x8001
 MOD_NOREPEAT = 0x4000
+MOUSE_ACTIONS = {binding.mouse: binding.action for binding in BINDINGS}
+HOTKEY_ACTIONS = {binding.identity: binding.action for binding in BINDINGS}
 
 
 class MousePresses:
@@ -26,12 +29,12 @@ class MousePresses:
         self.down: set[int] = set()
 
     def handle(self, message: int, button: int, flags: int = 0) -> bool:
-        if flags & 2 or button not in (1, 2):
+        if flags & 2 or button not in MOUSE_ACTIONS:
             return False
         if message == WM_XBUTTONDOWN:
             if button not in self.down:
                 self.down.add(button)
-                self.emit('read' if button == 1 else 'dictation')
+                self.emit(MOUSE_ACTIONS[button])
             return True
         if message == WM_XBUTTONUP:
             self.down.discard(button)
@@ -57,6 +60,7 @@ class WindowsInputs:
         self._events: queue.Queue[str] = queue.Queue(queue_size)
         self._commands: queue.Queue[_CancelCommand] = queue.Queue(16)
         self._ready, self._halt = threading.Event(), threading.Event()
+        self._cleanup_retry = threading.Event()
         self._thread: threading.Thread | None = None
         self._dispatcher: threading.Thread | None = None
         self._cancel_active = False
@@ -94,7 +98,7 @@ class WindowsInputs:
                 self.error = failure
                 raise
         self._dispatcher = threading.Thread(target=self._dispatch, name='hugin-input-dispatch', daemon=True)
-        self._thread = threading.Thread(target=self._run, name='hugin-input-loop', daemon=True)
+        self._thread = threading.Thread(target=self._run, name='hugin-input-loop', daemon=False)
         self._dispatcher.start()
         self._thread.start()
         if not self._ready.wait(3):
@@ -133,6 +137,7 @@ class WindowsInputs:
 
     def stop(self):
         self._halt.set()
+        self._cleanup_retry.set()
         if self._thread is not None and self._thread.is_alive():
             try:
                 self._backend.post(WM_QUIT)
@@ -169,10 +174,8 @@ class WindowsInputs:
         try:
             presses = MousePresses(self._enqueue)
             self._backend.open(None if self.pilot else presses.handle)
-            mods = (1 | 2) if self.pilot else 1
-            self._backend.register(1, mods | MOD_NOREPEAT, 0x44 if self.pilot else 0x59)
-            if self.pilot:
-                self._backend.register(2, mods | MOD_NOREPEAT, 0x56)
+            for binding in BINDINGS:
+                self._backend.register(binding.identity, 1 | 2 | MOD_NOREPEAT, ord(binding.key))
             self.running = True
             self._ready.set()
             while not self._halt.is_set():
@@ -180,10 +183,8 @@ class WindowsInputs:
                 if message == WM_QUIT:
                     break
                 if message == WM_HOTKEY:
-                    if identity == 1:
-                        self._enqueue('dictation')
-                    elif identity == 2 and self.pilot:
-                        self._enqueue('read')
+                    if identity in HOTKEY_ACTIONS:
+                        self._enqueue(HOTKEY_ACTIONS[identity])
                     elif identity == 3 and self._cancel_active:
                         self._enqueue('cancel')
                 elif message == WM_CONTROL:
@@ -211,12 +212,6 @@ class WindowsInputs:
         finally:
             self.running = False
             self._halt.set()
-            try:
-                self._backend.close()
-                self._cleanup_succeeded = True
-            except Exception:
-                self.error = HuginError('input_failed', 'input_cleanup')
-            self._ready.set()
             while True:
                 try:
                     command = self._commands.get_nowait()
@@ -224,6 +219,19 @@ class WindowsInputs:
                     break
                 command.error = self.error or HuginError('input_failed', 'input_stopped')
                 command.done.set()
+            while not self._cleanup_succeeded:
+                self._cleanup_retry.clear()
+                try:
+                    self._backend.close()
+                    self._cleanup_succeeded = True
+                except Exception:
+                    self.error = HuginError('input_failed', 'input_cleanup')
+                    self._ready.set()
+                    # Registrations belong to this native thread. Retain it
+                    # and retry only its remaining resources, with backoff;
+                    # stop() can wake it but cannot unregister on another thread.
+                    self._cleanup_retry.wait(0.1)
+            self._ready.set()
 
 
 class NativeInputs:

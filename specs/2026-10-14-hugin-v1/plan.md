@@ -6,7 +6,7 @@ Stand: 14.10.2026. Feature-Loop mit Brownfield-Migration. Die Nutzerbestätigung
 
 - DEC-001: Python 3.12.10 mit einer leichten Controller-Umgebung und getrennten, gepinnten STT-/TTS-Umgebungen. Unterschiedliche NumPy-Versionen und CUDA-Abhängigkeiten bleiben isoliert. Neue Umgebungen unter Hugin herstellen; keine bestehende venv verschieben.
 - DEC-002: Tkinter/ttk für ein kleines Windows-Fenster; Tkinter/Tk 8.6 sind im vorhandenen Python lesend nachgewiesen. pystray 0.19.5 und Pillow 12.3.0 sind aus dem Bestand bekannte Kandidaten für Tray/Icon. Alle GUI-Zugriffe laufen auf dem UI-Thread. Keine WebView, Node- oder Frontend-Laufzeit.
-- DEC-003: Ein Windows-Eingabeowner mit dedizierter Message-Loop. WH_MOUSE_LL verarbeitet XBUTTON1/2 kurz und übergibt Ereignisse an die Steuerung. Alt+Y mit MOD_NOREPEAT; Escape nur für aktive Aufträge. Maus-DOWN/UP paarweise konsumieren; den gemessenen INJECTED-Fall akzeptieren, LOWER_IL_INJECTED abweisen. Der Hook führt weder Modellarbeit noch Clipboard-/Audioarbeit aus.
+- DEC-003: Ein Windows-Eingabeowner mit dedizierter Message-Loop. WH_MOUSE_LL verarbeitet XBUTTON1/2 kurz und übergibt Ereignisse an die Steuerung. Strg+Alt+D/V mit MOD_NOREPEAT; Escape nur für aktive Aufträge. Maus-DOWN/UP paarweise konsumieren; den gemessenen INJECTED-Fall akzeptieren, LOWER_IL_INJECTED abweisen. Der Hook führt weder Modellarbeit noch Clipboard-/Audioarbeit aus.
 - DEC-004: Direkte Befehle, keine künstliche Alt+Y-Weiterleitung und keine Suche nach einem Whispering-Fenster. Registrierungsfehler begrenzen sichtbar die Funktion; kein grünes Gesamt-Bereit bei Konflikt.
 - DEC-005: Controller besitzt Mikrofon und native waveOut-Ausgabe. Vorhandenen PCM-Player gezielt übernehmen/härten, inklusive MIT-Hinweis. Aufnahme-Kandidat ist sounddevice RawInputStream mit PCM16/Mono/16 kHz; Version 0.5.1 und Geräte-/Treiberverhalten werden in T001/T004 isoliert validiert und gelockt. Unterstützt ein Standardgerät 16 kHz nicht, Fehler anzeigen; Resampling erst nach explizitem überprüftem Planupdate.
 - DEC-006: Zwei kontrollierte Worker, kein HTTP-Server im Endzustand. Nur eine GPU-Inferenz gleichzeitig. Worker können resident bleiben, sofern gemessene Reserven ausreichen. Initial Whisper-Idle-Offload nach 90 Sekunden; bei Residenzkonflikt expliziter, gemessener Offload-/Reload-Pfad statt zufälliger OOMs.
@@ -31,8 +31,8 @@ Eine Ansicht, initial ungefähr 500 × 520 logische Pixel, flexibel und DPI-taug
 Hugin                                   Lokal · GPU
 Bereit / Aufnahme / Verarbeitung / Vorlesen / Fehler
 
-Diktieren   Vordere Taste oder Alt+Y · erneut: fertig
-Vorlesen    Text markieren · hintere Taste · erneut: Stopp
+Diktieren   Zurück-Taste oder Strg+Alt+D · erneut: fertig
+Vorlesen    Text markieren · Vorwärts-Taste oder Strg+Alt+V · erneut: Stopp
 Abbrechen   Escape während einer Aktion
 
 Stimme      [ Freya – ruhig, weiblich | Tyr – männlich ]
@@ -158,3 +158,7 @@ Gleiche Fixtures, Stimmen, Decode-Parameter und GPU-Hardware für Altstack-/Hugi
 - RISK-004: Clipboard und Edit-Control-Identität variieren pro Anwendung. Begrenzte zugesicherte Zielmatrix und Kopierweg statt allgemeiner Erfolgsaussage.
 - RISK-005: Normale Windows-Dateisicht weicht von Codex ab. Installations-/Datenpfade explizit binden und unabhängig prüfen.
 - RISK-006: Aufnahme-Backend/GUI/Tray sind noch nicht im Hugin-Verbund erprobt. Früher vertikaler Pilot vor Modellintegration und Migration.
+
+Aktivierungsauftrag vom 21.10.2026: Der geprüfte bisherige Pilot wird als
+begrenzte Maus-/Autostartstufe umgestellt; offene vollständige Geräte-/Ziel-
+und Login-Nachweise bleiben offen. [Umstellungsplan](../2026-10-21-mouse-startup/plan.md).

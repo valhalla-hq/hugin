@@ -24,6 +24,19 @@ class NativeOwnership(unittest.TestCase):
         finally: inputs.stop()
         self.assertFalse(inputs.running)
 
+    def test_desktop_hook_and_hotkeys_release_before_next_launch(self):
+        # No synthetic input: register, release, and reacquire the real owners.
+        for pilot in (False, True, False):
+            inputs = WindowsInputs(lambda action:None, pilot=pilot)
+            try:
+                inputs.start()
+                self.assertTrue(inputs.running)
+                inputs.set_cancel_active(True)
+                inputs.set_cancel_active(False)
+                self.assertIsNone(inputs.error)
+            finally:inputs.stop()
+            self.assertTrue(inputs.closed)
+
     def test_native_second_instance_does_not_claim_mutex(self):
         # Windows mutexes are recursive on their owning thread. A second
         # instance means another process, not two handles on that same thread.

@@ -22,7 +22,7 @@ MESSAGES = {
     'protocol_invalid': 'Ungültige Daten einer lokalen Sprachkomponente.',
     'resource_limit': 'Eine Hugin-Ressourcengrenze wurde erreicht.',
     'unsupported': 'Diese Funktion ist in dieser Umgebung nicht verfügbar.',
-    'activation_pending': 'Hugin ist noch im Pilotbetrieb. Die normalen Tasten werden nach der Abnahme aktiviert.',
+    'activation_pending': 'Die Hugin-Maussteuerung ist noch nicht eingerichtet oder die Aktivierung ist ungültig.',
 }
 
 

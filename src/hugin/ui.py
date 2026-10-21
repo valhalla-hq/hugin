@@ -14,6 +14,7 @@ from .errors import HuginError
 from .branding import (BACKGROUND,CARD,FIELD,BORDER,TEXT,MUTED,ACCENT,BLUE,
                        ACTIVITY_COLORS,MAX_SURFACE_SIDE,hugin_icon,raven_mark,backdrop,panel_surface,mix,ambient_light)
 from .motion import Motion
+from .bindings import DICTATION, READING
 
 
 @dataclass(frozen=True)
@@ -30,8 +31,8 @@ class View:
     audio_level: float = 0.0
     completion_id: int = 0
     completion_until: float = 0.0
-    dictation_shortcut: str = 'Vordere Taste oder Alt+Y · erneut: fertig'
-    reading_shortcut: str = 'Text markieren · hintere Taste · erneut: Stopp'
+    dictation_shortcut: str = DICTATION.hint()
+    reading_shortcut: str = READING.hint()
     reading_job: str = ''
     reading_text: str = ''
     reading_index: int = 0

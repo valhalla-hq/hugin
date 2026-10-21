@@ -4,7 +4,7 @@ Stand: 14.10.2026. Arbeitsvertrag für die erste lokale Windows-Version. Funktio
 
 ## Ziel und Kontext
 
-Brian erhält eine einzige im Hintergrund laufende Anwendung für Diktieren und Vorlesen. Die Logitech MX Master 3, Alt+Y, lokale Whisper-/Qwen-Verarbeitung und beide bestätigten Stimmen bleiben nutzbar. Ein kleines Fenster erklärt die Bedienung und zeigt Zustand, Stimme, letztes Diktat und Diagnose. Technische Einstellungen pflegen Agents im Repository.
+Brian erhält eine einzige im Hintergrund laufende Anwendung für Diktieren und Vorlesen. Die Logitech MX Master 3, Strg+Alt+D/V, lokale Whisper-/Qwen-Verarbeitung und beide bestätigten Stimmen bleiben nutzbar. Ein kleines Fenster erklärt die Bedienung und zeigt Zustand, Stimme, letztes Diktat und Diagnose. Technische Einstellungen pflegen Agents im Repository.
 
 Arbeitsordner: C:/Users/brian/Hugin. Referenzhardware: Windows x64, RTX 4070 Laptop mit etwa 8 GB VRAM. Es existiert noch kein Hugin-Quellcode oder veröffentlichter Build. Quellen und Nachweisgrenzen stehen in [evidence.md](evidence.md).
 
@@ -27,10 +27,10 @@ Die Steuerung besitzt Auftragszustand, Eingaben, Mikrofon, Audioausgabe, Zwische
 
 | ID | Vertrag |
 | --- | --- |
-| REQ-001 | XBUTTON2/vordere Taste und Alt+Y rufen denselben Diktat-Toggle auf. Ein physischer Druck erzeugt eine Aktion; Halten/Wiederholung erzeugt keine zusätzlichen Toggles. Beide Seitentasten werden während Hugin-Betrieb für Hugin reserviert. |
+| REQ-001 | XBUTTON1/hintere Taste und Strg+Alt+D rufen denselben Diktat-Toggle auf. Ein physischer Druck erzeugt eine Aktion; Halten/Wiederholung erzeugt keine zusätzlichen Toggles. Beide Seitentasten werden während Hugin-Betrieb für Hugin reserviert. |
 | REQ-002 | Erster Toggle startet Aufnahme, zweiter beendet sie und transkribiert lokal. Aufnahme wartet nicht auf das Laden des Whisper-Modells. Sprache Auto und bisherige Decode-Parameter bleiben Standard. |
 | REQ-003 | Ein fertiges Diktat wird höchstens einmal ins geprüfte Einfügeziel übergeben. Unmittelbar vor Übergabe müssen Ziel und die eigene Clipboard-Transaktion noch gültig sein. Hugin drückt kein Enter. Bei Änderung oder Unsicherheit erfolgt keine automatische Übergabe; der Text bleibt zum Kopieren verfügbar. |
-| REQ-004 | XBUTTON1/hintere Taste liest die aktuelle kopierbare Textauswahl lokal vor. Ein weiterer Druck stoppt auch Erfassung, Vorbereitung und Erzeugung. Ohne aktuelle Auswahl keine Vorlesung von altem Zwischenablagetext. |
+| REQ-004 | XBUTTON2/vordere Taste oder Strg+Alt+V liest die aktuelle kopierbare Textauswahl lokal vor. Ein weiterer Druck stoppt auch Erfassung, Vorbereitung und Erzeugung. Ohne aktuelle Auswahl keine Vorlesung von altem Zwischenablagetext. |
 | REQ-005 | Diktat hat Vorrang: ausstehende TTS-Daten entwerten, Ausgabe stoppen, Stille der eigenen Audioausgabe bestätigen, dann Mikrofon öffnen. Während Aufnahme, Transkription oder Textübergabe startet kein Vorlesen. Kein automatisches Fortsetzen. |
 | REQ-006 | Freya und Tyr verwenden die bisherigen Referenz-WAVs, Referenztexte, Modellrevision und Inferenzparameter unverändert. Anzeigename und Profilidentität bleiben getrennt. Kein automatischer Stimmwechsel bei Fehlern. |
 | REQ-007 | Ein kleines Fenster zeigt Status, Tastenhinweise, Freya/Tyr-Auswahl, letztes Diktat mit Kopieren/Löschen und Diagnose kopieren. Schließen verbirgt das Fenster; Beenden im Tray beendet Hugin. Autostart öffnet kein Fenster. |
@@ -45,10 +45,10 @@ Vordergrundzustand: STARTING, IDLE, RECORDING, TRANSCRIBING, DELIVERING, TTS_PRE
 
 | Situation | Erwartetes Verhalten |
 | --- | --- |
-| Vorderer Toggle während TTS_PREPARING/TTS_PLAYING | TTS entwerten und Audio stoppen; Aufnahme nach bestätigtem Ausgabestopp starten. GPU-Abbruch darf parallel zur Aufnahme auslaufen. |
-| Vorderer Toggle während TRANSCRIBING/DELIVERING oder Abbruch eines Diktats | Keine zweite Diktataufgabe anlegen. Status erklärt Verarbeitung; Escape bleibt Abbruchweg. |
-| Vorderer Toggle während Abbruch eines Vorleseauftrags | Nach bestätigtem Ausgabestopp Aufnahme starten, auch wenn Qwen-GPU-Abbruch noch läuft. Der entwertete TTS-Auftrag bleibt nur für die Ressourcenbereinigung verfolgt. |
-| Hintere Taste während eines Diktats | Keine neue Auswahl-Erfassung, Vorlesung oder Browsernavigation. |
+| Diktat-Toggle während TTS_PREPARING/TTS_PLAYING | TTS entwerten und Audio stoppen; Aufnahme nach bestätigtem Ausgabestopp starten. GPU-Abbruch darf parallel zur Aufnahme auslaufen. |
+| Diktat-Toggle während TRANSCRIBING/DELIVERING oder Abbruch eines Diktats | Keine zweite Diktataufgabe anlegen. Status erklärt Verarbeitung; Escape bleibt Abbruchweg. |
+| Diktat-Toggle während Abbruch eines Vorleseauftrags | Nach bestätigtem Ausgabestopp Aufnahme starten, auch wenn Qwen-GPU-Abbruch noch läuft. Der entwertete TTS-Auftrag bleibt nur für die Ressourcenbereinigung verfolgt. |
+| Vorlesetaste während eines Diktats | Keine neue Auswahl-Erfassung, Vorlesung oder Browsernavigation. |
 | Escape während Aufnahme/Transkription/TTS | Aktuellen Auftrag entwerten, Mikrofon/Ausgabe schließen, verspätete Ergebnisse verwerfen. |
 | Escape unmittelbar bei Textübergabe | Serialisierter Übergabepunkt entscheidet: vorher Abbruch ohne Einfügen, danach keine Rücknahmebehauptung. |
 | Fokuswechsel innerhalb desselben Fensters | Eingabeelement und, soweit verfügbar, Auswahl-/Caret-Anker erneut prüfen. Bei Unsicherheit nur RAM-Ergebnis. Kein erzwungenes Zurückfokussieren. |
@@ -82,11 +82,11 @@ V1 enthält keine KI-Textkorrektur, Übersetzung, Sprachbefehle, dauerhafte Hist
 
 | ID | Prüfbarer Fall | Deckt ab |
 | --- | --- | --- |
-| AC-001 | Physisches XBUTTON2 und Alt+Y starten/stoppen jeweils genau einmal; Halten erzeugt keine Doppelaktion; XBUTTON1/2 navigieren nicht im Browser. Flags der gemessenen Logitech-Eingaben sind enthalten. | REQ-001 |
+| AC-001 | Physisches XBUTTON1 und Strg+Alt+D starten/stoppen jeweils genau einmal; Halten erzeugt keine Doppelaktion; XBUTTON1/2 navigieren nicht im Browser. Flags der gemessenen Logitech-Eingaben sind enthalten. | REQ-001 |
 | AC-002 | Deutsches Referenzdiktat wird nach Stop lokal erkannt; Aufnahmebeginn wartet weder auf Whisper-Laden noch Qwen-GPU-Abbruch. | REQ-002, NFR-001 |
 | AC-003 | Ergebnis erscheint genau einmal im unveränderten Ziel ohne Enter. Fenster-/Control-Wechsel, geänderte Auswahl und unprüfbare Ziele erzeugen nur ein kopierbares RAM-Ergebnis. | REQ-003 |
-| AC-004 | Auswahl aus Word, Browser und kopierbarem PDF wird gelesen; leere/fehlende Auswahl verwendet keinen alten Clipboard-Text. Hintere Taste stoppt auch vor dem ersten Ton. | REQ-004 |
-| AC-005 | Diktat während Auswahl-Erfassung, Modellvorbereitung, Generierung und Wiedergabe stoppt hörbare Ausgabe vor Mikrofonaufnahme. Auch nach einem vorherigen hinteren Stopp beginnt Aufnahme ohne Warten auf Qwen-GPU-Abbruch. Ein terminales altes TTS-Ereignis darf nur dessen Ressourcen freigeben; alte Audioblöcke starten keinen Ton. TTS startet während Diktat nicht. | REQ-005, NFR-003 |
+| AC-004 | Auswahl aus Word, Browser und kopierbarem PDF wird gelesen; leere/fehlende Auswahl verwendet keinen alten Clipboard-Text. Vordere Taste stoppt auch vor dem ersten Ton. | REQ-004 |
+| AC-005 | Diktat während Auswahl-Erfassung, Modellvorbereitung, Generierung und Wiedergabe stoppt hörbare Ausgabe vor Mikrofonaufnahme. Auch nach einem vorherigen Vorlese-Stopp beginnt Aufnahme ohne Warten auf Qwen-GPU-Abbruch. Ein terminales altes TTS-Ereignis darf nur dessen Ressourcen freigeben; alte Audioblöcke starten keinen Ton. TTS startet während Diktat nicht. | REQ-005, NFR-003 |
 | AC-006 | Freya/Tyr-WAVs, Referenztexte und Modellhashes stimmen; beide Stimmen bestehen den Hörvergleich auf demselben synthetischen Text. Wechsel stoppt TTS und beeinflusst Diktat nicht; Auswahl überlebt Neustart. | REQ-006, REQ-008 |
 | AC-007 | Fenster enthält exakt die vereinbarte Ansicht, bleibt bei Aktionen ohne Fokusübernahme und öffnet beim Login nicht. Tray, Fenster und Diagnose zeigen konsistenten Zustand; X verbirgt, Beenden beendet. Bei 100/150/200 Prozent DPI bleiben Bedienelemente erreichbar. | REQ-007, NFR-001 |
 | AC-008 | Escape in allen aktiven Zuständen verhindert Ausgabe vor dem Übergabepunkt, stoppt Aufnahme/TTS und lässt verspätete Ergebnisse ins Leere laufen. Danach ist Escape in fremden Apps normal nutzbar. | REQ-009 |
@@ -96,7 +96,7 @@ V1 enthält keine KI-Textkorrektur, Übersetzung, Sprachbefehle, dauerhafte Hist
 | AC-012 | Fehlende/belegte Geräte, Pipe-Abbruch, malformed/zu große IPC-Daten, Queue-Überlauf, Worker-Crash und GPU-Fehler führen zu begrenztem, sichtbarem Fehlerverhalten. Ein gültiges Transkript über 64 KiB bis 256 KiB passiert den gerahmten Textweg; abgeschnittene, verdoppelte oder ungeordnete Textfragmente erzeugen kein Teilergebnis. Kein Wiederholen bereits übergebener Texte und kein falsches Bereit. | NFR-001, NFR-002, SEC-002 |
 | AC-013 | Kalte/warme abgeschlossene Aufgaben auf Referenzhardware messen: Aufnahmebereitschaft, erster Ton, Textübergabe, Abbruch, CPU-Zeit, RAM-Prozessfamilie und GPU-Residenz. Zielabweichungen sind im Prüfbericht entschieden. | NFR-001, NFR-003 |
 | AC-014 | Netzwerk deaktiviert und alte Installationspfade für einen isolierten Restore unzugänglich: STT und beide Stimmen funktionieren mit Hugin-eigenen Dateien; Locks prüfen vollständig. | SEC-001, OPS-001 |
-| AC-015 | Gleichzeitiger Zweitstart, Escape-Registrierungskonflikt und belegtes Alt+Y erzeugen keine doppelten Owner und keine unbemerkte Teilaktivierung. Ein fremder Kontrollprozess bleibt bei Worker-Cleanup unangetastet. | REQ-001, REQ-009, SEC-002, OPS-003 |
+| AC-015 | Gleichzeitiger Zweitstart, Escape-Registrierungskonflikt und belegtes Strg+Alt+D/V erzeugen keine doppelten Owner und keine unbemerkte Teilaktivierung. Ein fremder Kontrollprozess bleibt bei Worker-Cleanup unangetastet. | REQ-001, REQ-009, SEC-002, OPS-003 |
 | AC-016 | Regulärer Windows-Login, Explorer-Neustart, Ruhe/Fortsetzen und Standardgerätewechsel funktionieren ohne manuelles Skript. Fehler bleiben sichtbar; alte Aktionen werden nicht fortgesetzt. | REQ-007, OPS-003 |
 | AC-017 | Aktivierungsprobe und Rückweg stellen jeweils exakt einen funktionierenden Stack her. Backups und tatsächliche externe Dateisicht sind geprüft; invalides Profil fällt sichtbar aus. | OPS-002, OPS-003 |
 
@@ -123,3 +123,8 @@ nicht stillschweigend.
   ungeprüfte Paste-Ziele bleiben manuell kopierbar. Start-, Audio-Terminal-
   und Cleanup-Barrieren durch unabhängiges Review präzisiert. Normalbetrieb
   bleibt bis zum geprüften Wechsel gesperrt; GPU-Pilot braucht freie Kapazität.
+
+Am 21.10.2026 ersetzt Brians ausdrücklicher Auftrag die frühere umgekehrte
+Mausbelegung und Alt+Y: Zurück diktiert, Vorwärts liest. Er autorisiert die
+Autostartmigration einschließlich stillem Hugin-Start. Details und begrenzte
+Abnahme: [Maus/Autostart](../2026-10-21-mouse-startup/spec.md).

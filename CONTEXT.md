@@ -1,150 +1,80 @@
 # Hugin Context
 
-Status: panel buttons and focus correction integrated and accepted by Brian
-Owner: Brian
-Repository: private `valhalla-hq/hugin`; runtime Mjolnir.
-Data boundary: curated source, configuration, locks and approved synthetic voice
-references. No personal dictation, clipboard/image contents, recordings,
-credentials, raw logs, model weights or virtual environments in Git.
+Status: accepted panel baseline; persistent mouse/startup migration in progress.
+Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
+Data boundary: curated source/configuration/locks and approved synthetic voice
+references only. No raw dictation, clipboard/image content, recordings,
+credentials, model weights, virtual environments or local startup backups in Git.
 
 ## Current objective and authorization
 
-Brian accepted the movable rounded reading panel on 21 October ("passt perfekt").
-He now requests buttons in Diktieren and Vorlesen alongside keyboard control:
-start recording, choose the external field during recording, finish/insert;
-select external text and click Vorlesen. This bounded request authorizes routine
-implementation and checked private integration under the central lifecycle.
-No global target history, forced foreground restoration or binding migration.
+Brian confirmed repeated successful dictation/insertion, reading, stopping and
+switching from reading to dictation with the PR26 panel buttons. PR26 and its
+PR27 acceptance record are merged. Main is
+460534fff76741427f6c380405916be1c7947f10.
 
-The first PR24 pilot exposed a stop bug: the UI required external focus before
-dispatching Finish, leaving a recording running when Hugin was foreground.
-Brian also reported ineffective Ctrl+Alt+D/Escape; their physical failure is not
-reproduced. Normal tray Quit succeeded. Fix recording stop independently from
-delivery readiness; retain failed-delivery text in RAM.
+He now explicitly requests permanent mouse Back/XBUTTON1 = dictation and
+Forward/XBUTTON2 = reading, removing PipPal/Whispering login startup, and
+confirms Hugin should start silently after login. This supersedes the old
+opposite mouse mapping, Alt+Y and previous no-migration restrictions.
+Ctrl+Alt+D/V remain additional controls; existing panel buttons remain.
+Complete routine private integration and the requested Windows setup after
+checks/review. Production packaging follows this prerequisite; do not equate
+this increment with the entire V1 acceptance matrix.
 
-Brian explicitly requests that Whispering/PipPal no longer restart after Hugin
-exits during testing. Use tools/pilot_session.py, which has no old-app launch
-path. This supersedes the old automatic-return test arrangement. Login startup
-shortcuts remain unchanged; manual old-app launch remains available.
+## Active work and handoff
 
-On 21 October 2026 Brian requested completion and saving of all finished work,
-then the recommended next reading stage. This authorizes consolidation of the
-finished PR11-18 stack through the central checked private integration workflow.
-It supersedes the former screenshot-task restriction against merging that stack.
-It does not authorize autostart/mouse-binding migration or claiming every V1
-hardware/target criterion passed. No new broad feature belongs in this baseline.
+- Branch: codex/hugin-mouse-startup-mjolnir.
+- Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-mouse-startup-mjolnir.
+- Base: 460534fff76741427f6c380405916be1c7947f10.
+- Control/preflight: e3deecae6673a024aa9015a4387737fbec04c795.
+- Ownership: active; no live runtime is started from this worktree yet.
+- Active handoff: `handoffs/2026-10-21-mouse-startup.md`.
+- Spec/plan/tasks: specs/2026-10-21-mouse-startup/.
 
-Brian then tried the reading pilot and requested a clear main-window button to
-show the panel again. His preferred behavior is to keep it hidden across reading
-jobs until explicitly shown. This bounded UI correction retains session-only
-visibility and leaves audio, selection, workers and cancellation unchanged.
+One binding definition owns dispatch and hints; strict read-only activation
+permits normal desktop launches. Explicit keyboard pilots cannot reset it.
+Setup has a read-only hash-pinned plan, exact backups, idempotent apply/restore,
+and only the two named old links plus the new Hugin link/activation as targets.
+No registry/Logitech writes, package/model installs, global target history or
+external focus restoration. Preserve the accepted clipboard/focus corrections.
+Final checks: 494 contracts/integration, 20.721 s; native shortcut roundtrip,
+3 ownership checks and 2 real hidden normal CLI launches passed. Independent
+spec/standards reviews have no remaining findings. Prepare-retry and same-thread
+input-cleanup retry fixes are included with red/green guards. Hosted checks,
+deployment and physical mouse acceptance are still in progress.
 
-Brian accepted the show/hide function, then requested matching rounded Obsidian
-styling, the visibility action centered at the bottom of the Vorlesen card, and
-a draggable overlay that keeps its placement. Position is session-only and
-clamped to a reachable monitor on show/drop; no permanent position file.
+## Running source and deployment
 
-## Accepted baseline
+Accepted source 379df037d1567f9ea3882f1f0e07902dd4d416e5 (PR26) is now stopped and retained
+in hugin-button-target-mjolnir. Fresh receipt confirms session_exited, code 0,
+own_family_exited true and no started old apps:
+.runtime/pilot-session-e02be514-5fb9-412b-82ee-57f7f0bdb4bf.json.
+No PID is termination authority. Normal tray Quit is the transition; the checked
+pilot starter no longer launches Whispering/PipPal on exit. Never replay old
+auto-return helpers. Prior PR25 owner exited cleanly; no repeated old-app Quit
+request is needed absent fresh evidence.
 
-- Source: d1331da7fa13573e23dd86a04ab4f3301c6b3fcf, PR18 tip.
-- Includes Word document-range handling, confirmed Codex dictation/selection
-  replacement, three original Whispering cues, Obsidian/Nocturne UI and motion,
-  active-mode highlighting, rounded control fixes and screenshot clipboard support.
-- Brian confirmed the Codex screenshot-plus-dictation scenario on 21 October.
-  Technical status at 10:22:31 MESZ: IDLE, native_target_captured,
-  target_captured, submitted, no error, no pending cleanup.
-- 462 contract/integration checks, focused/native evidence and independent reviews
-  passed. All three hosted checks passed at d1331da. See the closeout handoff for
-  the final cumulative review/check and integration proof.
-- Cumulative review found one additional wide-window clipping bug. The closeout
-  binds window/initial/minimum/font geometry to the same explicit 2048-pixel
-  raster bound; no silent cropped surfaces. Seven native visual checks pass.
-- Screenshot support is shared across applications for the proved format bundle;
-  other target applications/clipboard producers have not all been accepted.
-- Earlier target_changed and unassigned audio_failed observations are retained as
-  separate unproven causes. Do not label them fixed by the screenshot change.
+C:/Users/brian/Hugin is the deployment junction to
+C:/Users/brian/brian-projects/_repos/hugin. Models, worker/runtime inputs, voices
+and original cues stay intact. The new persistent startup link must use this
+stable installation, never a task worktree or --pilot. Local exact backup and
+activation metadata remain under its ignored .runtime; use the guarded restore
+in docs/desktop-startup.md after normal Quit if a rollback is needed.
 
-## Running state and return path
+## Accepted behavior and remaining evidence
 
-The PR24 pilot source 751f088241f0d8e1403ba7737225c397df430b10 in
-C:/Users/brian/brian-projects/worktrees/hugin/hugin-panel-actions-mjolnir is stopped.
-Its .runtime/pilot-session-c29822b6-6ef2-4f0f-bc18-2159534d4b00.json proves
-own_family_exited true, exit_code 0 and historical return_dispatched. Brian then
-closed both old apps normally. All temporary synthetic test windows are closed.
-Future sessions use the checked no-return starter; old automatic-return helpers
-must not be replayed. Fresh receipts determine current state, never stale PIDs.
-The accepted running source is now 379df037d1567f9ea3882f1f0e07902dd4d416e5
-(PR26), frozen in hugin-button-target-mjolnir. Its current session receipt is
-.runtime/pilot-session-e02be514-5fb9-412b-82ee-57f7f0bdb4bf.json. Read it freshly
-before any later restart; the acceptance update leaves the session running.
+Accepted: Word/Codex dictation probes, Codex screenshot plus text, original
+Whispering cues, Obsidian UI/motion, active mode, movable rounded reading panel,
+explicit show/hide, pause/resume implementation, and repeated panel-button flows.
+Reading orientation is by section; exact word highlighting is deferred pending
+measured Freya/Tyr synchronization, never invented fixed-rate timing.
 
-C:/Users/brian/Hugin is a junction to the deployment clone _repos/hugin. Its
-runtime/worker inputs must stay byte-identical when advancing the checked source.
-No model, environment, voice, original sound asset or startup-link replacement.
-Historical helper plans pin an old deployment head: revalidate/update an owned
-launcher before any later restart; never blindly replay an old starter.
-
-## Active work
-
-PR19/20, reading panel PR21, visibility PR22, layout PR23, panel actions PR24
-and stop/no-return PR25 plus focus correction PR26 are merged. The accepted
-implementation is merge e15205f303bc1e47ae37c1e46253b5e56519c5bb.
-PR11 is merged through ancestry;
-incorporated PR12-18 are closed. Closeout and inactive PR11-17 source ownerships
-were released through the workspace tool; their recovery files remain.
-
-Acceptance-record branch: codex/hugin-button-acceptance-mjolnir.
-Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-button-acceptance-mjolnir.
-PR: https://github.com/valhalla-hq/hugin/pull/26.
-Spec/plan/tasks: specs/2026-10-21-button-target/.
-Brian confirms recording now stops, but native target capture fails before any
-field probe or delivery. Physical Codex-to-button tracing reproduced a NULL
-foreground at WM_MOUSEACTIVATE and through 500 ms after release. Protecting the
-owned top-level with WS_EX_NOACTIVATE and retaining child MA_NOACTIVATE preserved
-Codex focus and produced native capture success in the same physical probe.
-ActionFocus now owns this wrapper policy; ordinary clicks activate only Hugin.
-No external history/refocus, clipboard or input-proof changes. Cleanup restores
-only added style bits and retains ownership on failure. 483 contracts/integration
-(26.496 s) and 32 native UI/focus/geometry/motion tests (12.818 s) pass. Native
-tests require their own foreground-eligible test window; background activation
-denial is not a product success. Independent spec and standards reviews found
-no material issues (23 and 61 focused pure checks). Exact-head hosted runs
-39599004831, 39598999791 and 39599004686 passed; PR26 merged on 21 October 2026.
-Brian then repeatedly tested the running pilot and confirmed dictation/insertion,
-reading, stopping, and starting dictation while reading: speech is interrupted
-and recording starts as intended. This closes the requested panel-button flow.
-It does not establish a new Word, full device/target or physical shortcut matrix.
-PR25 source 0e283ac3ded9e34e34514ce8af884500fc5e47e7 in hugin-panel-stop-mjolnir
-has exited cleanly. Its .runtime/pilot-session-e9462fe7-0c69-4eb2-ba0f-d6b1cb1cf343.json
-now proves session_exited, exit_code 0, own_family_exited true and no started
-shortcuts. No additional Quit request is needed before the next checked start.
-Physical mixed-DPI/monitor loss and full Freya/Tyr
-long-pause acceptance remain unverified beyond the user's general UI acceptance.
-Preflight/control: e3deecae6673a024aa9015a4387737fbec04c795.
-The live implementation worktree remains owned and frozen while running.
-Release the separate documentation worktree after its checked remote checkpoint.
-
-## Active Handoff
-
-- `handoffs/2026-10-21-button-target.md`
-
-## Reading direction retained
-
-Optional compact reading panel with current-section orientation; exact word
-highlighting deferred pending measured synchronization with Freya and Tyr.
-Pause/resume is the highest-value related control, but must preserve bounded
-streaming, prompt cancellation and dictation priority. No fixed-rate fake timing,
-no focus stealing, no extra speech model solely for animation, no new text log.
-The explicit button refines the existing session preference; a restart returns
-to the enabled default. Preserve the frozen live source until normal restart.
-Other proposed usability improvements: actionable errors and exact build identity.
-
-## Evidence and retained limits
-
-- docs/word-document-2026-10-19.md: native Word evidence and user dictation tests.
-- docs/whispering-cues-2026-10-19.md: pinned original sound identity and native output.
-- docs/obsidian-ui-2026-10-19.md and docs/ui-refinement-2026-10-21.md: UI/native checks.
-- docs/screenshot-formats-2026-10-21.md: format proof, native restoration and limits.
-- docs/baseline-closeout-2026-10-21.md: cumulative acceptance and integration scope.
-- specs/2026-10-14-hugin-v1/tasks.md retains unverified full target/device matrix,
-  performance, physical production bindings and autostart/login migration.
+Historical evidence: docs/baseline-closeout-2026-10-21.md,
+docs/panel-actions-2026-10-21.md, docs/screenshot-formats-2026-10-21.md,
+docs/reading-panel-2026-10-21.md and handoffs/2026-10-21-button-target.md.
+New native registration is not a physical mouse test; shortcut readback is not
+an observed Windows login. Full target/device matrix, mixed-DPI/monitor loss,
+long-pause Freya/Tyr hearing and broad performance/restore acceptance remain
+separate open evidence. Earlier target_changed/audio_failed observations and
+reported physical shortcut failure must not be declared fixed by this change.
