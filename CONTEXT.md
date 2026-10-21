@@ -338,8 +338,8 @@ geschlossenen Bildformatsatzes weg. Unbekannte Formate bleiben abgelehnt.
 Metadatenhelper begrenzt und besitzgefuehrt, temporaerer Diktattext vom Verlauf/
 Cloud ausgeschlossen. Oberflaeche, Animation, Originaltoene und Feldschutz
 unveraendert. 462 reine Tests und60 gezielte Checks gruen, getrennte Reviews
-ohne Produktbefund. Native Endpruefung und menschliche Abnahme noch offen;
-keine Behebung behaupten und laufenden Source nicht aendern.
+ohne Produktbefund. Native Endpruefung bestanden; menschliche Codex-Abnahme
+noch offen, laufenden Source nicht aendern.
 
 Details: docs/screenshot-formats-2026-10-21.md. Exakter aktiver Handoff:
 handoffs/2026-10-21-screenshot-formats.md. Main bleibt defe3d8; keine Integration
@@ -349,6 +349,16 @@ Draft-PR18: https://github.com/valhalla-hq/hugin/pull/18, gestapelt auf PR17.
 Implementierung3bf2ef3 sauber gepusht samt CONTEXT/exaktem Handoff. Nativer
 Produkt-Metadatenhelper bestaetigt den aktuellen achtteiligen Bildformatsatz
 in0,1469s und schliesst seinen Prozess vollstaendig. Er liest keine Bildinhalte
-und veraendert die Zwischenablage nicht. Finale synthetische Wiederholung
-wartet auf erneut bereitgestellte Diagnosekopie; der spaetere Bildinhalt wird
-nicht fuer den Test ueberschrieben. Ownership bleibt fuer diesen Task aktiv.
+und veraendert die Zwischenablage nicht. Der vollstaendige synthetische native
+Durchlauf besteht in0,708s: PNG/DIB/DIBV5/Richtlinien exakt, echtes WM_PASTE in
+verstecktes RichEdit samt Unicode/Auswahlersatz, PNG danach ueber IStream lesbar
+und vorheriger Diagnosetext wiederhergestellt. Defekte des Testanbieters wurden
+an dessen Stream-/GDI-Besitz und Cleanup korrigiert; Produktcode unveraendert.
+Eine fruehere fehlgeschlagene Probe liess nur das synthetische Bild zurueck;
+Brian stellte die Diagnose neu bereit. Keine persoenlichen Bilddaten in Git.
+Ownership bleibt fuer diesen Task aktiv. Geprueften Pilotwechsel vorbereiten.
+
+Auf Brians Wunsch Whispering7.11.0 am fixierten Upstream untersucht: write_text
+sichert nur optionalen Text, schreibt das Diktat, fuehrt Ctrl+V aus und stellt
+nur gesicherten Text wieder her. Ein Bild wird dabei nicht erhalten. Hugins
+Format-Erhaltung bleibt daher ein eigener Pfad; keine fremden Codes uebernommen.

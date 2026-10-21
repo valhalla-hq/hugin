@@ -41,26 +41,52 @@ worker dependencies are unchanged.
 - 462 contract/integration tests with Python 3.12.10 and `-S`: pass, 20.769 s.
 - 60 focused policy, ABI and clipboard checks: pass, 0.009 s.
 - Separate specification/standards reviews found no product-path issue.
+- Final fixture delta independently reviewed without material findings; 69 pure
+  checks pass. Native stream/bitmap selfchecks pass without clipboard access.
+  Additional trace bounding/selfcheck/restore assertions were reviewed after
+  the successful native run; no repeated clipboard mutation for those changes.
 - Native production metadata helper: pass on the current eight-format raster
   bundle in 0.1469 s with owned process closed; no image data read or writes.
 - Docs validator: 19 requirements/17 acceptance criteria, no problems; diff clean.
-- Native synthetic OLE bitmap/PNG-stream/policy roundtrip: pending final run.
+- Native synthetic OLE bitmap/PNG-stream/policy roundtrip: pass, 0.708 s.
+  Snapshot and restoration retain PNG/DIB/DIBV5 and policy bytes exactly;
+  Unicode replaces the synthetic selection through WM_PASTE in a native RichEdit;
+  the restored PNG is independently read as IStream and its digest matches.
+  The previous plain-text clipboard is restored and the owned provider exits.
   The fixture publishes only after a final expected-sequence check and never
   adopts a later snapshot sequence as restoration authority. Its opt-in setup
   requires a disposable text clipboard and no concurrent copying: OLE publication
-  has no atomic compare-and-replace API. The fixture uses its own message-only
-  Edit for WM_PASTE, never Codex input or foreground manipulation.
-- The first native fixture exposed a fixture error: its IStream exit position
-  was zero, which denotes empty transferred data. The producer now leaves the
-  stream at its data end; the independent stream reader seeks to zero. Production
-  snapshot guards were not loosened in response.
+  has no atomic compare-and-replace API. The fixture uses its own hidden RichEdit
+  for WM_PASTE, never Codex input or foreground manipulation. Its provider proves
+  exact OLE ownership before renewing cleanup authority after delayed rendering.
+- The synthetic provider needed explicit stream size/end-position, GetDataHere
+  support and source-owned GDI handles with pUnkForRelease. Stream/bitmap selfchecks
+  run before publication. A failed earlier fixture left only the synthetic image
+  because its sequence changed; Brian supplied another disposable diagnosis
+  copy, and subsequent probes restored it. Production guards were not loosened.
+  A separate window station was unavailable without additional privileges; no
+  existing station was reused and no privileges were changed.
 - One pre-existing ABI expectation was stale on untouched base c378743: the
   second sequence check follows native-target validation. The expected order
   now matches that existing production behavior; commit_paste is unchanged.
 
 The helper's runtime/memory limits are enforced bounds, not measured usage.
-No token, CPU or peak-family-memory performance claim is made. The final native
-probe and human Codex screenshot/dictation acceptance remain required.
+No token, CPU or peak-family-memory performance claim is made. Human Codex
+screenshot/dictation acceptance remains required; a native fixture is not that
+application's acceptance. Hosted checks passed at620fdde; verify the final head.
+
+## Comparison requested by Brian: Whispering 7.11.0
+
+The installed version maps to pinned upstream a6b15c28db9076742d7ae7014f8ec9f97aa615d1.
+Its [desktop text service](https://github.com/EpicenterHQ/epicenter/blob/a6b15c28db9076742d7ae7014f8ec9f97aa615d1/apps/whispering/src/lib/services/isomorphic/text/desktop.ts)
+invokes [write_text](https://github.com/EpicenterHQ/epicenter/blob/a6b15c28db9076742d7ae7014f8ec9f97aa615d1/apps/whispering/src-tauri/src/lib.rs).
+That command tries to save text, treats a failed text read as absent, writes the
+transcript, waits50ms, sends Ctrl+V on Windows, waits100ms and restores only a
+successfully saved text value. There is no image or all-format snapshot in that
+command. Thus an image-only clipboard does not trigger Hugin's format rejection,
+but the image is replaced rather than preserved. This is an implementation
+comparison, not a new live Whispering test or a claim about all releases.
+No upstream implementation code was copied into Hugin.
 
 ## Primary contracts
 

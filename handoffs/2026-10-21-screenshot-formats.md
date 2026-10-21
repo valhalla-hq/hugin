@@ -31,7 +31,7 @@ protocol and bounded helper lifetime. `clipboard_formats_probe.py` enumerates
 public OLE metadata without image contents. `clipboard.py` binds that proof to
 its native snapshot and preserves PNG/policy bytes; its staged text excludes
 history/cloud monitoring. Tests cover protocol, races, ownership and byte
-restoration, plus an opt-in C#/PowerShell synthetic OLE producer and native Edit
+restoration, plus an opt-in C#/PowerShell synthetic OLE producer and native RichEdit
 paste. The spec, curated evidence, CONTEXT and this exact handoff record scope.
 
 ## Verification
@@ -39,16 +39,24 @@ paste. The spec, curated evidence, CONTEXT and this exact handoff record scope.
 - 462 contracts/integration tests, Python 3.12.10 `-S`: pass, 20.769 s.
 - 60 focused policy/ABI/clipboard tests: pass, 0.009 s.
 - Separate spec/standards reviews: no product-path findings.
+- Final fixture standards review: no new material findings; 69 pure checks pass.
+  Stream/bitmap selfchecks also pass without any clipboard access. The final
+  trace bound, bitmap selfcheck and added original-byte assertion were reviewed
+  after the successful native run; no additional user-clipboard run was made.
 - Fixture review corrected stale sequence adoption and long startup race;
   final publication still needs the explicit no-concurrent-copy test setup.
-- Native synthetic roundtrip: pending final run after correcting the synthetic
-  provider's stream exit position. Earlier failure was a fixture defect, not
-  justification for weakening product guards. Original text was restored on
-  those completed runs; a later probe refused because the clipboard held an image.
+- Native synthetic roundtrip: pass, 0.708s; exact PNG/DIB/DIBV5/policy bytes,
+  native RichEdit WM_PASTE with Unicode/selection replacement, restored PNG read
+  independently as IStream, original text restored and provider family closed.
+  Fixture defects were repaired at their owner: exact stream size/exit position,
+  GetDataHere and explicit GDI lifetime, plus OLE ownership on delayed-render
+  cleanup. One earlier failed run left the synthetic image; the replacement
+  diagnosis copy supplied by Brian was restored on subsequent runs.
 - Native production metadata helper: pass for the current eight-format raster
   bundle, 0.1469 s, owned helper closed. No image contents read or clipboard writes.
 - Docs validator: 19 requirements/17 acceptance criteria, no problems; diff clean.
-- Exact-head hosted CI and human Codex acceptance are pending.
+- Hosted baseline and both contracts passed at620fdde (runs39564818239,
+  39564818247,39564813328). Recheck the final new head. Human Codex acceptance pending.
 
 See `docs/screenshot-formats-2026-10-21.md` for exact observed formats, design,
 source contracts and limits. The earlier focus rejection remains a distinct
@@ -79,27 +87,25 @@ before candidate start. No image-name or historical-PID termination.
 
 ## Open Blockers
 
-Native final roundtrip and real Codex screenshot/dictation confirmation remain.
-The latest user setup question requests another disposable Hugin diagnosis copy
-because a later clipboard check found an image. Do not overwrite that image to
-run the fixture. The test itself rejects non-text initial snapshots.
+No new clipboard setup is pending. Native verification passed; real Codex
+screenshot/dictation confirmation remains after the checked pilot switch.
+Brian additionally requested comparison with original Whispering: pinned7.11.0
+write_text preserves only optional text, not images, then Ctrl+V after50ms and
+restores after100ms. Details and exact sources are in the evidence document.
 
 ## Pick Up Here
 
-1. After explicit clipboard readiness, run the opt-in synthetic Windows test;
-   prove image/policy bytes, native Edit paste, restored PNG IStream and original
-   text restoration. Keep any foreign later copy untouched during cleanup.
-2. Finish checks/review, update this exact handoff and CONTEXT, commit only
-   reviewed files, push, create/attach stacked draft PR, verify exact-head CI
+1. Finish final fixture-delta review, update this exact handoff and CONTEXT,
+   commit only reviewed files, push, update attached draft PR18, verify exact-head CI
    and remote presence of both context files.
-3. Prepare checked helpers and perform the normal pilot switch, then request
+2. Prepare checked helpers and perform the normal pilot switch, then request
    Brian's Codex screenshot/dictation test. Keep live source frozen afterward.
 
 ## Starter Prompt
 
 Continue `valhalla-hq/hugin` from `handoffs/2026-10-21-screenshot-formats.md`.
 Read AGENTS, CONTEXT, this exact handoff and fresh Git/ownership/app state. The
-closed raster clipboard fix is implemented and pure-reviewed; finish native
-verification and the checked pilot switch, then obtain manual Codex acceptance.
+closed raster clipboard fix is implemented and native-verified; finish the
+checked pilot switch, then obtain manual Codex acceptance.
 Preserve the separate focus guard and existing live pilot; do not merge the
 older draft stack or automate Codex input.
