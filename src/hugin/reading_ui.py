@@ -3,7 +3,7 @@ import sys
 import tkinter as tk
 from tkinter import ttk
 
-from .branding import CARD,FIELD,TEXT,MUTED,BLUE,BORDER,MAX_SURFACE_SIDE,panel_surface
+from .branding import CARD,FIELD,MUTED,BLUE,BORDER,MAX_SURFACE_SIDE,panel_surface
 from .ui_controls import SoftButton
 
 
@@ -41,12 +41,12 @@ class ReadingPanel:
             command=lambda:self._action('read_stop'))
         self.hide=SoftButton(self.scene,text='Ausblenden',scale=scale,wake=self._wake,command=on_hide)
         self.buttons=(self.pause,self.stop,self.hide)
-        self.text=tk.Text(self.scene,wrap='word',background=FIELD,foreground=TEXT,
+        self.text=tk.Text(self.scene,wrap='word',background=FIELD,foreground='#bfc9dc',
             font=('Segoe UI',12),borderwidth=0,highlightthickness=0,
             padx=0,pady=0,state='disabled',takefocus=False)
         self.scroll=ttk.Scrollbar(self.scene,command=self.text.yview)
         self.text.configure(yscrollcommand=self.scroll.set)
-        self.text.tag_configure('reading_word',foreground='#ffffff',font=('Segoe UI',12,'bold'))
+        self.text.tag_configure('reading_word',foreground='#ffffff',background='#243651')
         self._controls={widget:self.scene.create_window(0,0,window=widget,anchor='nw')
                         for widget in (*self.buttons,self.text,self.scroll)}
 
@@ -113,9 +113,7 @@ class ReadingPanel:
             def place(widget,x,y,w,h):
                 self.scene.coords(self._controls[widget],round(x),round(y))
                 self.scene.itemconfigure(self._controls[widget],width=max(1,round(w)),height=max(1,round(h)))
-            font_size=-max(10,round(16*s))
-            self.text.configure(font=('Segoe UI',font_size))
-            self.text.tag_configure('reading_word',font=('Segoe UI',font_size,'bold'))
+            self.text.configure(font=('Segoe UI',-max(10,round(16*s))))
             place(self.text,30*s,60*s,width-76*s,height-130*s)
             place(self.scroll,width-40*s,60*s,10*s,height-130*s)
             button_w,button_h,gap=round(112*s),round(32*s),round(8*s)

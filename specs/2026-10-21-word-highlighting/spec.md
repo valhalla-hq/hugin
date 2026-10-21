@@ -11,10 +11,11 @@ reading-panel exclusion of alignment work. The source document is not modified.
   Pause freezes it; resume continues; hide/show restores the current word.
   Stop, new job, voice change and dictation clear stale text/marks and retain
   existing priority/cancellation. Follow the active word into view.
-- REQ-004: Following Brian's successful Freya/Tyr listening acceptance, render
-  the active word in bold white text without a filled background, inspired by
-  PipPal's current-word typography. Keep its font size aligned with the panel's
-  normal text at every scale; preserve the accepted timing and text offsets.
+- REQ-004: Preserve the position and width of all glyphs while the current word
+  changes. Brian selected variant A after finding active bold caused text to
+  shift: normal inherited font, white current word and a soft blue background.
+  Do not change font weight/size at word transitions. Preserve accepted timing,
+  original offsets, scroll-follow, pause/resume and hide/show behavior.
 - REQ-003: Preserve Freya/Tyr speech and the original selected text. On unavailable
   or rejected alignment retain useful section display and speech, explicitly
   showing that word marking is unavailable rather than inventing timestamps.

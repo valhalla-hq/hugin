@@ -102,3 +102,13 @@ Hugin's refinement uses its own Segoe UI bold tag, without a background fill,
 and scales it with the normal text. Original spans, audio alignment and native
 playback timing stay unchanged. This is a styling refinement of the accepted
 feature; it does not broaden the measured alignment coverage.
+
+Brian subsequently found that the normal-to-bold change moved subsequent text.
+Equal font size was insufficient: the native word aktuelle measured 54px normal
+and 62px bold. The synthetic mapped Tk comparison reproduced movement of 84
+character boxes. Three alternatives retained every box over 19 word changes.
+Brian selected A: normal font with a soft blue fill and white current word.
+The final style removes both active-font overrides; the Text widget owns the
+single scalable font. Foreground/background change without changing glyph
+advances. A new native regression guard failed on the bold implementation and
+passes with A at normal and small scales. All six native word-panel checks pass.
