@@ -10,9 +10,10 @@ C:/Users/brian/brian-projects/worktrees/hugin/hugin-reading-start-mjolnir.
 Base/main 9ec85225cbc8786d0b6fcfe1da65e8a570d39147. Control preflight verified
 05181f9a99374ff8b298c626f903304f36ac8926. No initial open PRs.
 
-Candidate changes only the section producer: first budget 120, later budget at
-most 1.5 times preceding section length, floor 120, ceiling 240. Natural boundaries
-in the last third avoid tiny greetings followed by oversized successors. Existing
+Candidate changes only the section producer: first soft budget 120, later soft
+budget 1.5 times preceding section length, floor 120, hard ceiling 240. Whole
+tokens and a <=40-character final remainder can exceed the soft budget. Natural
+boundaries in the last third avoid tiny greetings followed by oversized successors. Existing
 serial worker/alignment/native-clock pipeline and one-successor bound stay intact.
 No model, input, UI, startup or preferences changes.
 
@@ -24,8 +25,8 @@ both voices, real alignment and native output with equal-length zero PCM.
 No personal input, clipboard, hooks or audible speech. Reports only counts,
 timing and process metrics under ignored .runtime.
 
-Brian confirmed normal Quit for the exclusive measurement. Probe running under
-InstanceGuard; real results not yet claimed. Stable C:/Users/brian/Hugin points
+Brian confirmed normal Quit for the exclusive measurements, now completed under
+InstanceGuard with cleanup proven. Stable C:/Users/brian/Hugin points
 to _repos/hugin and remains at reviewed main. Whispering/PipPal stay disabled.
 Never terminate via remembered PID. Prior word-highlight handoff retains history.
 
@@ -51,12 +52,13 @@ and publication remains usable during cleanup. Four cleanup guards pass; full
 delta reviews cleared 1cdad90afc3ca6b804f5e573e9340f421b259501. PR37:
 https://github.com/valhalla-hq/hugin/pull/37. Final docs/hosted gate and merge remain.
 
-Next: inspect real measurements and tune only if evidence requires it; independent
-spec/standards reviews, hosted checks, exact-head merge and guarded stable update.
+Next: final documentation review, hosted checks, exact-head merge and guarded
+stable update. Source reviews and real measurements are complete.
 Return path: base main after normal Quit. Listening acceptance remains necessary
 for changed sentence prosody; native silent playback proves only scheduling.
 
 Starter: Continue faster reading start from this exact handoff and the matching
-spec. Preserve accepted word timing and style A. Finish the real old/new probe,
-then review/integrate/deploy only the checked scope. No repeated model downloads
+spec. Preserve accepted word timing and style A. Integrate/deploy the checked scope
+after the final documentation/hosted gate; do not repeat completed probes without
+new changes or a failing result. No repeated model downloads
 or startup changes, and no return of Whispering/PipPal.
