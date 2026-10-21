@@ -56,9 +56,15 @@ def run_owned(command,source,publish,*,factory=OwnedProcess):
             return 2
         while True:
             try:
-                owner.kill()
-                owner.wait(timeout=7)
-                owner.close()
+                try:
+                    # A failed constructor may own handles without a process.
+                    # The owner, not a wait/PID assumption, decides closability.
+                    owner.close()
+                except BaseException:
+                    try:
+                        owner.kill()
+                        owner.wait(timeout=7)
+                    finally:owner.close()
                 break
             except BaseException:
                 publish('own_cleanup_pending',app_pid=owner.pid,started_shortcuts=[])

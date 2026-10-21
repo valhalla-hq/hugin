@@ -92,15 +92,19 @@ were released through the workspace tool; their recovery files remain.
 
 Exclusive branch: codex/hugin-panel-stop-mjolnir.
 Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-panel-stop-mjolnir.
+PR: https://github.com/valhalla-hq/hugin/pull/25 (fresh remote state governs integration).
 Spec/plan/tasks: specs/2026-10-21-panel-stop/.
 Finish no longer depends on external foreground; read-start guidance remains.
 Existing generation/state, clipboard and target proofs are unchanged. The new
 checked pilot starter owns its child family and exits without starting old apps.
-481 contracts/integration, 26 native UI/geometry/motion checks, two native input
+483 contracts/integration, 26 native UI/geometry/motion checks, two native input
 dispatch tests and one real owned-child launcher exit test pass. An own Hugin UI
 with synthetic I/O confirmed button stop, Ctrl+Alt+D and Escape via Windows input.
 Original physical shortcut failure and real Codex/Word button acceptance remain
-explicitly unverified. Independent review and exact-head hosted checks follow.
+explicitly unverified. Independent spec review is clear; standards review found
+partial-constructor cleanup waiting for a nonexistent process. Owner-first close
+with retained retry fixes it; real OwnedProcess producer regressions and re-review
+pass. Exact-head hosted checks follow this final checkpoint.
 Physical mixed-DPI/monitor loss and full Freya/Tyr
 long-pause acceptance remain unverified beyond the user's general UI acceptance.
 Preflight/control: e3deecae6673a024aa9015a4387737fbec04c795.

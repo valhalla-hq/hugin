@@ -14,6 +14,7 @@ No login startup changes, stored external target or forced foreground restore.
 - Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-panel-stop-mjolnir.
 - Control/preflight: e3deecae6673a024aa9015a4387737fbec04c795.
 - Ownership active; exact checkpoint and PR resolved from fresh remote state.
+- PR: https://github.com/valhalla-hq/hugin/pull/25.
 - Spec/plan/tasks: specs/2026-10-21-panel-stop/.
 
 ## Findings and change
@@ -34,20 +35,27 @@ keyboard, focus-history or external-window mutations were introduced.
 tools/pilot_session.py replaces the local auto-return helpers. It validates the
 exact clean source/runtime and identical worker inputs, keeps the existing
 OwnedProcess family owner, records bounded session facts and starts no old app.
-Cleanup failures retain the owner and retry. Manual old-app startup is the return.
+Cleanup failures retain the owner and retry. Independent review found that a
+partially created owner without a process cannot be waited on; cleanup now asks
+the existing owner to close first, then kills/waits only if needed, always retrying
+close. Two real OwnedProcess producer guards cover partial and active constructor
+failures. Review reproduced the original failure and cleared the correction.
+Manual old-app startup is the return.
 Old local auto-return helpers must not be replayed.
 
 ## Verification
 
-- Full contracts/integration: 481 tests, 22.888 s, passed.
-- Focused launcher contracts after cleanup refinement: 3 passed.
+- Final full contracts/integration: 483 tests, 23.434 s, passed.
+- Focused launcher contracts after cleanup refinement: 5 passed.
 - Native UI/focus/geometry/motion: 26 tests, 11.006 s, passed.
 - Native input dispatch: 2 tests, 0.133 s, passed; posted messages are not physical keys.
-- Real owned-child launcher exit: 1 test, 0.063 s, passed; no old-app dispatch.
+- Real owned-child launcher exit: 1 test, final repeat 0.069 s, passed; no old-app dispatch.
 - Separate synthetic UI via Windows input: button finish, Ctrl+Alt+D, Escape passed;
   temporary fixture is closed. No microphone, models or private clipboard used.
 - Docs validator: 19 requirements/17 AC, no problems; whitespace check clean.
-- Independent review and exact-head hosted checks pending at this checkpoint.
+- Independent spec review clear (48 focused pure tests); standards review's P2
+  fixed and re-reviewed clear (14 focused pure tests). No native helper actions.
+- Exact-head hosted checks pending at this final checkpoint.
 
 ## Running and data boundary
 
