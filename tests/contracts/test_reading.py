@@ -6,6 +6,7 @@ import unittest
 from hugin import coordinator as c
 from hugin.audio import PCMOutput
 from test_audio import Device
+from test_word_reading import prepared
 
 
 def ready_reading(core, text='Erster Abschnitt. ' * 45):
@@ -22,12 +23,12 @@ class ReadingOwnership(unittest.TestCase):
         core=c.Coordinator(instance_id='fixture')
         job,op=ready_reading(core)
         self.assertIsNone(core.snapshot().reading_section)
-        first=next(e for e in core.dispatch(c.EngineAudio(op,b'\0\0')) if isinstance(e,c.PlayAudio))
+        first=prepared(core,op)
         self.assertIsNone(core.snapshot().reading_section)
         core.dispatch(c.SectionStarted(job,first.section))
         self.assertEqual(core.snapshot().reading_section.index,1)
-        core.dispatch(c.EngineTerminal(op))
-        second=next(e for e in core.dispatch(c.EngineAudio(core.snapshot().gpu_slot,b'\0\0')) if isinstance(e,c.PlayAudio))
+        core.dispatch(c.AudioFinished(job,first.sequence))
+        second=prepared(core,core.snapshot().gpu_slot)
         self.assertEqual(core.snapshot().reading_section,first.section)
         core.dispatch(c.SectionStarted(job,second.section))
         self.assertEqual(core.snapshot().reading_section.index,2)
@@ -40,14 +41,14 @@ class ReadingOwnership(unittest.TestCase):
         core=c.Coordinator(instance_id='fixture')
         job,op=ready_reading(core)
         self.assertEqual(core.dispatch(c.PauseReading(job.request_id)),())
-        effect=next(e for e in core.dispatch(c.EngineAudio(op,b'\0\0')) if isinstance(e,c.PlayAudio))
+        effect=prepared(core,op)
         core.dispatch(c.SectionStarted(job,effect.section))
         self.assertEqual(core.dispatch(c.PauseReading('stale')),())
         self.assertFalse(core.snapshot().reading_paused)
         effects=core.dispatch(c.PauseReading(job.request_id))
         self.assertTrue(core.snapshot().reading_paused)
         self.assertTrue(any(isinstance(e,c.PauseAudio) and e.paused for e in effects))
-        core.dispatch(c.EngineTerminal(op))
+        core.dispatch(c.AudioFinished(job,effect.sequence))
         self.assertIsNone(core.snapshot().gpu_slot)
         effects=core.dispatch(c.PauseReading(job.request_id))
         self.assertFalse(core.snapshot().reading_paused)

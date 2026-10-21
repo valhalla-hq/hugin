@@ -1,13 +1,14 @@
 """Serial, deterministic job reducer. Adapters execute effects; this module does no I/O."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import StrEnum
 from collections import deque
 import math
 import re
 
 from .errors import HuginError
+from .word_timing import AlignmentResult, WordTiming, MAX_SECTION_PCM_BYTES
 
 
 class State(StrEnum):
@@ -37,6 +38,7 @@ class Action(StrEnum):
     INITIALIZE = 'initialize'
     TRANSCRIBE = 'transcribe'
     SYNTHESIZE = 'synthesize'
+    ALIGN = 'align'
     OFFLOAD = 'offload'
 
 
@@ -91,6 +93,14 @@ class ReadingSection:
     index: int
     total: int
     text: str
+    words: tuple[WordTiming, ...] = ()
+    marking: str = 'preparing'
+
+
+@dataclass(frozen=True)
+class AlignmentInput:
+    pcm: bytes
+    text: str
 
 
 @dataclass(frozen=True)
@@ -109,6 +119,8 @@ class Snapshot:
     reading_section: ReadingSection | None
     reading_total: int
     reading_paused: bool
+    reading_word: tuple[int, int] | None
+    reading_marking: str
 
 
 class Event:
@@ -134,6 +146,14 @@ class PauseReading(Event):
 class SectionStarted(Event):
     job: Job
     section: ReadingSection
+
+
+@dataclass(frozen=True)
+class WordProgress(Event):
+    job: Job
+    section_index: int
+    word: tuple[int, int] | None
+    available: bool = True
 
 
 @dataclass(frozen=True)
@@ -182,6 +202,12 @@ class EngineResult(Event):
 class EngineAudio(Event):
     operation: Operation
     pcm: bytes
+
+
+@dataclass(frozen=True)
+class EngineAlignment(Event):
+    operation: Operation
+    result: AlignmentResult
 
 
 @dataclass(frozen=True)
@@ -285,7 +311,7 @@ class ResetAudio(Effect):
 @dataclass(frozen=True)
 class BeginEngine(Effect):
     operation: Operation
-    payload: bytes | str | None = None
+    payload: bytes | str | AlignmentInput | None = None
     voice: str | None = None
 
 
@@ -309,15 +335,14 @@ class PlayAudio(Effect):
 
 
 @dataclass(frozen=True)
-class PauseAudio(Effect):
+class AudioBuffered(Effect):
     job: Job
-    paused: bool
 
 
 @dataclass(frozen=True)
-class DrainAudio(Effect):
+class PauseAudio(Effect):
     job: Job
-    through_sequence: int
+    paused: bool
 
 
 @dataclass(frozen=True)
@@ -405,7 +430,7 @@ class Coordinator:
         self._slot: Operation | None = None
         self._slot_result = False
         self._components = {engine: Component(engine, None, False, False) for engine in Engine}
-        self._payload: bytes | str | None = None
+        self._payload: bytes | str | AlignmentInput | None = None
         self._target: object = None
         self._recording_open: Job | None = None
         self._stopping_capture = False
@@ -416,10 +441,14 @@ class Coordinator:
         self._pending_dictation = False
         self._tts_chunks: deque[str] = deque()
         self._audio_sequence = 0
-        self._tts_terminal = False
         self._section: ReadingSection | None = None
         self._reading_section: ReadingSection | None = None
         self._reading_paused = False
+        self._section_pcm = bytearray()
+        self._alignment_audio = b''
+        self._reading_phase = ''
+        self._reading_word = None
+        self._position_available = True
         self._delivery_attempted = False
         self._shutdown = False
         self._dispatching = False
@@ -435,7 +464,10 @@ class Coordinator:
                         self._voice, self._result, self._slot, retired,
                         tuple(self._components.values()), self._error, self._job is not None,
                         self._reading_section, self._section.total if self._section else 0,
-                        self._reading_paused)
+                        self._reading_paused,self._reading_word,
+                        'preparing' if self._reading_phase in ('synthesize','align','ready') else
+                        self._reading_section.marking if self._reading_section and self._position_available else
+                        'unavailable_position' if self._reading_section else '')
 
     def dispatch(self, event: Event) -> tuple[Effect, ...]:
         if self._dispatching:
@@ -469,7 +501,6 @@ class Coordinator:
         self._tts_chunks.clear()
         self._clear_reading()
         self._audio_sequence = 0
-        self._tts_terminal = False
         self._job_voice = self._voice if kind == JobKind.READING else None
         return job
 
@@ -492,6 +523,23 @@ class Coordinator:
     def _clear_reading(self):
         self._section = self._reading_section = None
         self._reading_paused = False
+        self._section_pcm.clear()
+        self._alignment_audio = b''
+        self._reading_phase = ''
+        self._reading_word = None
+        self._position_available = True
+
+    def _next_section(self,effects):
+        self._reading_word = None
+        self._alignment_audio = b''
+        if self._tts_chunks:
+            self._payload = self._tts_chunks.popleft()
+            self._section = ReadingSection(self._section.index+1,self._section.total,self._payload)
+            self._reading_phase = 'synthesize'
+            self._state = State.TTS_PREPARING
+            self._schedule(effects)
+        else:
+            self._finish_job()
 
     def _cancel(self, effects: list[Effect]) -> None:
         job = self._job
@@ -558,9 +606,17 @@ class Coordinator:
         return None
 
     def _schedule(self, effects: list[Effect]) -> None:
-        if self._shutdown or self._job is None or self._slot is not None or self._payload is None or self._reading_paused:
+        if self._shutdown or self._job is None or self._slot is not None or self._reading_paused:
             return
-        engine = Engine.STT if self._job.kind == JobKind.DICTATION else Engine.TTS
+        if self._job.kind == JobKind.READING and self._reading_phase == 'ready':
+            self._reading_phase = 'playing'
+            self._audio_sequence += 1
+            effects.append(PlayAudio(self._job,self._alignment_audio,self._audio_sequence,self._section))
+            self._alignment_audio = b''
+            return
+        if self._payload is None:return
+        alignment = self._job.kind == JobKind.READING and self._reading_phase == 'align'
+        engine = Engine.STT if self._job.kind == JobKind.DICTATION or alignment else Engine.TTS
         component = self._components[engine]
         if component.blocked:
             self._fail(HuginError('worker_failed'), 'engine', effects)
@@ -569,14 +625,14 @@ class Coordinator:
             self._worker_number += 1
             component = Component(engine, f'{self._instance_id}:worker:{self._worker_number}', False, False)
             self._components[engine] = component
-        action = (Action.TRANSCRIBE if engine == Engine.STT else Action.SYNTHESIZE) if component.ready else Action.INITIALIZE
+        action = (Action.ALIGN if alignment else Action.TRANSCRIBE if engine == Engine.STT else Action.SYNTHESIZE) if component.ready else Action.INITIALIZE
         payload = None if action == Action.INITIALIZE else self._payload
         if action != Action.INITIALIZE:
             self._payload = None
         self._begin_operation(component, action, self._job, payload, self._job_voice, effects)
 
     def _begin_operation(self, component: Component, action: Action, job: Job | None,
-                         payload: bytes | str | None, voice: str | None,
+                         payload: bytes | str | AlignmentInput | None, voice: str | None,
                          effects: list[Effect]) -> None:
         # Both callers have proved a free central slot and a known incarnation.
         assert self._slot is None and component.engine_instance is not None
@@ -603,13 +659,13 @@ class Coordinator:
         """Preserve content, preferring sentence then whitespace boundaries.
 
         Whitespace-only spans have no spoken content and need no engine call.
-        Each scan examines at most 400 characters; a long token is split rather
+        Each scan examines at most 240 characters; a long token is split rather
         than silently truncated or sent beyond the worker's character bound.
         """
         chunks: deque[str] = deque()
         offset = 0
         while offset < len(text):
-            end = min(offset + 400, len(text))
+            end = min(offset + 240, len(text))
             window = text[offset:end]
             if end < len(text):
                 sentence = list(re.finditer(r'[.!?]["\'”’\)\]]*\s+|\n+', window))
@@ -697,11 +753,20 @@ class Coordinator:
                 if not self._reading_paused:self._schedule(effects)
             return
         if isinstance(event, SectionStarted):
-            if (event.job == self._job and self._section is not None and
-                    event.section.total == self._section.total and
-                    1 <= event.section.index <= self._section.index and
-                    (self._reading_section is None or event.section.index > self._reading_section.index)):
+            if (event.job == self._job and self._reading_phase == 'playing' and
+                    event.section == self._section):
                 self._reading_section = event.section
+                self._state = State.TTS_PLAYING
+                self._reading_word = None
+                self._position_available = True
+            return
+        if isinstance(event, WordProgress):
+            if (event.job == self._job and self._reading_phase == 'playing' and
+                    self._reading_section is not None and event.section_index == self._reading_section.index
+                    and not self._reading_paused and type(event.available) is bool):
+                if event.word is None or any((word.start,word.end)==event.word for word in self._reading_section.words):
+                    self._reading_word = event.word if event.available else None
+                    self._position_available = event.available
             return
         if isinstance(event, VoiceSelected):
             if event.voice not in ('freya', 'tyr'):
@@ -756,6 +821,7 @@ class Coordinator:
                 total = len(self._tts_chunks)
                 self._payload = self._tts_chunks.popleft()
                 self._section = ReadingSection(1,total,self._payload)
+                self._reading_phase = 'synthesize'
                 self._schedule(effects)
             return
         if isinstance(event, AudioReset):
@@ -773,9 +839,9 @@ class Coordinator:
             return
         if isinstance(event, AudioFinished):
             if (event.job == self._job and event.job.kind == JobKind.READING and
-                    self._tts_terminal and type(event.through_sequence) is int and
+                    self._reading_phase == 'playing' and type(event.through_sequence) is int and
                     event.through_sequence == self._audio_sequence):
-                self._finish_job()
+                self._next_section(effects)
             return
         if isinstance(event, DeliveryCommit):
             if event.job == self._job and self._state == State.DELIVERING and not self._delivery_attempted:
@@ -818,12 +884,12 @@ class Coordinator:
             self._settle_cancel(effects)
             self._schedule(effects)
             return
-        if isinstance(event, (EngineReady, EngineResult, EngineAudio, EngineTerminal, EngineFault)):
+        if isinstance(event, (EngineReady, EngineResult, EngineAudio, EngineAlignment, EngineTerminal, EngineFault)):
             self._engine_event(event, effects)
             return
         raise HuginError('protocol_invalid', 'coordinator')
 
-    def _engine_event(self, event: EngineReady | EngineResult | EngineAudio | EngineTerminal | EngineFault,
+    def _engine_event(self, event: EngineReady | EngineResult | EngineAudio | EngineAlignment | EngineTerminal | EngineFault,
                       effects: list[Effect]) -> None:
         operation = event.operation
         if operation != self._slot:
@@ -857,24 +923,34 @@ class Coordinator:
                     if self._job is None:
                         self._state = State.ERROR
             elif current and (event.success is not True or not valid_terminal or
-                            operation.action == Action.TRANSCRIBE and not self._slot_result):
+                            operation.action in (Action.TRANSCRIBE,Action.ALIGN) and not self._slot_result):
                 self._components[operation.engine] = Component(operation.engine, operation.engine_instance, False, True)
                 self._fail(HuginError('worker_failed' if not event.success else 'protocol_invalid'), 'engine', effects)
             elif current and operation.action == Action.SYNTHESIZE:
-                if self._tts_chunks:
-                    self._payload = self._tts_chunks.popleft()
-                    self._section = ReadingSection(self._section.index+1,self._section.total,self._payload)
+                if self._section_pcm:
+                    self._alignment_audio = bytes(self._section_pcm)
+                    self._section_pcm.clear()
+                    self._payload = AlignmentInput(self._alignment_audio,self._section.text)
+                    self._reading_phase = 'align'
                 else:
-                    self._tts_terminal = True
-                    effects.append(DrainAudio(operation.job, self._audio_sequence))
+                    self._next_section(effects)
+            elif current and operation.action == Action.ALIGN:
+                self._reading_phase = 'ready'
             component = self._components[operation.engine]
-            if (operation.engine == Engine.STT and operation.action in (Action.INITIALIZE, Action.TRANSCRIBE)
+            if (operation.engine == Engine.STT and operation.action in (Action.INITIALIZE, Action.TRANSCRIBE,Action.ALIGN)
                     and component.ready and not component.blocked):
                 self._stt_idle_since = self._now
             self._settle_cancel(effects)
             self._schedule(effects)
         elif not current:
             return
+        elif isinstance(event,EngineAlignment):
+            if (operation.action != Action.ALIGN or self._reading_phase != 'align' or self._slot_result
+                    or not isinstance(event.result,AlignmentResult)):
+                self._fail(HuginError('protocol_invalid'),'alignment',effects)
+                return
+            self._slot_result = True
+            self._section = replace(self._section,words=event.result.words,marking=event.result.status)
         elif isinstance(event, EngineResult):
             if operation.action != Action.TRANSCRIBE or self._state != State.TRANSCRIBING or self._slot_result:
                 self._fail(HuginError('protocol_invalid'), 'engine', effects)
@@ -896,7 +972,8 @@ class Coordinator:
                 self._fail(HuginError('protocol_invalid'), 'audio', effects)
             elif len(event.pcm) > self.limits.frame_bytes:
                 self._fail(HuginError('resource_limit'), 'audio', effects)
+            elif len(self._section_pcm)+len(event.pcm)>MAX_SECTION_PCM_BYTES:
+                self._fail(HuginError('resource_limit'),'audio',effects)
             else:
-                self._audio_sequence += 1
-                self._state = State.TTS_PLAYING
-                effects.append(PlayAudio(operation.job, event.pcm, self._audio_sequence,self._section))
+                self._section_pcm.extend(event.pcm)
+                effects.append(AudioBuffered(operation.job))

@@ -5,7 +5,7 @@ import unittest
 from hugin.coordinator import (
     Action, AudioFinished, AudioReset, BeginEngine, Busy, Cancel, CancelDelivery,
     CancelEngine, CaptureSelection, Coordinator, CopyResult, CopyText, DeleteResult,
-    DeliverText, DeliveryCommit, DeliveryFinished, DictationToggle, DrainAudio, Engine,
+    DeliverText, DeliveryCommit, DeliveryFinished, DictationToggle, Engine,
     EngineAudio, EngineExited, EngineFault, EngineReady, EngineResult,
     EngineTerminal, JobKind, Limits, PersistVoice, PlayAudio, ReadToggle,
     RecordingStarted, RecordingStopped, ResetAudio, RetryCleanup, SelectionReady, SetEscape,
@@ -13,6 +13,7 @@ from hugin.coordinator import (
     VoiceSelected,
 )
 from hugin.errors import HuginError
+from test_word_reading import prepared
 
 
 class CoordinatorContracts(unittest.TestCase):
@@ -257,13 +258,12 @@ class CoordinatorContracts(unittest.TestCase):
         self.assertEqual(self.effects(SelectionReady(capture.job, ' \n'), BeginEngine), [])
         self.assertEqual(self.core.snapshot().error.code, 'selection_empty')
 
-    def test_tts_waits_for_both_terminal_and_audio_drain(self):
+    def test_tts_waits_for_preparation_and_audio_drain(self):
         job, operation = self.reading()
-        play, = self.effects(EngineAudio(operation, b'\x00\x00'), PlayAudio)
+        play = prepared(self.core, operation)
         self.assertEqual(play.job, job)
-        drain, = self.effects(EngineTerminal(operation), DrainAudio)
-        self.assertEqual(self.core.snapshot().state, State.TTS_PLAYING)
-        self.core.dispatch(AudioFinished(job, drain.through_sequence))
+        self.assertIsNotNone(self.core.snapshot().job)
+        self.core.dispatch(AudioFinished(job, play.sequence))
         self.assertEqual(self.core.snapshot().state, State.IDLE)
 
     def test_engine_fault_keeps_resource_owned_until_verified_exit(self):
@@ -364,40 +364,34 @@ class CoordinatorContracts(unittest.TestCase):
         self.assertEqual(self.core.snapshot().result.text, text)
         self.finish_delivery(job, operation)
 
-    def test_tts_chunks_keep_one_job_unique_requests_and_final_drain_barrier(self):
+    def test_tts_chunks_keep_one_job_unique_requests_and_per_section_drain_barrier(self):
         capture, = self.effects(ReadToggle(), CaptureSelection)
         text = ('Sentence with synthetic words. ' * 40) + ('x' * 450)
         init, = self.effects(SelectionReady(capture.job, text), BeginEngine)
         self.core.dispatch(EngineReady(init.operation))
         begin, = self.effects(EngineTerminal(init.operation), BeginEngine)
-        chunks = []
-        request_ids = set()
+        chunks, request_ids = [], set()
         audio_sequence = 0
         while True:
             chunks.append(begin.payload)
-            self.assertLessEqual(len(begin.payload), 400)
+            self.assertLessEqual(len(begin.payload), 240)
             self.assertTrue(begin.payload.strip())
             self.assertEqual(begin.operation.job, capture.job)
             self.assertEqual(begin.operation.engine_instance, init.operation.engine_instance)
             self.assertNotIn(begin.operation.request_id, request_ids)
             request_ids.add(begin.operation.request_id)
-            play, = self.effects(EngineAudio(begin.operation, b'\x00\x00'), PlayAudio)
+            play = prepared(self.core, begin.operation)
             audio_sequence += 1
             self.assertEqual(play.sequence, audio_sequence)
-            self.core.dispatch(AudioFinished(capture.job, audio_sequence))
-            self.assertIsNotNone(self.core.snapshot().job)
-            effects = self.core.dispatch(EngineTerminal(begin.operation))
+            self.assertIsNone(self.core.snapshot().gpu_slot)
+            self.assertEqual(self.effects(AudioFinished(capture.job, audio_sequence-1), BeginEngine), [])
+            effects = self.core.dispatch(AudioFinished(capture.job, audio_sequence))
             next_operations = [item for item in effects if isinstance(item, BeginEngine)]
-            if not next_operations:
-                drain, = [item for item in effects if isinstance(item, DrainAudio)]
-                break
-            self.assertFalse(any(isinstance(item, DrainAudio) for item in effects))
+            if not next_operations: break
             begin, = next_operations
+            self.assertEqual(begin.operation.action, Action.SYNTHESIZE)
         self.assertEqual(''.join(chunks), text)
         self.assertGreater(len(chunks), 3)
-        self.core.dispatch(AudioFinished(capture.job, drain.through_sequence - 1))
-        self.assertEqual(self.core.snapshot().state, State.TTS_PLAYING)
-        self.core.dispatch(AudioFinished(capture.job, drain.through_sequence))
         self.assertEqual(self.core.snapshot().state, State.IDLE)
 
     def test_cancel_chunked_tts_discards_all_unstarted_chunks(self):
@@ -505,15 +499,15 @@ class CoordinatorContracts(unittest.TestCase):
         begin, = self.effects(Tick(1090), BeginEngine)
         self.assertEqual(begin.operation.action, Action.OFFLOAD)
 
-    def test_idle_offload_waits_for_current_tts_slot_and_final_audio_cleanup(self):
+    def test_idle_offload_waits_for_reading_drain_and_rearms_after_alignment(self):
         self.idle_stt()
         job, operation = self.reading()
         self.assertEqual(self.effects(Tick(100), BeginEngine), [])
         self.assertEqual(self.core.snapshot().gpu_slot, operation)
-        drain, = self.effects(EngineTerminal(operation), DrainAudio)
-        self.assertEqual(self.effects(Tick(101), BeginEngine), [])
-        self.core.dispatch(AudioFinished(job, drain.through_sequence))
-        begin, = self.effects(Tick(102), BeginEngine)
+        play = prepared(self.core, operation)
+        self.assertEqual(self.effects(Tick(190), BeginEngine), [])
+        self.core.dispatch(AudioFinished(job, play.sequence))
+        begin, = self.effects(Tick(191), BeginEngine)
         self.assertEqual(begin.operation.action, Action.OFFLOAD)
 
     def test_recording_starts_during_offload_but_transcribe_waits_for_terminal(self):

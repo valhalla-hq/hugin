@@ -158,7 +158,7 @@ class Controller:
         self._completions = {}
         self._queued_head = None
         self._audio_job = None
-        self._audio_section = 0
+        self._audio_samples = 0
         self._snapshot = self.core.snapshot()
         self._runtime_error = None
         self._overflow = threading.Event()
@@ -329,6 +329,8 @@ class Controller:
         kind = event.get('type')
         if kind == 'result':
             self._post(c.EngineResult(operation,event['text']))
+        elif kind == 'alignment':
+            self._post(c.EngineAlignment(operation,event['result']))
         elif kind == 'fault':
             self._post(c.EngineFault(operation,HuginError(event['code'],'engine')))
         elif kind == 'audio':
@@ -646,6 +648,9 @@ class Controller:
             self._deadlines[(operation.engine,operation.engine_instance)] = time.monotonic()+self.settings.limits['cancel_seconds']
         elif isinstance(effect,c.ShutdownEngine):
             self._close_engine(effect.engine,effect.engine_instance)
+        elif isinstance(effect,c.AudioBuffered):
+            if audio_ack and not audio_ack.done():audio_ack.set_result(True)
+            return True
         elif isinstance(effect,c.PlayAudio):
             token = self._token(effect.job)
             def play():
@@ -653,38 +658,40 @@ class Controller:
                     if token.is_set(): return False
                     if self._audio_job != effect.job:
                         self.output.start(effect.job.request_id); self._audio_job = effect.job
-                        self._audio_section = 0
-                    started=None
-                    if self._audio_section != effect.section.index:
-                        if self._audio_section and not self.output.drain(effect.job.request_id,token.is_set):return False
-                        def started():
-                            self._audio_section=effect.section.index
-                            self._post(c.SectionStarted(effect.job,effect.section))
-                    return self.output.write(effect.pcm,effect.job.request_id,token.is_set,started=started)
+                        self._audio_samples = 0
+                    origin=self._audio_samples
+                    previous=object()
+                    def started():self._post(c.SectionStarted(effect.job,effect.section))
+                    def progress(samples):
+                        nonlocal previous
+                        if token.is_set():return
+                        word=None
+                        available=samples is not None
+                        if available:
+                            relative=samples-origin
+                            for timing in effect.section.words:
+                                if timing.start_sample<=relative<timing.end_sample:
+                                    word=(timing.start,timing.end);break
+                        marker=(word,available)
+                        if marker!=previous:
+                            previous=marker
+                            self._post(c.WordProgress(effect.job,effect.section.index,word,available))
+                    for offset in range(0,len(effect.pcm),65536):
+                        if not self.output.write(effect.pcm[offset:offset+65536],effect.job.request_id,
+                                token.is_set,started=started if offset==0 else None,progress=progress):return False
+                    if self.output.drain(effect.job.request_id,token.is_set,progress=progress) and not token.is_set():
+                        self._audio_samples=origin+len(effect.pcm)//2
+                        self._post(c.AudioFinished(effect.job,effect.sequence))
+                    return True
                 except Exception as error:
                     self._post(_Failure(_safe_error(error,'audio'))); return False
-            future = self.audio_executor.submit(play)
-            if audio_ack:
-                def acknowledge(done):
-                    if not audio_ack.done(): audio_ack.set_result(done.result())
-                future.add_done_callback(acknowledge)
-            return True
+            self.audio_executor.submit(play)
         elif isinstance(effect,c.PauseAudio):
             try:
                 token=self._token(effect.job)
                 if not token.is_set() and not self.output.pause(effect.job.request_id,effect.paused) and not token.is_set():
                     raise HuginError('audio_failed','audio_pause')
             except Exception as error:self._post(_Failure(_safe_error(error,'audio_pause')),priority=0)
-        elif isinstance(effect,c.DrainAudio):
-            token = self._token(effect.job)
-            def drain():
-                try:
-                    # A silent completed stream has no native player to drain.
-                    if self._audio_job != effect.job or self.output.drain(effect.job.request_id,token.is_set):
-                        if self._audio_job == effect.job: self._audio_job=None
-                        self._post(c.AudioFinished(effect.job,effect.through_sequence))
-                except Exception as error: self._post(_Failure(_safe_error(error,'audio')))
-            self.audio_executor.submit(drain)
         elif isinstance(effect,c.StageDelivery):
             with self._lock:self._delivery_visual=(effect.job,self._visual_epoch)
             token = self._token(effect.job)
@@ -792,6 +799,9 @@ class Controller:
                     future = self.pool.transcribe(effect.payload,request,binding.generation)
                 elif operation.action == c.Action.SYNTHESIZE:
                     future = self.pool.synthesize(effect.payload,effect.voice,request,binding.generation,self.settings.language)
+                elif operation.action == c.Action.ALIGN:
+                    future = self.pool.align(effect.payload.pcm,effect.payload.text,request,
+                                             binding.generation,self.settings.language)
                 else: raise HuginError('unsupported','engine')
             def finished(done):
                 try:
@@ -912,6 +922,8 @@ class Controller:
             c.State.TTS_PREPARING:'reading',c.State.TTS_PLAYING:'reading',
         }.get(snap.state,'')
         status=labels[snap.state]
+        if snap.gpu_slot and snap.gpu_slot.action==c.Action.ALIGN and snap.gpu_slot.job==snap.job:
+            status='Wörter werden zugeordnet'
         if snap.reading_paused:
             status='Vorlesen pausiert'
             activity='idle'
@@ -951,7 +963,8 @@ class Controller:
             reading_job=snap.job.request_id if snap.job and snap.job.kind==c.JobKind.READING and snap.reading_total else '',
             reading_text=snap.reading_section.text if snap.reading_section else '',
             reading_index=snap.reading_section.index if snap.reading_section else 0,
-            reading_total=snap.reading_total,reading_paused=snap.reading_paused)
+            reading_total=snap.reading_total,reading_paused=snap.reading_paused,
+            reading_word=snap.reading_word,reading_marking=snap.reading_marking)
         return view
 
     def _publish(self): self.publish(self.view())

@@ -91,12 +91,16 @@ def _worker(trace, remaining):
     """Probe-only provider timings; no text/PCM/exception payload is persisted."""
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument('--root', type=Path, required=True)
+    parser.add_argument('--engine', choices=('stt','tts'), required=True)
     args, _ = parser.parse_known_args(remaining)
     root, trace = args.root.resolve(), trace.resolve()
     if (trace.name != 'worker.json' or trace.parent.parent != root/'.runtime/live-audio-probe'
             or str(uuid.UUID(trace.parent.name)) != trace.parent.name):
         raise HuginError('config_invalid', 'live_probe_path')
     from hugin.workers import engines, server
+    if args.engine=='stt':
+        sys.argv=[sys.argv[0],*remaining]
+        return server.main()  # Only the TTS producer owns worker.json.
     base = engines.QwenEngine
     facts = []
     class ObservedEngine(base):
@@ -206,15 +210,20 @@ def probe(root, *, run=False, cancel=False):
 
     class Output(PCMOutput):
         closed = False
-        def write(self, pcm, job, cancelled=lambda:False, *, started=None):
-            accepted = super().write(pcm, job, cancelled,started=started)
-            if accepted and current['cancel'] and current['cancel_started'] is None:
-                current['cancel_started'] = time.monotonic()
-                controller.command('cancel')
-            return accepted
-        def drain(self, *args):
+        def write(self, pcm, job, cancelled=lambda:False, *, started=None,progress=None):
+            # Section preparation now precedes playback. Keep the cancellation
+            # probe at its first bounded playback packet, independent of IPC.
+            for offset in range(0,len(pcm),6000):
+                if not super().write(pcm[offset:offset+6000],job,cancelled,
+                        started=started if offset==0 else None,progress=progress):return False
+                if current['cancel'] and current['cancel_started'] is None:
+                    current['cancel_started'] = time.monotonic()
+                    current['playback_cancelled'] = True
+                    controller.command('cancel')
+            return True
+        def drain(self, *args, **kwargs):
             current['draining'] = True
-            return super().drain(*args)
+            return super().drain(*args, **kwargs)
         def close(self):
             super().close()
             self.closed = True
@@ -265,7 +274,7 @@ def probe(root, *, run=False, cancel=False):
             finally:operation['in_callback'] -= 1
         else:
             if kind == 'fault':operation['error'] = dict(code=event['code'], phase=event['phase'])
-            if kind == 'terminal':
+            if kind == 'terminal' and event['engine']=='tts':
                 operation['terminal'] = dict(cancelled=event['cancelled'], code=event['code'],
                     audio_bytes=event['audio_bytes'], clock=time.perf_counter())
             controller.worker_event(event)
@@ -296,7 +305,7 @@ def probe(root, *, run=False, cancel=False):
             while controller.pump_once():pass
             current = dict(voice=voice, cancel=cancelling, cancel_started=None,
                 trace=[], pcm_bytes=0, native_bytes=0, peak_queued_bytes=0, empty_refills=0,
-                terminal=None, error=None, draining=False, in_callback=0,
+                terminal=None, error=None, draining=False, in_callback=0,playback_cancelled=False,
                 callback_hash=hashlib.sha256(), native_hash=hashlib.sha256())
             before = time.perf_counter()
             controller.command('read')
@@ -309,7 +318,8 @@ def probe(root, *, run=False, cancel=False):
                 return current['terminal'] is not None and current['in_callback'] == 0 and snapshot.job is None and not snapshot.cancelling_job and snapshot.gpu_slot is None
             pump_until(finished, deadline, 'live_probe_operation')
             if current['error']:raise HuginError(current['error']['code'], current['error']['phase'])
-            if current['terminal']['code'] or current['terminal']['cancelled'] != cancelling:
+            if (current['terminal']['code'] or current['terminal']['cancelled']
+                    or current['playback_cancelled'] != cancelling):
                 raise HuginError('worker_failed', 'live_probe_terminal')
             if not current['native_bytes']:raise HuginError('audio_failed', 'live_probe_no_audio')
             if not cancelling and (current['pcm_bytes'] != current['native_bytes'] or current['callback_hash'].digest() != current['native_hash'].digest()):
