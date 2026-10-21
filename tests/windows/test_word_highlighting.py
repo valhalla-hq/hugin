@@ -59,6 +59,24 @@ class WordHighlightingNative(unittest.TestCase):
         self.assertEqual(self.marked(),'')
         panel.render(View(),True);self.assertEqual(self.marked(),'')
 
+    def test_current_word_keeps_native_glyph_advances_at_each_panel_scale(self):
+        from tkinter.font import Font
+        panel=self.panel
+        view=replace(self.view,reading_text='Das aktuelle Wort bleibt stehen.',reading_word=(4,12))
+        panel.render(view,True)
+        for work in ((0,0,1280,800),(0,0,450,300)):
+            with self.subTest(work=work):
+                panel._fit(work)
+                normal=Font(root=self.root,font=panel.text.cget('font'))
+                active=Font(root=self.root,font=panel.text.tag_cget('reading_word','font') or
+                            panel.text.cget('font'))
+                word=self.marked()
+                self.assertEqual(word,'aktuelle')
+                self.assertEqual([active.measure(word[:index]) for index in range(1,len(word)+1)],
+                                 [normal.measure(word[:index]) for index in range(1,len(word)+1)],
+                                 'marking must not move following glyphs or change wrapping')
+                self.assertEqual(active.metrics('linespace'),normal.metrics('linespace'))
+
     def test_preparing_unavailable_and_invalid_spans_never_invent_mark(self):
         panel=self.panel
         panel.render(replace(self.view,reading_marking='preparing',reading_word=None),True)

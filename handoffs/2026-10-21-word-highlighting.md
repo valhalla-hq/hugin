@@ -116,20 +116,23 @@ A normal font + subtle blue fill, B normal font + accent underline, C constant
 bold font + subtle fill. All three retain exactly the same character boxes over
 19 current-word transitions. The preview closes itself after three minutes.
 It is a visual style preview, not a new timing implementation or app deployment.
-Brian has been asked which variant reads best; A was recommended. No answer is
-recorded yet, and no production style was changed for this follow-up. PR35 is
-draft again and contains the deployment/savepoint documentation; do not merge
-it using the earlier ready state while the next style scope is unresolved.
+Brian selected A. The candidate now inherits one normal font from the Text
+widget and uses white text with a soft blue current-word background. Both bold
+font overrides and their redundant sizing code are removed. Inactive text and
+highlight colors match A. Alignment, playback, word spans and scrolling are
+unchanged. A native glyph-advance/line-height regression guard first failed on
+the previous bold style, then passed with A at normal/small scale. All six
+existing/new native word-panel checks pass in 1.353s. No GPU/input/clipboard
+probe was repeated; no target content was read. Production still runs PR34.
 
-Next: receive the style preference, apply the smallest tag/font-owner change,
-verify unchanged glyph positions plus existing native word-panel behavior,
-update review/PR scope, and integrate/deploy normally. Preserve the accepted
-audio timing and never compensate for width changes with guessed spacing.
+Next: finish independent review and exact-head checks of final PR35 scope,
+then merge and update after normal Quit/restart. Preserve the accepted audio
+timing and never compensate for width changes with guessed spacing.
 
 Starter: Continue Hugin from this exact handoff. PR33 is merged, deployed and
 hearing-accepted; PR34 bold-word styling is running but needs the stable-layout
-visual follow-up described above. Resolve the pending preview preference before
-its final styling. Use this active parent
+visual follow-up described above. Brian chose A; finish its reviewed rollout.
+Use this active parent
 worktree and preserve the accepted
 input/clipboard/startup behavior. Do not repeat completed GPU/native probes
 without new evidence or claim perceptual acceptance from those probes.

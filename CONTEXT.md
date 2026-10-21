@@ -1,8 +1,9 @@
 # Hugin Context
 
 Status: audio-based word highlighting and the bold-word refinement are deployed
-through PR34. Brian accepts function/timing but reports text shifting when a
-word becomes bold. Stable-layout style comparison is prepared; selection pending.
+through PR34. Brian accepts function/timing and selected A (normal font with a
+soft blue fill) to remove bold-induced text movement. Candidate is implemented;
+six native word-panel checks pass. Review and normal rollout are pending.
 Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
 
 ## Current intent and authorization
@@ -38,8 +39,10 @@ the word tag to white bold text, with matching font size at each panel scale.
 It passed independent review and exact-head hosted checks, deployed under
 InstanceGuard and started at 17:41:27 local. The own window was observed preparing
 reading with Tyr. Brian then confirmed function but rejected the shifting text
-layout caused by changing word weight. The running app is unchanged while a
-separate synthetic native preview compares three stable-layout alternatives.
+layout caused by changing word weight. He selected A after the synthetic native
+comparison. Candidate uses the same inherited font for all words and changes
+only foreground/background for the active span. The running app is still PR34
+until reviewed integration and normal Quit/restart.
 No stored PID is termination authority. Whispering and PipPal remain disabled and must not auto-return.
 
 Accepted: screenshot plus dictation in Codex, clipboard fallback for Ctrl+V,
