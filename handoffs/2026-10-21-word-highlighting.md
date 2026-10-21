@@ -123,15 +123,26 @@ highlight colors match A. Alignment, playback, word spans and scrolling are
 unchanged. A native glyph-advance/line-height regression guard first failed on
 the previous bold style, then passed with A at normal/small scale. All six
 existing/new native word-panel checks pass in 1.353s. No GPU/input/clipboard
-probe was repeated; no target content was read. Production still runs PR34.
+probe was repeated; no target content was read.
 
-Next: finish independent review and exact-head checks of final PR35 scope,
-then merge and update after normal Quit/restart. Preserve the accepted audio
-timing and never compensate for width changes with guessed spacing.
+Independent review of exact d745c7091752e815c6c9a4f07cdaa00c279ac217 found no
+issues; all three hosted checks passed. Fresh PR identity, scope, head and
+checks were verified immediately before PR35 merged at 2026-10-21T16:40:03Z as
+8eee62192a399a0a1cf98f4d3b5193f3b0b5768a. The first deployment guard correctly
+found Hugin running and made no update. After Brian confirmed normal Quit,
+the clean stable main clone fast-forwarded under InstanceGuard; source tree
+is 888e66e787082207f6d01fd31b6f4f767a440cee. Normal start was at 18:41:03 local
+on 2026-10-21. The freshly discovered own Hugin window showed Bereit für dein
+Diktat. No app input was sent, and accepted audio/input/startup behavior was
+not changed. Live visual feedback on A is not claimed beyond the chosen preview.
+
+The requested style is integrated and running; receive any further feedback
+before changing it. Preserve the accepted audio timing. Source rollback for
+this iteration is PR34 f4bcc437 after normal Quit; its bold reflow limitation
+is known. Parent/helper ownership remains active for this saved continuation.
 
 Starter: Continue Hugin from this exact handoff. PR33 is merged, deployed and
-hearing-accepted; PR34 bold-word styling is running but needs the stable-layout
-visual follow-up described above. Brian chose A; finish its reviewed rollout.
+hearing-accepted; PR35 selected style A is reviewed, merged and running.
 Use this active parent
 worktree and preserve the accepted
 input/clipboard/startup behavior. Do not repeat completed GPU/native probes

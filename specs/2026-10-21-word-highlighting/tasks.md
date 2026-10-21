@@ -9,7 +9,7 @@
 - [x] Real Freya/Tyr word-highlighting acceptance.
 - [x] Apply and verify Brian's requested PipPal-inspired bold-word presentation.
 - [x] Select and verify a stable reading style that removes bold-induced movement.
-- [ ] Review, integrate and deploy the selected A style after normal Quit.
+- [x] Review, integrate and deploy the selected A style after normal Quit.
 
 Final integrated checks: 546 passed in 23.637s; 5 native UI checks and 1 silent audio check passed.
 Real GPU/Controller measurements and known Freya fallback are recorded in
@@ -25,4 +25,7 @@ Brian subsequently reported that bold changes shift following text. A synthetic
 native comparison reproduces that movement and verifies three alternatives with
 unchanged glyph positions. Brian selected A. Its implementation removes active
 font overrides; six native word-panel checks pass (1.353s), including a new
-glyph-advance guard that first failed on the old bold style. Rollout is pending.
+glyph-advance guard that first failed on the old bold style. Independent review
+and all exact-head hosted checks passed. PR35 merged as 8eee6219; the stable
+deployment updated under InstanceGuard after normal Quit. Hugin restarted at
+18:41:03 local and its own window showed ready.

@@ -1,9 +1,8 @@
 # Hugin Context
 
-Status: audio-based word highlighting and the bold-word refinement are deployed
-through PR34. Brian accepts function/timing and selected A (normal font with a
-soft blue fill) to remove bold-induced text movement. Candidate is implemented;
-six native word-panel checks pass. Review and normal rollout are pending.
+Status: audio-based word highlighting is hearing-accepted. Brian's selected
+stable-layout style A (normal font with a soft blue fill) is reviewed, integrated
+through PR35 and running. Six native word-panel checks and hosted checks pass.
 Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
 
 ## Current intent and authorization
@@ -18,7 +17,7 @@ Routine checked private integration and normal deployment remain authorized.
 
 - Branch: codex/hugin-word-highlighting-mjolnir.
 - Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-word-highlighting-mjolnir.
-- Feature main/deployment: f4bcc43704f5907bc848c41d9add2b281cd1f78f (PR34).
+- Feature main/deployment: 8eee62192a399a0a1cf98f4d3b5193f3b0b5768a (PR35).
 - Exact handoff: handoffs/2026-10-21-word-highlighting.md.
 - Spec/plan/tasks: specs/2026-10-21-word-highlighting/.
 - Evidence/limits: docs/word-highlighting-2026-10-21.md.
@@ -40,9 +39,10 @@ It passed independent review and exact-head hosted checks, deployed under
 InstanceGuard and started at 17:41:27 local. The own window was observed preparing
 reading with Tyr. Brian then confirmed function but rejected the shifting text
 layout caused by changing word weight. He selected A after the synthetic native
-comparison. Candidate uses the same inherited font for all words and changes
-only foreground/background for the active span. The running app is still PR34
-until reviewed integration and normal Quit/restart.
+comparison. PR35 uses the same inherited font for all words and changes only
+foreground/background for the active span. After normal Quit, the clean stable
+clone updated under InstanceGuard and Hugin restarted at 18:41:03 local on
+2026-10-21. Its own window showed Bereit für dein Diktat. No app input was sent.
 No stored PID is termination authority. Whispering and PipPal remain disabled and must not auto-return.
 
 Accepted: screenshot plus dictation in Codex, clipboard fallback for Ctrl+V,
