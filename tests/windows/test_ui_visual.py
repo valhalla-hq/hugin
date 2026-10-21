@@ -68,6 +68,16 @@ class NativeVisualContract(unittest.TestCase):
         self.assertGreaterEqual(toggle[1],card[1])
         self.assertLessEqual(toggle[3],card[3])
         self.assertAlmostEqual((toggle[0]+toggle[2])/2,(card[0]+card[2])/2,delta=1)
+        for name,parent in (('dictation_button','dictation'),('read_action','reading'),('read_pause','reading')):
+            if window.scene.itemcget(window._windows[name],'state')=='hidden':continue
+            card=window.scene.bbox(window._items[parent])
+            action=window.scene.bbox(window._windows[name])
+            key=window.scene.bbox(window._labels[parent+'_key'])
+            self.assertGreaterEqual(action[0],card[0])
+            self.assertLessEqual(action[2],card[2])
+            self.assertGreaterEqual(action[1],key[3])
+            self.assertLessEqual(action[3],card[3])
+            if parent=='reading':self.assertLessEqual(action[3],toggle[1])
 
     def test_three_dpi_scales_keep_text_and_actions_inside_their_cards(self):
         for scale in (1,1.5,2):
@@ -78,7 +88,8 @@ class NativeVisualContract(unittest.TestCase):
                     components='Whisper · bereit    Qwen · bereit',
                     error='Synthetischer Diagnosehinweis: Der Prüfadapter meldet eine begrenzte Störung. Bitte erneut versuchen.',
                     dictation_shortcut='Strg+Alt+D · erneut: fertig',
-                    reading_shortcut='Text markieren · Strg+Alt+V · erneut: Stopp'))
+                    reading_shortcut='Text markieren · Strg+Alt+V · erneut: Stopp',
+                    dictation_control='finish',reading_control='start',panel_token=(1,'RECORDING')))
                 window.show()
                 self.assert_visible_controls(window)
                 width,height=window.root.minsize()

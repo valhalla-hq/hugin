@@ -1,6 +1,6 @@
 # Hugin Context
 
-Status: reading visibility accepted; movable Obsidian panel and in-card action under verification
+Status: movable reading panel accepted; focus-preserving panel actions under review
 Owner: Brian
 Repository: private `valhalla-hq/hugin`; runtime Mjolnir.
 Data boundary: curated source, configuration, locks and approved synthetic voice
@@ -8,6 +8,13 @@ references. No personal dictation, clipboard/image contents, recordings,
 credentials, raw logs, model weights or virtual environments in Git.
 
 ## Current objective and authorization
+
+Brian accepted the movable rounded reading panel on 21 October ("passt perfekt").
+He now requests buttons in Diktieren and Vorlesen alongside keyboard control:
+start recording, choose the external field during recording, finish/insert;
+select external text and click Vorlesen. This bounded request authorizes routine
+implementation and checked private integration under the central lifecycle.
+No global target history, forced foreground restoration or binding migration.
 
 On 21 October 2026 Brian requested completion and saving of all finished work,
 then the recommended next reading stage. This authorizes consolidation of the
@@ -48,10 +55,12 @@ clamped to a reachable monitor on show/drop; no permanent position file.
 
 ## Running state and return path
 
-The live source is frozen at 9d6273f81fcf0786135107d1a871b14fdb87c1c2 in
-C:/Users/brian/brian-projects/worktrees/hugin/hugin-reading-visibility-mjolnir.
-It started 21 October at 12:08:15 MESZ after normal old-app exits. The previous
-reading pilot proved own-family exit and normal return before that switch.
+The last accepted source is 6dd1bde105f0bac292f91e996f5933604adb7bb2 in
+C:/Users/brian/brian-projects/worktrees/hugin/hugin-reading-layout-mjolnir.
+It started 21 October at 13:06:45 MESZ after normal old-app exits. Receipt
+.runtime/pilot-session-87ca3a44-f36c-4109-9c03-8dc199092351.json now confirms
+return_dispatched, own_family_exited true and exit_code 0. It is no longer live.
+The previous visibility pilot proved own-family exit and normal return before that switch.
 Fresh runtime receipts, not historical PIDs, determine current state. Normal Hugin Quit returns
 Whispering/PipPal through unchanged startup shortcuts. Preserve the source and
 ignored runtime helpers until normal exit. Never kill apps by name or stale PID.
@@ -64,30 +73,30 @@ launcher before any later restart; never blindly replay an old starter.
 
 ## Active work
 
-PR19/20, reading panel PR21 and visibility PR22 are merged; main/deployment is
-a7404d8ee761c8c3925c12be4b6055319f4a54ae. PR11 is merged through ancestry;
+PR19/20, reading panel PR21, visibility PR22 and layout PR23 are merged; main/deployment is
+35528f4ab8315b23e3fb848aacfc6bbcc343d4b9. PR11 is merged through ancestry;
 incorporated PR12-18 are closed. Closeout and inactive PR11-17 source ownerships
 were released through the workspace tool; their recovery files remain.
 
-Exclusive new branch: codex/hugin-reading-layout-mjolnir.
-Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-reading-layout-mjolnir.
-Spec/plan/tasks: specs/2026-10-21-reading-layout/. Existing section orientation,
-pause and visibility are preserved. The new canvas surface shares Hugin branding,
-composites rounded button corners against the actual background, and uses an
-owned native rounded region. The overlay header can be dragged; position survives
-hide/show and new jobs within the session. Remembered geometry selects its monitor
-instead of the current foreground app. The existing show/hide button moves into
-the main reading card; compact scaling keeps the additional row inside bounds.
-471 contracts/integration checks and 19 native/geometry/UI/motion checks pass.
-Synthetic preview was dragged and hidden/reopened at the same measured position.
-See exact handoff for review and checked-integration state. Physical mixed-DPI,
-real monitor disconnection and full Freya/Tyr long-pause acceptance remain open.
+Exclusive new branch: codex/hugin-panel-actions-mjolnir.
+Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-panel-actions-mjolnir.
+PR: https://github.com/valhalla-hq/hugin/pull/24 (resolve current checks/integration fresh).
+Spec/plan/tasks: specs/2026-10-21-panel-actions/. Native per-button activation
+handling preserves external focus. Controller generation/state tokens reject
+queued duplicate/stale actions. Capture, clipboard and delivery remain unchanged.
+477 contracts/integration and 26 native/geometry/UI/motion checks pass; synthetic
+preview confirms normal/recording layout. Both independent review findings are
+fixed and re-reviewed: held mouse presses preserve original intent even through
+key events; accepted interruptions survive phase changes of the same job.
+Hosted exact-head checks are pending at this checkpoint. Real Codex/Word button acceptance follows
+the normal pilot switch. Physical mixed-DPI/monitor loss and full Freya/Tyr
+long-pause acceptance remain unverified beyond the user's general UI acceptance.
 Preflight/control: e3deecae6673a024aa9015a4387737fbec04c795.
 Ownership remains active until clean remote checkpoint/release proof.
 
 ## Active Handoff
 
-- `handoffs/2026-10-21-reading-layout.md`
+- `handoffs/2026-10-21-panel-actions.md`
 
 ## Reading direction retained
 

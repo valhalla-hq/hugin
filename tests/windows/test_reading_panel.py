@@ -23,10 +23,11 @@ class ReadingPanelNative(unittest.TestCase):
         window.reading_panel._placement=placement
         with patch.object(placement.api,'SetWindowRgn',return_value=0), \
                 patch.object(placement.gdi,'DeleteObject',return_value=0):
-            window.render(View(reading_job='region-fixture',reading_text='Synthetisch'))
+            window.render(View(reading_job='region-fixture',reading_text='Synthetisch',
+                reading_control='stop',panel_token=(1,'TTS_PLAYING')))
             self.assertIsNotNone(placement._region)
             self.assertFalse(window.reading_panel._shown)
-            self.assertEqual(str(window.read_stop['state']),'normal')
+            self.assertEqual(str(window.read_action['state']),'normal')
             with self.assertRaises(OSError):window.stop()
             self.assertFalse(window._closed)
             self.assertIsNotNone(placement._region)
