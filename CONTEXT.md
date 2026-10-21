@@ -66,7 +66,10 @@ native pause/resume, session visibility, no-activation display and job-bound
 controls. Worker playback-credit lifetime now permits a deliberate long pause;
 cancel/fault cleanup remains bounded. No word-time estimator or text history.
 Do not advance deployment worker sources while the old live pilot can start
-workers there. Candidate review/checks and exact PR proof are still pending.
+workers there. PR21 holds the candidate: 471 full checks, 19 native/geometry
+checks and separate spec/standards reviews pass. Resolve final exact-head CI and
+integration from PR21, then wait for normal old-pilot exit before deployment.
+The real Freya/Tyr and monitor user pilot remains open.
 Preflight/control: e3deecae6673a024aa9015a4387737fbec04c795.
 Ownership remains active until clean remote checkpoint/release proof.
 

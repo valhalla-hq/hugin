@@ -26,7 +26,7 @@ Session toggle and keyboard controls live in the main window. Automatic mapping
 uses no-activate native styles and monitor work area. Presentation text is RAM
 only, cleared at job end/hide, and excluded from diagnostics.
 
-## Verification at first checkpoint
+## Candidate verification
 
 Guard failures reproduced before implementation: section/pause API missing;
 normal paused server credit incorrectly timed out; client success terminal
@@ -36,8 +36,16 @@ probe Output override signature failure; that consumer was fixed and its full
 10-test focused/native run passes. Seven native UI visual checks pass after
 correcting high-DPI layout. New native no-focus/clear controls and silent
 waveOut pause/resume pass. These are synthetic fixtures, not voice acceptance.
-Final full run, new controller guards, visual inspection and independent review
-are still required. Do not claim completion from this first checkpoint.
+Final full run passes471 in18.458s;19 native UI/reading/motion plus pure geometry
+checks pass in9.535s after optional placement-failure isolation. New controller
+guards cover stale controls, actual section publication, failed pause and
+dictation preemption. Synthetic preview was visually checked and normally
+closed. Spec review at709623c plus the small placement delta has no findings
+(95 focused pure tests); standards review also passed without material findings
+(58 focused pure tests), including the optional placement-failure delta.
+PR21 https://github.com/valhalla-hq/hugin/pull/21 has three green hosted checks
+at709623c; final checkpoint CI is verified separately on the exact PR head. See
+docs/reading-panel-2026-10-21.md for exact measured/unmeasured boundaries.
 
 ## Runtime and return path
 
@@ -51,8 +59,9 @@ or clipboard mutations belong to this task. Native fixture tests used silence.
 
 ## Next steps and starter
 
-Finish candidate verification/review, update this exact handoff and PR, then
-prepare the checked pilot switch. Brian's old acceptance is not acceptance of
+Finish final exact-head CI/integration, then prepare the checked pilot switch.
+Do not advance deployment workers until the old pilot has exited normally.
+Brian's old acceptance is not acceptance of
 the new reading feature. Live Freya/Tyr usefulness, physical multi-monitor/DPI
 movement and pause listening remain open until actually tested.
 

@@ -532,7 +532,7 @@ class HuginWindow:
             state='normal' if view.reading_job and view.reading_index and not view.error else 'disabled')
         self.read_stop.configure(state='normal' if view.reading_job and not view.error else 'disabled')
         self._reading_controls()
-        self.reading_panel.render(view,self.reading_panel_enabled.get())
+        self._render_reading_panel(view)
         if old is None or old.voice!=view.voice:
             for name,button in self.voice_buttons.items():
                 button._selected=view.voice==name
@@ -586,7 +586,16 @@ class HuginWindow:
             self.scene.itemconfigure(item,state='hidden' if active else 'normal')
 
     def _reading_visibility(self):
-        if self._view:self.reading_panel.render(self._view,self.reading_panel_enabled.get())
+        if self._view:self._render_reading_panel(self._view)
+
+    def _render_reading_panel(self,view):
+        try:self.reading_panel.render(view,self.reading_panel_enabled.get())
+        except OSError:
+            # Optional native placement must not stop speech or dictation.
+            # Main-window pause/stop remain available; no risky focus fallback.
+            self.reading_panel.clear()
+            self.reading_panel_enabled.set(False)
+            self.reading_toggle.configure(text='Mitleseleiste nicht verfügbar',state='disabled')
 
     def _hide_reading(self):
         self.reading_panel_enabled.set(False)

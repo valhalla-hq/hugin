@@ -4,6 +4,7 @@ import os
 import sys
 import time
 import unittest
+from unittest.mock import patch
 from dataclasses import replace
 
 from hugin.ui import HuginWindow,View
@@ -14,6 +15,18 @@ from hugin.reading_ui import panel_geometry
 @unittest.skipUnless(sys.platform=='win32' and os.environ.get('HUGIN_INTERACTIVE_TESTS')=='1',
                      'Explicit isolated native test required')
 class ReadingPanelNative(unittest.TestCase):
+    def test_optional_panel_show_failure_keeps_main_controls_and_reading_available(self):
+        window=HuginWindow(lambda *args:None,with_tray=False)
+        self.addCleanup(window.stop)
+        with patch('hugin.windows.reading_panel.PanelPlacement.show',side_effect=OSError('synthetic')):
+            window.render(View(reading_job='fixture',reading_text='Synthetisch',reading_index=1,reading_total=1))
+        self.assertIsNone(window.failure)
+        self.assertFalse(window.reading_panel_enabled.get())
+        self.assertFalse(window.reading_panel._shown)
+        self.assertEqual(window.reading_panel.text.get('1.0','end-1c'),'')
+        self.assertEqual(str(window.read_pause['state']),'normal')
+        self.assertEqual(str(window.reading_toggle['state']),'disabled')
+
     def test_panel_show_update_hide_preserve_owned_foreground_and_clear_text(self):
         calls=[]
         window=HuginWindow(lambda *args:calls.append(args),with_tray=False)
@@ -39,6 +52,9 @@ class ReadingPanelNative(unittest.TestCase):
         self.assertEqual(panel.pause.cget('text'),'Fortsetzen')
         self.assertEqual(window.read_pause.cget('text'),'Fortsetzen')
         self.assertEqual(user.GetForegroundWindow(),before)
+        # Synthetic small work area after a larger/high-DPI main display.
+        panel.scale=4
+        panel._placement.show(*panel._fit((0,0,680,480)));window.root.update()
         for control in panel.buttons:
             self.assertLessEqual(control.winfo_rootx()+control.winfo_width(),panel.window.winfo_rootx()+panel.window.winfo_width())
             self.assertLessEqual(control.winfo_rooty()+control.winfo_height(),panel.window.winfo_rooty()+panel.window.winfo_height())
@@ -51,6 +67,25 @@ class ReadingPanelNative(unittest.TestCase):
         window.render(View());window.root.update()
         self.assertFalse(panel._shown);self.assertEqual(panel.text.get('1.0','end-1c'),'')
         self.assertEqual(panel._job,'');self.assertIsNone(panel._view)
+
+    def test_panel_can_show_while_main_is_hidden_without_activating_it(self):
+        import tkinter as tk
+        window=HuginWindow(lambda *args:None,with_tray=False)
+        self.addCleanup(window.stop)
+        fixture=tk.Toplevel(window.root);fixture.title('Owned focus fixture')
+        fixture.geometry('320x120+40+40');fixture.update()
+        user=ct.WinDLL('user32')
+        user.GetAncestor.argtypes=[ct.c_void_p,ct.c_uint];user.GetAncestor.restype=ct.c_void_p
+        user.SetForegroundWindow.argtypes=[ct.c_void_p];user.SetForegroundWindow.restype=ct.c_int
+        user.GetForegroundWindow.argtypes=[];user.GetForegroundWindow.restype=ct.c_void_p
+        owned=user.GetAncestor(fixture.winfo_id(),2)
+        self.assertTrue(user.SetForegroundWindow(owned))
+        window.render(View(reading_job='fixture',reading_total=2))
+        window.root.update()
+        self.assertEqual(window.root.state(),'withdrawn')
+        self.assertTrue(window.reading_panel._shown)
+        self.assertEqual(user.GetForegroundWindow(),owned)
+        self.assertEqual(str(window.reading_panel.pause['state']),'disabled')
 
     def test_native_silent_pause_preserves_queue_then_resumes(self):
         output=PCMOutput(buffer_ms=250)

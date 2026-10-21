@@ -19,6 +19,8 @@ panel and real pause/resume. It does not change dictation or migrate startup.
   reading, and never automatically activates or replaces the foreground window.
   Provide keyboard-accessible pause/stop controls in the main window as well.
   The panel toggle is a session preference, initially enabled in this pilot.
+  Unavailable native placement disables only the optional panel and leaves
+  main-window controls and speech available; no focus-changing fallback.
 - NFR-001: Preserve bounded streaming and one GPU owner. No full recording cache,
   extra alignment model, network service or word-rate heuristic. Paused local
   playback backpressure must not be mistaken for worker initialization failure.
