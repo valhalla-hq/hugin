@@ -8,6 +8,7 @@ import time
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'))
 from hugin.ui import HuginWindow,View
+from hugin.bindings import DICTATION,READING
 
 
 def main():
@@ -21,8 +22,7 @@ def main():
         'processing':'Diktat wird verarbeitet','playing':'Vorlesen läuft',
         'complete':'Bereit für dein Diktat','error':'Einfügen nicht möglich'}
     current=View(mode='Designvorschau',activity='idle',
-        dictation_shortcut='Strg+Alt+D · erneut: fertig',
-        reading_shortcut='Strg+Alt+V · markierten Text lesen')
+        dictation_shortcut=DICTATION.hint(),reading_shortcut=READING.hint())
     def action(kind,value):
         nonlocal current
         if kind=='voice':current=replace(current,voice=value)

@@ -108,6 +108,7 @@ class ClipboardResult:
     target: WindowTarget | None = None
     submitted: bool = False
     restored: bool = False
+    copied: bool = False  # Publication succeeded; a later user copy may supersede it.
 
 
 class ClipboardService:
@@ -339,29 +340,30 @@ class ClipboardService:
                  still_current: Callable[[], bool], authorize,commit) -> ClipboardResult:
         if not self._lock.acquire(blocking=False):
             return ClipboardResult('clipboard_busy')
-        snapshot = None
-        owned_sequence = None
-        submitted = False
-        restore_delay=None
+        copied = submitted = False
+        paste_delay=None
         try:
             formats = self._text_formats(text)
             if not still_current():
                 return ClipboardResult('cancelled')
-            if target is None or not target.verifiable:
-                return ClipboardResult('target_unverifiable')
             backend = self._native()
             self._check_recovery(backend)
-            # Field policy and cheap native identity precede clipboard mutation.
-            # The one expensive UIA refresh happens only in commit_paste.
+            # Completed dictation intentionally replaces old clipboard contents.
+            # Publish once, even without an eligible automatic paste target.
+            owned_sequence=backend.stage(formats,backend.sequence(),still_current=still_current)
+            copied=True
+            if not still_current():
+                return ClipboardResult('cancelled',copied=True)
+            if target is None or not target.verifiable:
+                return ClipboardResult('target_unverifiable',copied=True)
+            # The one expensive UIA refresh still happens only in commit_paste.
             if self._selection_target(backend).without_uia != target.without_uia:
-                return ClipboardResult('target_changed')
-            restore_delay=self._restore_delay(target)
-            if restore_delay is None:
-                return ClipboardResult('target_unverified')
+                return ClipboardResult('target_changed',copied=True)
+            paste_delay=self._restore_delay(target)
+            if paste_delay is None:
+                return ClipboardResult('target_unverified',copied=True)
             if backend.modifiers_down():
-                return ClipboardResult('modifiers_active')
-            snapshot = backend.snapshot(self.snapshot_budget)
-            owned_sequence = backend.stage(formats, snapshot.sequence)
+                return ClipboardResult('modifiers_active',copied=True)
             transaction = ClipboardTransaction(uuid.uuid4().hex, owned_sequence, target)
             # The adapter rechecks sequence/transaction, target and generation
             # while holding the clipboard lock immediately before SendInput.
@@ -370,24 +372,15 @@ class ClipboardService:
             else:
                 backend.commit_paste(owned_sequence,target,still_current,authorize,transaction,commit=commit)
             submitted = True
-            backend.sleep(restore_delay)
-            restored = self._restore(backend, snapshot, owned_sequence)
-            owned_sequence = None
-            return ClipboardResult('submitted', submitted=True, restored=restored)
+            return ClipboardResult('submitted', submitted=True,copied=True)
         except ClipboardFailure as failure:
             submitted = submitted or failure.submitted
-            if failure.owned_sequence is not None:
-                owned_sequence = failure.owned_sequence
-            if submitted and owned_sequence is not None:
-                backend.sleep(restore_delay)
-            return ClipboardResult(failure.status, submitted=submitted)
+            return ClipboardResult(failure.status, submitted=submitted,copied=copied)
         finally:
             try:
-                if snapshot is not None and owned_sequence is not None:
-                    try:
-                        self._restore(self.backend, snapshot, owned_sequence)
-                    except ClipboardFailure as failure:
-                        raise ClipboardFailure(failure.status, submitted=submitted) from None
+                # Preserve the measured post-input settling interval. No restore
+                # or second publication may overwrite a later user's copy.
+                if submitted and paste_delay is not None:backend.sleep(paste_delay)
             finally:
                 self._lock.release()
 
@@ -511,6 +504,7 @@ class NativeClipboard:
         self.tx_format = self.user.RegisterClipboardFormatW('Hugin.Private.ClipboardTransaction.v1')
         if not self.tx_format:
             raise ClipboardFailure('clipboard_failed')
+        self.allowed.add(self.tx_format)  # Our rendered flat HGLOBAL token.
         self.hwnd = None
         self._owner_thread = None
         self._owner_thread_id = 0
@@ -668,7 +662,7 @@ class NativeClipboard:
             raise ClipboardFailure('clipboard_failed')
         return handle
 
-    def replace(self, formats, expected=None):
+    def replace(self, formats, expected=None, *, still_current=lambda:True):
         # All fallible allocations precede destructive EmptyClipboard.
         handles = []
         mutated = False
@@ -679,6 +673,8 @@ class NativeClipboard:
             with self._opened(write=True):
                 if expected is not None and self.sequence() != expected:
                     raise ClipboardFailure('clipboard_changed')
+                if not still_current():
+                    raise ClipboardFailure('cancelled')
                 if not self.user.EmptyClipboard():
                     raise ClipboardFailure('clipboard_failed')
                 mutated = True
@@ -694,7 +690,7 @@ class NativeClipboard:
         except ClipboardFailure as failure:
             if mutated:
                 # Ownership is retained even when SetClipboardData partially
-                # failed. The service still owns the original full snapshot.
+                # failed. Selection capture can retain its original snapshot.
                 try:
                     published=self.restorable_sequence(last_owned_sequence)
                     if published is not None:last_owned_sequence=published
@@ -713,12 +709,13 @@ class NativeClipboard:
                 raise ClipboardFailure('clipboard_cleanup_failed',
                                        owned_sequence=last_owned_sequence)
 
-    def stage(self, formats, expected):
+    def stage(self, formats, expected, *, still_current=lambda:True):
         self._token = uuid.uuid4().hex.encode('ascii')
-        # Temporary dictation must not become a history/cloud item. Explicit
-        # copy and original restoration retain their existing policy instead.
+        # Automatic dictation remains available for Ctrl+V, but must not become
+        # a history/cloud item. Install exclusion before any text can be exposed.
         exclusion=self.registered['ExcludeClipboardContentFromMonitorProcessing']
-        return self.replace((*formats,(exclusion,b'\0\0\0\0'),(self.tx_format,self._token)),expected)
+        return self.replace(((exclusion,b'\0\0\0\0'),*formats,(self.tx_format,self._token)),
+            expected,still_current=still_current)
 
     def _package_family(self,process):
         query=getattr(self.kernel,'GetPackageFamilyName',None)

@@ -175,7 +175,7 @@ class WindowsInputs:
             presses = MousePresses(self._enqueue)
             self._backend.open(None if self.pilot else presses.handle)
             for binding in BINDINGS:
-                self._backend.register(binding.identity, 1 | 2 | MOD_NOREPEAT, ord(binding.key))
+                self._backend.register(binding.identity, 1 | (2 if binding.control else 0) | MOD_NOREPEAT, ord(binding.key))
             self.running = True
             self._ready.set()
             while not self._halt.is_set():

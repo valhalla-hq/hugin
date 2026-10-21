@@ -57,29 +57,31 @@ class CompletionCueContracts(unittest.TestCase):
         def deliver(*args,**kwargs):
             self.assertNotIn('complete_cue',self.calls)
             result=original(*args,**kwargs)
-            self.calls.append('clipboard_restored');return result
+            self.calls.append('delivery_returned');return result
         self.clipboard.deliver=deliver
         event=self.recognize()
         self.assertNotIn('complete_cue',self.calls)
         self.finish(event)
         self.assertEqual(self.calls.count('complete_cue'),1)
-        self.assertLess(self.calls.index('clipboard_restored'),self.calls.index('complete_cue'))
+        self.assertLess(self.calls.index('delivery_returned'),self.calls.index('complete_cue'))
         self.assertEqual(self.controller.core.snapshot().state,c.State.IDLE)
         self.controller.handle(c.DeliveryFinished(self.operation.job));self.finish(event)
         self.assertEqual(self.calls.count('complete_cue'),1)
         self.assertEqual(self.clipboard.submissions,['synthetic completed dictation'])
 
-    def test_failed_capture_delivery_and_restore_keep_ram_result_without_success_cue(self):
-        for failure in ('capture','delivery','restore'):
+    def test_failed_capture_delivery_and_partial_submission_keep_ram_result_without_success_cue(self):
+        for failure in ('capture','delivery','partial'):
             with self.subTest(failure=failure):
                 self.setUp()
                 if failure=='capture':
                     self.clipboard.capture_target=lambda **_:NS(status='target_unverifiable',target=None)
                 else:
                     self.clipboard.deliver=lambda *a,**k:NS(status='clipboard_failed',
-                        submitted=failure=='restore',restored=False)
+                        submitted=failure=='partial',copied=failure=='partial')
                 self.finish(self.recognize())
                 self.assertNotIn('complete_cue',self.calls)
+                self.assertEqual(self.controller.core.snapshot().error.code,
+                    'target_unverifiable' if failure=='capture' else 'clipboard_failed')
                 self.assertEqual(self.controller.view().text,'synthetic completed dictation')
                 self.assertEqual(self.clipboard.submissions,[])
 

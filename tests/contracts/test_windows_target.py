@@ -386,7 +386,7 @@ class TargetContracts(unittest.TestCase):
         for observed in (None,'Other.Package_2p2nqsd0c76g0'):
             backend.target=replace(backend.target,control_class='Chrome_WidgetWin_1',package_family=observed)
             self.assertEqual(service.deliver('synthetic',backend.target,lambda:True).status,'target_unverified')
-            self.assertEqual(backend.mutations,0)
+            self.assertEqual(backend.pastes,0)
         backend.target=replace(backend.target,package_family=family)
         self.assertEqual(service.deliver('synthetic',backend.target,lambda:True).status,'submitted')
         decoded=decode_operation(encode_request(backend.target,operation='target')[4:])[1]
@@ -618,14 +618,14 @@ class OwnerCommitContracts(unittest.TestCase):
             self.assertIsNone(reference(),outcome)
             with self.assertRaises(ClipboardFailure):saved[0]()
 
-    def test_service_restores_own_transaction_when_commit_is_declined(self):
+    def test_service_retains_dictation_when_commit_is_declined(self):
         from test_windows_clipboard import FakeClipboard
         backend=FakeClipboard();service=ClipboardService(backend=backend)
-        service.approve_target_class('Edit',.02);original=dict(backend.data)
+        service.approve_target_class('Edit',.02)
         result=service.deliver('synthetic',backend.target,lambda:True,commit=lambda transaction,fast:None)
         self.assertEqual(result.status,'commit_rejected')
         self.assertFalse(result.submitted);self.assertEqual(backend.pastes,0)
-        self.assertEqual(backend.data,original)
+        self.assertEqual(backend.data,{13:'synthetic\0'.encode('utf-16-le')})
 
     def test_service_uses_fast_native_precheck_then_one_full_commit_probe(self):
         from test_windows_clipboard import FakeClipboard
@@ -634,7 +634,7 @@ class OwnerCommitContracts(unittest.TestCase):
         backend.capture_native_target=lambda:backend.target
         backend.capture_target=lambda **kwargs:(_ for _ in ()).throw(AssertionError('no pre-stage UIA probe'))
         result=service.deliver('synthetic',backend.target,lambda:True,commit=lambda transaction,fast:fast())
-        self.assertEqual(result.status,'submitted');self.assertTrue(result.restored)
+        self.assertEqual(result.status,'submitted');self.assertTrue(result.copied)
 
     def backend(self):
         native=NativeClipboard.__new__(NativeClipboard)

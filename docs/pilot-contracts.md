@@ -3,7 +3,7 @@
 `config/targets.json` ist agentengepflegte Konfiguration. Die Delivery-Liste
 enthält nach vollständigen nativen Proben ausschließlich
 `Chrome_RenderWidgetHostHWND` und `Chrome_WidgetWin_1`, jeweils mit der exakten
-Paketfamilie `OpenAI.Codex_2p2nqsd0c76g0` und 0,15s Restore;
+Paketfamilie `OpenAI.Codex_2p2nqsd0c76g0` und 0,15s Übergabeintervall;
 der Ctrl+C-Lesefallback bleibt leer. Nachweis:
 [Codex-Übergabe](codex-delivery-2026-10-15.md). Direkte Standard-Edit-/UIA-Auswahl
 und manuelles Kopieren eines RAM-Diktats bleiben verfügbar.
@@ -11,7 +11,7 @@ und manuelles Kopieren eines RAM-Diktats bleiben verfügbar.
 Eine Freigabe benennt die exakte `control_class`, gegebenenfalls die exakt
 zugehörige `package_family`, und eine vorhandene Markdown-
 Datei im Repository als `evidence`. Für `delivery` kommt
-`restore_delay_seconds` (0,02 bis 2 Sekunden) hinzu. Ein vorhandener Dateipfad
+`restore_delay_seconds` (0,02 bis 2 Sekunden) hinzu. Der historische Feldname bleibt kompatibel: Nach der Diktat-Änderung vom 21.10.2026 bezeichnet er das gemessene Intervall nach der Eingabeübergabe; Diktat stellt den alten Inhalt nicht mehr her. Ein vorhandener Dateipfad
 beweist keine Abnahme: Die Datei muss die tatsächlich geprüften Anwendungen,
 Versionen, Auswahl-/Fokus-/Caret- und Clipboard-Rennen sowie Einschränkungen
 festhalten. Eine Klassenfreigabe ist keine universelle Kompatibilitätszusage.
@@ -28,7 +28,8 @@ Treiber noch eine erfolgreiche Inferenz. Es werden dafür keine Engines importie
 
 Text, Audio, Dokumenttitel, Zielpfade, Gerätebezeichnungen, Umgebungsvariablen
 und rohe Ausnahmen gehören nicht in diese Diagnose. Das letzte vollständige
-Diktat wird separat ausschließlich im RAM gehalten und nach 300 Sekunden,
+Diktat wird im App-Fenster im RAM gehalten und nach 300 Sekunden,
 Löschen oder Beenden freigegeben. Abgeschlossene Worker-Nachrichten und
 Operationsdaten bleiben nicht im folgenden blockierenden Idle-Read erhalten.
+Zusätzlich bleibt das fertige Diktat in der Betriebssystem-Zwischenablage für Strg+V, bis es dort ersetzt wird. `input_checks.clipboard` meldet die erfolgte Veröffentlichung unabhängig vom automatischen Einfügen; eine spätere Benutzerkopie kann diesen Inhalt ersetzen. Die automatische Veröffentlichung schließt History-/Cloud-Monitoring aus.
 Dies ist keine Zusage einer sicheren Löschung nativer Speicher-Caches.

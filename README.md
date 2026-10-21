@@ -2,9 +2,9 @@
 
 Lokale Windows-App für Diktieren und Vorlesen mit den bestätigten Stimmen **Freya** und **Tyr**. Hugin soll Whispering und PipPal vollständig ersetzen.
 
-Status am **21.10.2026**: Diktat, Vorlesen, Screenshot-Zwischenablage, Obsidian-Oberfläche, verschiebbare Mitleseleiste und Panel-Buttons sind integriert. Brian hat die Buttonabläufe einschließlich des Wechsels vom Vorlesen zum Diktat bestätigt. Die nächste beauftragte Stufe aktiviert Maussteuerung und stillen Windows-Autostart. [Einrichtung und Rückweg](docs/desktop-startup.md), [aktueller Handoff](handoffs/2026-10-21-mouse-startup.md). Vollständige Geräte-/Zielmatrix, nächster echter Login und Produktionspaket bleiben gesonderte Nachweise.
+Status am **21.10.2026**: Diktat, Vorlesen, Screenshot-Zwischenablage, Obsidian-Oberfläche, verschiebbare Mitleseleiste und Panel-Buttons sind integriert. Brian hat die Buttonabläufe einschließlich des Wechsels vom Vorlesen zum Diktat bestätigt. Maussteuerung und stiller Windows-Autostart sind eingerichtet. Die folgende Diktat-Korrektur ersetzt den bisherigen Zwischenablageinhalt und hält fertigen Text für Strg+V bereit. [Einrichtung und Rückweg](docs/desktop-startup.md), [aktueller Handoff](handoffs/2026-10-21-mouse-startup.md). Vollständige Geräte-/Zielmatrix, nächster echter Login und Produktionspaket bleiben gesonderte Nachweise.
 
-Der lokale Einstieg `C:\Users\brian\Hugin` zeigt auf den sauberen Main-Deploymentclone. Alle drei eigenen Umgebungen und echten Modell-/CUDA-Dateien sind dort aus geprüften lokalen Dateien wiederhergestellt. Die sechs ursprünglichen Planungsdateien bleiben mit identischen SHA256-Hashes unter `C:\Users\brian\Hugin-Planung-2026-10-14` erhalten. Dies aktiviert noch keine produktiven Bindungen.
+Der lokale Einstieg `C:\Users\brian\Hugin` zeigt auf den sauberen Main-Deploymentclone. Alle drei eigenen Umgebungen und echten Modell-/CUDA-Dateien sind dort aus geprüften lokalen Dateien wiederhergestellt. Die sechs ursprünglichen Planungsdateien bleiben mit identischen SHA256-Hashes unter `C:\Users\brian\Hugin-Planung-2026-10-14` erhalten. Die explizite Einrichtung aktiviert die dauerhaften Maus-/Tastenbindungen.
 
 ## Verbindlicher Funktionsumfang
 
@@ -21,11 +21,11 @@ aktiviert. Die abgerundete Leiste laesst sich am Kopfbereich verschieben und
 behaelt ihre Position waehrend der App-Sitzung. Details und verbleibende Hoerprobe:
 [Mitleseleiste](docs/reading-panel-2026-10-21.md).
 
-- Hintere Daumentaste / Zurück (XBUTTON1) oder Strg+Alt+D: Diktat starten/stoppen und Text einfügen.
+- Hintere Daumentaste / Zurück (XBUTTON1) oder Alt+Y: Diktat starten/stoppen und Text einfügen.
 - Vordere Daumentaste / Vorwärts (XBUTTON2) oder Strg+Alt+V: markierten Text vorlesen/stoppen.
 - Diktat unterbricht Vorlesen; Escape bricht eine aktive Aktion ab.
 - Kleines Fenster und Statussymbol, Stimmenauswahl Freya/Tyr.
-- Ein letztes Diktat vorübergehend im RAM, mit Kopieren/Löschen.
+- Ein letztes Diktat vorübergehend im RAM, mit Kopieren/Löschen; fertiger Text bleibt zusätzlich in der Zwischenablage für Strg+V, bis er dort ersetzt wird.
 - Technische Diagnose kopieren, ohne Sprachinhalte.
 
 ## Planungsunterlagen
@@ -56,12 +56,12 @@ Die Vorschau startet keine Eingaben, Aufnahme oder Sprachmodelle. Die CPU-Probe
 erkennt ausschließlich das bestätigte synthetische Tyr-Referenzaudio, übergibt
 an ein RAM-Testziel und schließt eigene Worker; sie verändert keine Zwischenablage.
 
-`--pilot --show` startet das Interface mit Strg+Alt+D für Diktat und
+`--pilot --show` startet das Interface mit Alt+Y für Diktat und
 Strg+Alt+V für Vorlesen, ohne Maus-Hook. Erneutes Drücken beendet die Aktion.
 Sprachaktionen in diesem Modus sind für den vorbereiteten Hardware-Pilot mit
 exklusiv verfügbarer GPU gedacht. Der normale Start liest die explizit eingerichtete
 Aktivierung; fehlt sie oder ist sie ungültig, startet kein Hook. Ein Pilot verändert
-diesen dauerhaften Stand nicht. Alt+Y gehört nicht mehr zur Hugin-Belegung.
+diesen dauerhaften Stand nicht. Alt+Y ersetzt die frühere Diktatbelegung Strg+Alt+D; die Änderung gilt auch nach Neustarts.
 Fehlende Hardware-/Login-Nachweise werden nicht als erfolgreiche Tests gewertet.
 
 Restore plant standardmäßig ohne Schreibwirkung. `--apply` materialisiert nur

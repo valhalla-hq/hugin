@@ -105,7 +105,7 @@ _INPUT_STATUSES=frozenset(('not_run','not_attempted','native_target_captured',
     'clipboard_recovery_pending','clipboard_restore_failed','clipboard_write_failed',
     'format_delayed','format_unsupported','snapshot_limit','modifiers_active',
     'modifier_release_failed','input_partial','commit_rejected','commit_timeout',
-    'text_invalid','text_limit','unknown'))
+    'text_invalid','text_limit','copied','unknown'))
 
 
 def _input_error(status,phase):
@@ -170,7 +170,7 @@ class Controller:
         self._devices = {}
         self._closed_io = set()
         self._io_cleanup_failed = set()
-        self._input_checks = dict(capture_native='not_run',capture_field='not_run',delivery='not_run')
+        self._input_checks = dict(capture_native='not_run',capture_field='not_run',clipboard='not_run',delivery='not_run')
         self._completion_cue: _CompletionCue | None = None
         self._completion_id=0
         self._completion_until=0.0
@@ -546,7 +546,7 @@ class Controller:
     def _effect(self, effect, audio_ack=None):
         if isinstance(effect,c.StartRecording):
             with self._lock:
-                self._input_checks=dict(capture_native='not_run',capture_field='not_run',delivery='not_run')
+                self._input_checks=dict(capture_native='not_run',capture_field='not_run',clipboard='not_run',delivery='not_run')
             token=self._token(effect.job)
             def start():
                 try:
@@ -714,14 +714,16 @@ class Controller:
             def deliver():
                 try:
                     captured=effect.target
-                    if not isinstance(captured,_CapturedTarget) or captured.status!='target_captured' or captured.target is None:
+                    eligible=isinstance(captured,_CapturedTarget) and captured.status=='target_captured' and captured.target is not None
+                    result=self.clipboard.deliver(effect.text,captured.target if eligible else None,current,
+                        authorize=authorize,commit=commit)
+                    self._input_status(effect.job,'clipboard','copied' if result.copied else result.status)
+                    if not eligible and result.copied:
                         self._input_status(effect.job,'delivery','not_attempted')
                         error=_input_error(captured.status if isinstance(captured,_CapturedTarget) else 'unknown','target_capture')
                     else:
-                        result=self.clipboard.deliver(effect.text,captured.target,current,
-                            authorize=authorize,commit=commit)
                         status=self._input_status(effect.job,'delivery',result.status)
-                        error=None if result.submitted and result.restored else _input_error(status,'delivery')
+                        error=None if result.status=='submitted' and result.submitted and result.copied else _input_error(status,'delivery')
                 except BaseException as cause:error=_safe_error(cause,'delivery')
                 self._post(c.DeliveryFinished(effect.job,error))
             ticket=Future()
@@ -923,13 +925,21 @@ class Controller:
         with self._lock:
             completion_id=self._completion_id
             completion_until=0.0 if error else self._completion_until
+            copied=self._input_checks['clipboard']=='copied'
+            clipboard_changed=self._input_checks['delivery']=='clipboard_changed'
+        error_message=MESSAGES.get(error,'') if error else ''
+        if not self._runtime_error and snap.error and snap.error.phase=='delivery':
+            if clipboard_changed:
+                error_message='Die Zwischenablage wurde inzwischen geändert. Das Diktat kann über „Kopieren“ übernommen werden.'
+            elif copied:
+                error_message+=' Das Diktat wurde in die Zwischenablage kopiert (Strg+V).'
         view = View(status=status,voice=snap.voice,text=snap.result.text if snap.result else '',
             dictation_shortcut=DICTATION.hint(pilot),reading_shortcut=READING.hint(pilot),
             panel_token=(snap.generation,snap.state.value),
             dictation_control=self._panel_controls(snap)[0],reading_control=self._panel_controls(snap)[1],
             detail='Erneut drücken, um das Diktat abzuschließen.' if snap.state == c.State.RECORDING else '',
             mode='Lokal · Pilot' if pilot else 'Lokal',components=components,
-            error=MESSAGES.get(error,'') if error else '',activity=activity,audio_level=audio_level,
+            error=error_message,activity=activity,audio_level=audio_level,
             completion_id=completion_id,completion_until=completion_until,active_action=active_action,
             reading_job=snap.job.request_id if snap.job and snap.job.kind==c.JobKind.READING and snap.reading_total else '',
             reading_text=snap.reading_section.text if snap.reading_section else '',
