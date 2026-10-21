@@ -11,9 +11,9 @@ vertraglich gesperrt.
    ohne `--apply` planen und lokale SHA256-Dateilocks prüfen.
 2. Die drei eigenen Umgebungen am endgültigen Installationspfad aus lokalen
    Wheels herstellen. Keine venv verschieben und keine alten Pakete benutzen.
-3. Nur für die vereinbarte Pilotzeit den Altstack über seine geordneten
-   Beenden-Wege pausieren. Brian hat das Weiterlaufen bis zur geprüften
-   Umstellung verlangt; diese Pause muss zuvor mit ihm abgestimmt sein.
+3. Den Altstack über seine geordneten Beenden-Wege pausieren. Brian hat am
+   21. Oktober ausdrücklich verlangt, Whispering und PipPal während der
+   weiteren Tests nach Hugin-Ende geschlossen zu lassen.
    Keine alten Prozesse erzwingen, keine Autostarts oder Profile ändern.
 4. GPU-Belegung neu messen. Inferenz, Initialisierung, Warmup und Offload
    ausschließlich über den einzelnen Hugin-Slot ausführen. Keine zweite
@@ -51,9 +51,14 @@ gesondert geprüften Aktivierung; ein guter Pilot aktiviert sie nicht selbst.
 
 ## Ende und Rückweg
 
-Hugin über das Tray beenden, bestätigten eigenen Cleanup abwarten und den
-unveränderten Altstack über seine vorhandenen Startwege wieder starten.
-Whispering-/PipPal-Erreichbarkeit und produktive Bindungen prüfen. Bei offenem
+Hugin über das Tray beenden und bestätigten eigenen Cleanup abwarten.
+**Whispering und PipPal bleiben geschlossen.** Der geprüfte Starter
+`tools/pilot_session.py --root <Installation> --head <Quell-SHA>
+--runtime-head <Installations-SHA>` plant zunächst; erst `--run` startet Hugin.
+Sein Sitzungsbericht meldet `old_stack_return: disabled`. Die früheren lokalen
+Starter mit automatischer Rückkehr dürfen nicht erneut verwendet werden.
+Bei Bedarf kann Brian die alten Apps weiterhin selbst normal starten. Diese
+Änderung betrifft den Teststarter, nicht die Windows-Login-Autostarts. Bei offenem
 Hugin-Cleanup den gehaltenen Owner gezielt erneut beenden; keine PID-/
 Namenssuche als Ersatz für Eigentumsnachweise verwenden. Produktiver Wechsel,
 Autostart-/Login-Abnahme und Rückweg bleiben T011/T012/T900/T901.

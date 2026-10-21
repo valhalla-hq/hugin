@@ -1,6 +1,6 @@
 # Hugin Context
 
-Status: movable reading panel accepted; focus-preserving panel actions under review
+Status: panel stop correction and test-session exit under review
 Owner: Brian
 Repository: private `valhalla-hq/hugin`; runtime Mjolnir.
 Data boundary: curated source, configuration, locks and approved synthetic voice
@@ -15,6 +15,17 @@ start recording, choose the external field during recording, finish/insert;
 select external text and click Vorlesen. This bounded request authorizes routine
 implementation and checked private integration under the central lifecycle.
 No global target history, forced foreground restoration or binding migration.
+
+The first PR24 pilot exposed a stop bug: the UI required external focus before
+dispatching Finish, leaving a recording running when Hugin was foreground.
+Brian also reported ineffective Ctrl+Alt+D/Escape; their physical failure is not
+reproduced. Normal tray Quit succeeded. Fix recording stop independently from
+delivery readiness; retain failed-delivery text in RAM.
+
+Brian explicitly requests that Whispering/PipPal no longer restart after Hugin
+exits during testing. Use tools/pilot_session.py, which has no old-app launch
+path. This supersedes the old automatic-return test arrangement. Login startup
+shortcuts remain unchanged; manual old-app launch remains available.
 
 On 21 October 2026 Brian requested completion and saving of all finished work,
 then the recommended next reading stage. This authorizes consolidation of the
@@ -55,15 +66,15 @@ clamped to a reachable monitor on show/drop; no permanent position file.
 
 ## Running state and return path
 
-The last accepted source is 6dd1bde105f0bac292f91e996f5933604adb7bb2 in
-C:/Users/brian/brian-projects/worktrees/hugin/hugin-reading-layout-mjolnir.
-It started 21 October at 13:06:45 MESZ after normal old-app exits. Receipt
-.runtime/pilot-session-87ca3a44-f36c-4109-9c03-8dc199092351.json now confirms
-return_dispatched, own_family_exited true and exit_code 0. It is no longer live.
-The previous visibility pilot proved own-family exit and normal return before that switch.
-Fresh runtime receipts, not historical PIDs, determine current state. Normal Hugin Quit returns
-Whispering/PipPal through unchanged startup shortcuts. Preserve the source and
-ignored runtime helpers until normal exit. Never kill apps by name or stale PID.
+The PR24 pilot source 751f088241f0d8e1403ba7737225c397df430b10 in
+C:/Users/brian/brian-projects/worktrees/hugin/hugin-panel-actions-mjolnir is stopped.
+Its .runtime/pilot-session-c29822b6-6ef2-4f0f-bc18-2159534d4b00.json proves
+own_family_exited true, exit_code 0 and historical return_dispatched. Brian then
+closed both old apps normally. All temporary synthetic test windows are closed.
+Future sessions use the checked no-return starter; old automatic-return helpers
+must not be replayed. Fresh receipts determine current state, never stale PIDs.
+The last user-accepted UI source remains 6dd1bde105f0bac292f91e996f5933604adb7bb2
+(PR23), retained in hugin-reading-layout-mjolnir; its pilot also exited cleanly.
 
 C:/Users/brian/Hugin is a junction to the deployment clone _repos/hugin. Its
 runtime/worker inputs must stay byte-identical when advancing the checked source.
@@ -73,30 +84,35 @@ launcher before any later restart; never blindly replay an old starter.
 
 ## Active work
 
-PR19/20, reading panel PR21, visibility PR22 and layout PR23 are merged; main/deployment is
-35528f4ab8315b23e3fb848aacfc6bbcc343d4b9. PR11 is merged through ancestry;
+PR19/20, reading panel PR21, visibility PR22, layout PR23 and panel actions PR24
+are merged; base main/deployment is ad9b0a083c0472eda06fc42546f88fccca9eea9f.
+PR11 is merged through ancestry;
 incorporated PR12-18 are closed. Closeout and inactive PR11-17 source ownerships
 were released through the workspace tool; their recovery files remain.
 
-Exclusive new branch: codex/hugin-panel-actions-mjolnir.
-Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-panel-actions-mjolnir.
-PR: https://github.com/valhalla-hq/hugin/pull/24 (resolve current checks/integration fresh).
-Spec/plan/tasks: specs/2026-10-21-panel-actions/. Native per-button activation
-handling preserves external focus. Controller generation/state tokens reject
-queued duplicate/stale actions. Capture, clipboard and delivery remain unchanged.
-477 contracts/integration and 26 native/geometry/UI/motion checks pass; synthetic
-preview confirms normal/recording layout. Both independent review findings are
-fixed and re-reviewed: held mouse presses preserve original intent even through
-key events; accepted interruptions survive phase changes of the same job.
-Hosted exact-head checks are pending at this checkpoint. Real Codex/Word button acceptance follows
-the normal pilot switch. Physical mixed-DPI/monitor loss and full Freya/Tyr
+Exclusive branch: codex/hugin-panel-stop-mjolnir.
+Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-panel-stop-mjolnir.
+PR: https://github.com/valhalla-hq/hugin/pull/25 (fresh remote state governs integration).
+Spec/plan/tasks: specs/2026-10-21-panel-stop/.
+Finish no longer depends on external foreground; read-start guidance remains.
+Existing generation/state, clipboard and target proofs are unchanged. The new
+checked pilot starter owns its child family and exits without starting old apps.
+483 contracts/integration, 26 native UI/geometry/motion checks, two native input
+dispatch tests and one real owned-child launcher exit test pass. An own Hugin UI
+with synthetic I/O confirmed button stop, Ctrl+Alt+D and Escape via Windows input.
+Original physical shortcut failure and real Codex/Word button acceptance remain
+explicitly unverified. Independent spec review is clear; standards review found
+partial-constructor cleanup waiting for a nonexistent process. Owner-first close
+with retained retry fixes it; real OwnedProcess producer regressions and re-review
+pass. Exact-head hosted checks follow this final checkpoint.
+Physical mixed-DPI/monitor loss and full Freya/Tyr
 long-pause acceptance remain unverified beyond the user's general UI acceptance.
 Preflight/control: e3deecae6673a024aa9015a4387737fbec04c795.
 Ownership remains active until clean remote checkpoint/release proof.
 
 ## Active Handoff
 
-- `handoffs/2026-10-21-panel-actions.md`
+- `handoffs/2026-10-21-panel-stop.md`
 
 ## Reading direction retained
 

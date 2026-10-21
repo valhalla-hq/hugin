@@ -616,10 +616,11 @@ class HuginWindow:
         if self._panel_releasing==kind and self._panel_intents.get(kind)!=view.panel_token:return
         control=view.dictation_control if kind=='dictation' else view.reading_control
         if not control:return
-        needs_target=kind=='dictation' and control=='finish' or kind=='read' and control=='start'
-        if needs_target and (self._action_focus is None or not self._action_focus.external_target()):
-            self._panel_notice=('Erst ins Zielfeld klicken, dann hier fertigstellen.' if kind=='dictation'
-                else 'Text im anderen Fenster markieren, dann hier starten.')
+        # Stopping the microphone must never depend on a usable paste target.
+        # The controller retains the transcript if the normal target proof fails.
+        if kind=='read' and control=='start' and (
+                self._action_focus is None or not self._action_focus.external_target()):
+            self._panel_notice='Text im anderen Fenster markieren, dann hier starten.'
             self._render_state_text(time.monotonic())
             return
         self._panel_notice=''

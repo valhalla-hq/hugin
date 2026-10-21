@@ -38,15 +38,15 @@ class NativePanelActions(unittest.TestCase):
         self.assertEqual(len(calls),1)
         self.assertIn('markieren',window.scene.itemcget(window._labels['detail'],'text'))
 
-    def test_finish_without_external_focus_keeps_recording_and_hint(self):
+    def test_finish_without_external_focus_still_stops_recording(self):
         calls=[];window=self.make_window(calls)
         window.render(View(activity='recording',active_action='dictation',
             panel_token=(1,'RECORDING'),dictation_control='finish'))
         with patch.object(window._action_focus,'external_target',return_value=False):
             window.dictation_button.invoke()
-        self.assertFalse(calls)
+        self.assertEqual(calls,[('panel_dictation',(1,'RECORDING'))])
         self.assertEqual(window.dictation_button.cget('text'),'Fertig & einfügen')
-        self.assertIn('Zielfeld',window.scene.itemcget(window._labels['detail'],'text'))
+        calls.clear()
         with patch.object(window._action_focus,'external_target',return_value=True):
             window.dictation_button.invoke()
         self.assertEqual(calls,[('panel_dictation',(1,'RECORDING'))])
