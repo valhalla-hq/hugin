@@ -8,6 +8,11 @@ Der lokale Einstieg `C:\Users\brian\Hugin` zeigt auf den sauberen Main-Deploymen
 
 ## Verbindlicher Funktionsumfang
 
+Die Panels enthalten jetzt zusätzlich **Diktat starten / Fertig & einfügen**
+und **Vorlesen starten / Stopp**. Beim Diktat das Zielfeld während der Aufnahme
+wählen; beim Vorlesen den Text vor dem direkten Buttonklick markieren. Die Buttons
+erhalten den Fokus der anderen Anwendung. [Bedienung und Prüfgrenzen](docs/panel-actions-2026-10-21.md).
+
 Die integrierte Pilotstufe aus PR21 ergaenzt eine optionale Mitleseleiste mit
 Abschnittsanzeige, Pause/Fortsetzen und Stopp. Im Vorlesen-Panel laesst sie sich
 mit "Mitleseleiste einblenden/ausblenden" steuern. Ausblenden gilt auch fuer

@@ -89,6 +89,13 @@ class _CapturedTarget:
     target: object = None
 
 
+@dataclass(frozen=True)
+class _PanelInterruption:
+    """An already accepted cancellation must finish for this exact job."""
+    job: c.Job
+    start_dictation: bool = False
+
+
 _INPUT_STATUSES=frozenset(('not_run','not_attempted','native_target_captured',
     'target_captured','target_changed','target_unverifiable','target_unverified',
     'target_probe_timeout','target_probe_failed','target_probe_busy','target_cleanup_pending',
@@ -239,7 +246,16 @@ class Controller:
 
     def command(self, kind, value=None):
         """Prompt invalidation before clipboard waits; no model work on input threads."""
+        queued_event=_Command(kind,value)
         with self._lock:
+            if kind in ('panel_dictation','panel_read'):
+                if not self._panel_current(kind,value,self._snapshot):return
+                action=self._panel_controls(self._snapshot)[0 if kind=='panel_dictation' else 1]
+                preempt=(kind=='panel_dictation' and self._snapshot.job is not None
+                    and self._snapshot.job.kind==c.JobKind.READING)
+                if self._snapshot.job is not None and (action in ('cancel','stop') or preempt):
+                    queued_event=_PanelInterruption(self._snapshot.job,preempt)
+                kind='dictation' if kind=='panel_dictation' else 'read'
             if kind in ('dictation','read','cancel','copy','clear','voice','quit',
                     'system_pause','system_resume','devices_changed'):
                 self._clear_completion_visual()
@@ -262,7 +278,20 @@ class Controller:
         elif cue is not None:
             try:self.cues.stop(cue.job)
             except HuginError as error:self._post(_CueFailure(error),priority=0)
-        self._post(_Command(kind,value),priority=-1 if kind == 'quit' else 0)
+        self._post(queued_event,priority=-1 if kind == 'quit' else 0)
+
+    @staticmethod
+    def _panel_controls(snap):
+        dictation={c.State.IDLE:'start',c.State.ERROR:'start',
+            c.State.STARTING:'cancel',c.State.RECORDING:'finish',
+            c.State.TTS_PREPARING:'start',c.State.TTS_PLAYING:'start'}.get(snap.state,'')
+        reading={c.State.IDLE:'start',c.State.ERROR:'start',
+            c.State.TTS_PREPARING:'stop',c.State.TTS_PLAYING:'stop'}.get(snap.state,'')
+        return dictation,reading
+
+    def _panel_current(self,kind,token,snap):
+        control=self._panel_controls(snap)[0 if kind=='panel_dictation' else 1]
+        return bool(control and token==(snap.generation,snap.state.value))
 
     def _clear_completion_visual(self):
         with self._lock:
@@ -353,7 +382,13 @@ class Controller:
             try:self.inputs.set_cancel_active(self._snapshot.escape_reserved)
             except HuginError as error:self.handle(_Failure(error))
             self._publish();return
+        if isinstance(event,_PanelInterruption):
+            if self.core.snapshot().job!=event.job:return
+            event=c.DictationToggle() if event.start_dictation else c.Cancel()
         if isinstance(event,_Command):
+            if event.kind in ('panel_dictation','panel_read'):
+                if not self._panel_current(event.kind,event.value,self.core.snapshot()):return
+                event=_Command('dictation' if event.kind=='panel_dictation' else 'read')
             mapping = {'dictation':c.DictationToggle,'read':c.ReadToggle,'cancel':c.Cancel,
                 'copy':c.CopyResult,'clear':c.DeleteResult,'quit':c.Shutdown,
                 'system_pause':c.Cancel,'system_resume':c.Cancel,'devices_changed':c.Cancel}
@@ -887,6 +922,8 @@ class Controller:
             completion_id=self._completion_id
             completion_until=0.0 if error else self._completion_until
         view = View(status=status,voice=snap.voice,text=snap.result.text if snap.result else '',
+            panel_token=(snap.generation,snap.state.value),
+            dictation_control=self._panel_controls(snap)[0],reading_control=self._panel_controls(snap)[1],
             detail='Erneut drücken, um das Diktat abzuschließen.' if snap.state == c.State.RECORDING else '',
             mode='Lokal · Pilot' if pilot else 'Lokal',components=components,
             error=MESSAGES.get(error,'') if error else '',activity=activity,audio_level=audio_level,

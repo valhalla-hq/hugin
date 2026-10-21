@@ -173,6 +173,7 @@ class WindowCleanupContracts(unittest.TestCase):
                 calls.append('root')
         window=HuginWindow.__new__(HuginWindow)
         window.root=Root();window._tray=NS(close=lambda:calls.append('tray'),closed=True)
+        window._action_focus=None
         window._alive=True;window._closed=False
         window.stop();window.stop()
         self.assertEqual(calls,['tray','root'])
@@ -198,6 +199,7 @@ class WindowPumpContracts(unittest.TestCase):
                 self.closed=True
         self.window=HuginWindow.__new__(HuginWindow)
         self.window.root=Root();self.window._tray=Tray()
+        self.window._action_focus=None
         self.window._alive=True;self.window._closed=False;self.window.failure=None
         self.window._commands=queue.Queue(maxsize=32);self.window._updates=queue.Queue(maxsize=2)
         self.window._stop_requested=threading.Event()
