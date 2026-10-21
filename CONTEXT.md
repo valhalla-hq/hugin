@@ -1,6 +1,6 @@
 # Hugin Context
 
-Status: panel stop correction and test-session exit under review
+Status: physical panel-button focus correction under review
 Owner: Brian
 Repository: private `valhalla-hq/hugin`; runtime Mjolnir.
 Data boundary: curated source, configuration, locks and approved synthetic voice
@@ -84,27 +84,32 @@ launcher before any later restart; never blindly replay an old starter.
 
 ## Active work
 
-PR19/20, reading panel PR21, visibility PR22, layout PR23 and panel actions PR24
-are merged; base main/deployment is ad9b0a083c0472eda06fc42546f88fccca9eea9f.
+PR19/20, reading panel PR21, visibility PR22, layout PR23, panel actions PR24
+and stop/no-return PR25 are merged. Current base main/deployment is
+392977f2fc824dff30522f645156bc855bc0bf26.
 PR11 is merged through ancestry;
 incorporated PR12-18 are closed. Closeout and inactive PR11-17 source ownerships
 were released through the workspace tool; their recovery files remain.
 
-Exclusive branch: codex/hugin-panel-stop-mjolnir.
-Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-panel-stop-mjolnir.
-PR: https://github.com/valhalla-hq/hugin/pull/25 (fresh remote state governs integration).
-Spec/plan/tasks: specs/2026-10-21-panel-stop/.
-Finish no longer depends on external foreground; read-start guidance remains.
-Existing generation/state, clipboard and target proofs are unchanged. The new
-checked pilot starter owns its child family and exits without starting old apps.
-483 contracts/integration, 26 native UI/geometry/motion checks, two native input
-dispatch tests and one real owned-child launcher exit test pass. An own Hugin UI
-with synthetic I/O confirmed button stop, Ctrl+Alt+D and Escape via Windows input.
-Original physical shortcut failure and real Codex/Word button acceptance remain
-explicitly unverified. Independent spec review is clear; standards review found
-partial-constructor cleanup waiting for a nonexistent process. Owner-first close
-with retained retry fixes it; real OwnedProcess producer regressions and re-review
-pass. Exact-head hosted checks follow this final checkpoint.
+Exclusive branch: codex/hugin-button-target-mjolnir.
+Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-button-target-mjolnir.
+Spec/plan/tasks: specs/2026-10-21-button-target/.
+Brian confirms recording now stops, but native target capture fails before any
+field probe or delivery. Physical Codex-to-button tracing reproduced a NULL
+foreground at WM_MOUSEACTIVATE and through 500 ms after release. Protecting the
+owned top-level with WS_EX_NOACTIVATE and retaining child MA_NOACTIVATE preserved
+Codex focus and produced native capture success in the same physical probe.
+ActionFocus now owns this wrapper policy; ordinary clicks activate only Hugin.
+No external history/refocus, clipboard or input-proof changes. Cleanup restores
+only added style bits and retains ownership on failure. 483 contracts/integration
+(26.496 s) and 32 native UI/focus/geometry/motion tests (12.818 s) pass. Native
+tests require their own foreground-eligible test window; background activation
+denial is not a product success. Reviews and exact-head CI pending. Full live
+dictation/reading acceptance is still pending; the probe used no audio or payloads.
+The live PR25 source remains frozen at 0e283ac3ded9e34e34514ce8af884500fc5e47e7
+in hugin-panel-stop-mjolnir. Its no-return receipt is
+.runtime/pilot-session-e9462fe7-0c69-4eb2-ba0f-d6b1cb1cf343.json. Fresh receipt
+state governs restart; normal Hugin Quit is sufficient, with no old-app return.
 Physical mixed-DPI/monitor loss and full Freya/Tyr
 long-pause acceptance remain unverified beyond the user's general UI acceptance.
 Preflight/control: e3deecae6673a024aa9015a4387737fbec04c795.
@@ -112,7 +117,7 @@ Ownership remains active until clean remote checkpoint/release proof.
 
 ## Active Handoff
 
-- `handoffs/2026-10-21-panel-stop.md`
+- `handoffs/2026-10-21-button-target.md`
 
 ## Reading direction retained
 

@@ -61,6 +61,47 @@ class NativePanelActions(unittest.TestCase):
         window.stop()
         self.assertFalse(owner.handles)
 
+    def test_top_level_protection_survives_show_and_ordinary_click_activates_hugin(self):
+        window=self.make_window([]);owner=window._action_focus;user=owner.user
+        top=owner._top
+        self.assertEqual(top,user.GetAncestor(window.root.winfo_id(),2))
+        mask=0x08000000|0x00040000
+        self.assertEqual(user.GetWindowLongPtrW(top,-20)&mask,mask)
+        window.hide();window.show();window.root.update()
+        self.assertEqual(user.GetWindowLongPtrW(top,-20)&mask,mask)
+        fixture=tk.Toplevel(window.root);entry=tk.Entry(fixture);entry.pack()
+        fixture.update();source=user.GetAncestor(fixture.winfo_id(),2)
+        self.assertTrue(user.SetForegroundWindow(source));entry.focus_force();window.root.update()
+        self.assertEqual(user.GetForegroundWindow(),source)
+        user.SendMessageW.argtypes=[ct.c_void_p,ct.c_uint,ct.c_size_t,ct.c_ssize_t]
+        user.SendMessageW.restype=ct.c_ssize_t
+        # A normal child forwards mouse activation to our wrapper. Only Hugin
+        # itself is activated; action buttons never reach this branch.
+        user.SendMessageW(window.copy.winfo_id(),0x21,top,0x2010001)
+        window.root.update()
+        self.assertEqual(user.GetForegroundWindow(),top)
+
+    def test_style_cleanup_failure_retains_native_owner_until_retry(self):
+        window=self.make_window([]);owner=window._action_focus;top=owner._top
+        with patch.object(owner,'_set_style',side_effect=OSError('style denied')):
+            with self.assertRaises(OSError):window.stop()
+        self.assertIn(top,owner.handles)
+        self.assertEqual(owner._top,top)
+        self.assertTrue(owner._added_style)
+        self.assertFalse(window._closed)
+        window.stop();self.assertFalse(owner.handles)
+
+    def test_detach_restores_only_owned_style_bits_and_keyboard_button_still_invokes(self):
+        calls=[];window=self.make_window(calls);owner=window._action_focus;top=owner._top
+        style=owner._style(top);added=owner._added_style
+        owner._set_style(top,style|0x10)  # Unrelated own-window accept-files bit.
+        window.dictation_button.focus_force();window.root.update()
+        window.dictation_button.event_generate('<Return>');window.root.update()
+        self.assertEqual(calls,[('panel_dictation',(0,'IDLE'))])
+        owner.close()
+        self.assertEqual(owner._style(top),(style|0x10)&~added)
+        self.assertFalse(owner.handles)
+
     def test_native_message_and_tk_click_bindings_keep_owned_selection_and_foreground(self):
         calls=[];window=self.make_window(calls)
         fixture=tk.Toplevel(window.root);fixture.title('Owned action source fixture')
@@ -70,6 +111,8 @@ class NativePanelActions(unittest.TestCase):
         user.GetAncestor.argtypes=[ct.c_void_p,ct.c_uint];user.GetAncestor.restype=ct.c_void_p
         user.SendMessageW.argtypes=[ct.c_void_p,ct.c_uint,ct.c_size_t,ct.c_ssize_t]
         user.SendMessageW.restype=ct.c_ssize_t
+        self.assertTrue(user.SetForegroundWindow(user.GetAncestor(fixture.winfo_id(),2)))
+        entry.focus_force();window.root.update()
         before=user.GetForegroundWindow()
         self.assertEqual(before,user.GetAncestor(fixture.winfo_id(),2))
         # Same-process synthetic source: bypass only the UX process filter.

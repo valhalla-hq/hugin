@@ -72,3 +72,24 @@ physischen Tasten im gemeldeten Versuch nicht ankamen, bleibt ungeklärt.
 Die bestehende Aktivierungsbehandlung wurde nicht spekulativ verändert; Tk's
 [nativer Button-Handler](https://github.com/tcltk/tk/blob/core-8-6-branch/win/tkWinButton.c)
 und die vorhandenen nativen Fokusprüfungen wurden als Gegenprüfung herangezogen.
+
+## Korrektur der physischen Button-Aktivierung
+
+Die spätere echte Codex-Probe zeigte: Die Aufnahme stoppt, aber Windows meldet
+beim Klick auf den Aktionsbutton kein Vordergrundfenster mehr. Deshalb scheitert
+die native Zielerkennung vor der Feld- und Zwischenablageprüfung. Eine reine
+Aktivierungssperre am untergeordneten Button genügt hier nicht.
+
+Das eigene Hauptfenster erhält zusätzlich
+[WS_EX_NOACTIVATE](https://learn.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles),
+während WS_EX_APPWINDOW den Taskleisteneintrag erhält. Normale Mausklicks auf
+andere Bedienelemente oder den Titel aktivieren weiterhin nur Hugin selbst.
+Es wird kein früheres externes Fenster gespeichert oder nachträglich aktiviert.
+
+Die gleiche physische Codex-Fokusprobe war damit erfolgreich: Der native Fokus
+blieb erhalten und die Zielerkennung gelang sofort sowie nach 100 und 500 ms.
+Zusätzlich bestanden 483 Contract-/Integrationstests und 32 native Fenster-/UI-
+Prüfungen, einschließlich normaler Aktivierung, Tastaturbedienung, erneutem
+Anzeigen und wiederholbarer Freigabe. Die Probe verwendete keine Aufnahme und
+keine Zwischenablageinhalte; echtes Einfügen und Vorlesen werden nach dem
+Pilotwechsel gesondert geprüft.
