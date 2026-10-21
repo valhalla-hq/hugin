@@ -42,9 +42,8 @@ def main():
                 return 0
             finally: window.stop()
         if not args.pilot:
-            # Productive hooks require the separately checked migration record.
-            # Development launches cannot take the old stack's mouse bindings.
-            raise HuginError('activation_pending','activation')
+            from .activation import require_activation
+            require_activation(settings.paths['state'])
         from .application import Application
         return Application(settings,pilot=args.pilot,show=args.show).run()
     except HuginError as error:

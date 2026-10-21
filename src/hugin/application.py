@@ -21,6 +21,7 @@ from . import __version__
 from .errors import HuginError, MESSAGES
 from .config import read_json_object
 from .diagnostics import observed_versions
+from .bindings import DICTATION, READING, PROFILE
 from .ui import View
 from .windows.clipboard import ClipboardFailure
 
@@ -861,6 +862,7 @@ class Controller:
                 or self.cues is not None and self.cues.cleanup_pending)
             input_checks=dict(self._input_checks)
         data = {'schema_version':1,'app':'Hugin','version':__version__,
+            'input_profile':'keyboard-pilot' if getattr(self.inputs,'pilot',False) else PROFILE,
             'state':snap.state.value,'voice':snap.voice,'input_ready':bool(self.inputs.running and not self.inputs.error),
             'profile_id':self.settings.voices[snap.voice].source_id,
             'engine_versions':self._engine_versions,
@@ -922,6 +924,7 @@ class Controller:
             completion_id=self._completion_id
             completion_until=0.0 if error else self._completion_until
         view = View(status=status,voice=snap.voice,text=snap.result.text if snap.result else '',
+            dictation_shortcut=DICTATION.hint(pilot),reading_shortcut=READING.hint(pilot),
             panel_token=(snap.generation,snap.state.value),
             dictation_control=self._panel_controls(snap)[0],reading_control=self._panel_controls(snap)[1],
             detail='Erneut drücken, um das Diktat abzuschließen.' if snap.state == c.State.RECORDING else '',
@@ -932,10 +935,6 @@ class Controller:
             reading_text=snap.reading_section.text if snap.reading_section else '',
             reading_index=snap.reading_section.index if snap.reading_section else 0,
             reading_total=snap.reading_total,reading_paused=snap.reading_paused)
-        if pilot:
-            from dataclasses import replace
-            view=replace(view,dictation_shortcut='Strg+Alt+D · erneut: fertig',
-                reading_shortcut='Text markieren · Strg+Alt+V · erneut: Stopp')
         return view
 
     def _publish(self): self.publish(self.view())

@@ -23,7 +23,7 @@ T005/T006 sind nach T004 unabhängig vorbereitbar, aber gemeinsame Hardware wird
 - [ ] **T009 – Wiederanlauf, Geräte und reproduzierbarer Restore.** Begrenzte Worker-Recovery, Ruhe-/Resume-/Geräteereignisse, Explorer-Tray-Wiederherstellung, Konfigvalidierung und unabhängigen Datenpfad prüfen. Deckt NFR-001, SEC-002, OPS-001, OPS-003. Abhängig: T008. Prüfen: integration, windows --interactive; AC-012, AC-014, AC-015, AC-016. Ungültige Einstellungen und nicht erreichbare Altpfade sind Fixtures.
 - [ ] **T010 – Hardware-/Leistungs-Pilot.** Physische Tasten und Zielmatrix Word/Browser/Codex/kopierbare PDFs, beide Stimmen, Diktat-TTS-Wechsel und Clipboard-Fälle mit echtem Stack prüfen. Kalte/warme Vergleichsmessung inklusive Kosten und Prozessfamilien-Speicher durchführen. Deckt REQ-001 bis REQ-011, NFR-001 bis NFR-003. Abhängig: T009. Prüfen: alle relevanten Gruppen, benchmark baseline-and-hugin --cold-warm; AC-001 bis AC-013, AC-015. Menschliche Tasten-/Hörtests nicht durch simulierte Provider ersetzen. Zielabweichungen entscheiden, dokumentieren, ggf. passende Tests wiederholen.
 - [ ] **T011 – Aktivierung und Rückweg vorbereiten.** Tatsächliche Altstack-Identität, geordnete Beenden-Wege, Link-/Config-Backups, idempotenten Plan/Apply und Restore-Vertrag implementieren. Deckt OPS-002, OPS-003. Abhängig: T010, T900. Prüfen: isolierte Migrationsfixtures und normaler externer Windows-Prozess; AC-017. Den neuen Migrations-/Restore-Diff vor Apply mit Code-Review prüfen und offene Befunde schließen. Bis zu einem expliziten Aktivierungsauftrag keine produktiven Verknüpfungen umschreiben.
-- [ ] **T012 – Produktive Umstellung und Login-Abnahme.** Auf Nutzerauftrag Hugin als einzigen Input-/Autostart-Owner aktivieren; regulären Login, Offline-Restore und Rückweg prüfen. Deckt SEC-001, OPS-001, OPS-002, OPS-003. Abhängig: T011, T900 und Aktivierungsauftrag. Prüfen: AC-014 bis AC-017, physische Alt+Y-/Mausprüfung und Zustandsreadback. Alte Installation bleibt als Rückweg erhalten.
+- [ ] **T012 – Produktive Umstellung und Login-Abnahme.** Auf Nutzerauftrag Hugin als einzigen Input-/Autostart-Owner aktivieren; regulären Login, Offline-Restore und Rückweg prüfen. Deckt SEC-001, OPS-001, OPS-002, OPS-003. Abhängig: T011, T900 und Aktivierungsauftrag. Prüfen: AC-014 bis AC-017, physische Strg+Alt+D/V-/Mausprüfung und Zustandsreadback. Alte Installation bleibt als Rückweg erhalten.
 
 ## Abschluss
 
@@ -34,3 +34,10 @@ T005/T006 sind nach T004 unabhängig vorbereitbar, aber gemeinsame Hardware wird
 ## Einordnung dieses Auftrags
 
 T001/T002/T003/T008 sind als begrenzte Implementierungsscheiben geprüft. T004–T007 enthalten Code und Vertragsnachweise, bleiben wegen Zielmatrix/GPU-/Hörtests offen. T009 enthält UIA, Betriebssignale und den vollständigen lokalen Restore echter Modell-/CUDA-Dateien und aller Pakete in frischen eigenen Umgebungen; native Betriebsszenarien und Offline-/GPU-Inferenz bleiben offen. T010–T012 und die abschließende Konvergenz folgen nach dem kontrollierten Hardware-Pilot. Whispering/PipPal bleiben produktiv. Geprüfte Kommandos und verbleibende Einschränkungen stehen in implementation.md.
+
+## Umstellungsauftrag 21.10.2026
+
+Brian beauftragt jetzt ausdrücklich Maus-Zurück = Diktieren, Maus-Vorwärts =
+Vorlesen sowie Ersatz beider alten Autostarts durch stillen Hugin-Start.
+T012 ist dadurch autorisiert, nicht vollständig abgenommen; Login und übrige
+Gesamtmatrix bleiben offen. Siehe ../2026-10-21-mouse-startup/tasks.md.

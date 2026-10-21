@@ -46,7 +46,31 @@ class WindowsInputContracts(unittest.TestCase):
         self.assertTrue(presses.handle(WM_XBUTTONDOWN, 1, 0))
         self.assertFalse(presses.handle(WM_XBUTTONDOWN, 2, 2))
         self.assertFalse(presses.handle(WM_XBUTTONDOWN, 3, 0))
-        self.assertEqual(actions, ['dictation', 'read'])
+        self.assertEqual(actions, ['read', 'dictation'])
+
+    def test_normal_mode_mouse_and_keyboard_share_actions_after_restart(self):
+        for _ in range(2):
+            actions = queue.Queue()
+            backend = FakeInputs()
+            inputs = WindowsInputs(actions.put, backend=backend)
+            inputs.start()
+            try:
+                self.assertEqual(backend.keys, {
+                    1: (1 | 2 | MOD_NOREPEAT, ord('D')),
+                    2: (1 | 2 | MOD_NOREPEAT, ord('V')),
+                })
+                for button, action, identity in ((1, 'dictation', 1), (2, 'read', 2)):
+                    self.assertTrue(backend.mouse(WM_XBUTTONDOWN, button, 1))
+                    self.assertTrue(backend.mouse(WM_XBUTTONDOWN, button, 1))
+                    self.assertTrue(backend.mouse(WM_XBUTTONUP, button, 1))
+                    self.assertEqual(actions.get(timeout=2), action)
+                    self.assertTrue(actions.empty())
+                    backend.post(WM_HOTKEY, identity)
+                    self.assertEqual(actions.get(timeout=2), action)
+                self.assertFalse(backend.mouse(WM_XBUTTONDOWN, 3, 0))
+            finally:
+                inputs.stop()
+            self.assertTrue(inputs.closed)
 
     def test_pilot_has_no_mouse_hook_and_escape_is_dynamic(self):
         backend = FakeInputs()
@@ -108,6 +132,36 @@ class WindowsInputContracts(unittest.TestCase):
         self.assertEqual(inputs.error.code, 'input_failed')
         self.assertNotIn('PRIVATE', str(inputs.error))
         self.assertTrue(inputs.closed)
+
+    def test_native_cleanup_failure_retries_on_same_owner_thread(self):
+        import threading
+        threads = []
+        failed = threading.Event()
+        allow_close = threading.Event()
+        class TransientClose(FakeInputs):
+            def open(self, mouse):
+                super().open(mouse)
+                self.owner_thread = threading.get_ident()
+            def close(self):
+                threads.append(threading.get_ident())
+                if not allow_close.is_set():
+                    failed.set()
+                    raise HuginError('input_failed', 'synthetic_cleanup')
+                super().close()
+        backend = TransientClose()
+        inputs = WindowsInputs(lambda _:None, backend=backend)
+        inputs.start()
+        backend.post(WM_QUIT)
+        try:
+            self.assertTrue(failed.wait(2))
+            self.assertFalse(inputs.closed)
+            self.assertTrue(inputs._thread.is_alive())
+        finally:
+            allow_close.set()
+            with self.assertRaises(HuginError):inputs.stop()
+        self.assertTrue(inputs.closed)
+        self.assertGreaterEqual(len(threads), 2)
+        self.assertEqual(set(threads), {backend.owner_thread})
 
 
 if __name__ == '__main__':
