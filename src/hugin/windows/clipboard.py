@@ -16,6 +16,8 @@ import threading
 import time
 import uuid
 
+from .clipboard_formats import RASTER_FORMATS,OLE_FORMATS,raster_candidate
+
 MAX_SNAPSHOT_BYTES = 32 * 1024 * 1024
 MAX_TEXT_BYTES = 256 * 1024
 CF_UNICODETEXT = 13
@@ -495,15 +497,17 @@ class NativeClipboard:
             family.argtypes=[W.HANDLE,ctypes.POINTER(W.UINT),W.LPWSTR]
             family.restype=W.LONG
         self.allowed = {1, 7, 8, 13, 15, 16, 17}
+        self.registered={}
         # Chromium publishes these two provenance formats as HGLOBAL bytes.
         # Preserve them opaquely; an arbitrary registered format may instead
         # contain an object/stream and still must fail before materialization.
         for name in ('HTML Format', 'Rich Text Format',
-                     'Chromium internal source RFH token', 'Chromium internal source URL'):
+                     'Chromium internal source RFH token', 'Chromium internal source URL',*RASTER_FORMATS):
             identity = self.user.RegisterClipboardFormatW(name)
             if not identity:
                 raise ClipboardFailure('clipboard_failed')
-            self.allowed.add(identity)
+            self.registered[name]=identity
+            if name not in OLE_FORMATS:self.allowed.add(identity)
         self.tx_format = self.user.RegisterClipboardFormatW('Hugin.Private.ClipboardTransaction.v1')
         if not self.tx_format:
             raise ClipboardFailure('clipboard_failed')
@@ -515,6 +519,7 @@ class NativeClipboard:
         self._token: bytes | None = None
         self._unfreed: set[int] = set()
         self._selection_probe = None
+        self._format_probe = None
 
     def _window_loop(self):
         try:
@@ -594,43 +599,57 @@ class NativeClipboard:
             if not self.kernel.GlobalUnlock(handle) and ctypes.get_last_error():
                 raise ClipboardFailure('clipboard_failed')
 
+    def _format_ids(self):
+        """Caller holds OpenClipboard; one producer for native format order."""
+        identities=[];previous=0
+        while True:
+            ctypes.set_last_error(0)
+            identity=self.user.EnumClipboardFormats(previous)
+            if not identity:
+                if ctypes.get_last_error():raise ClipboardFailure('clipboard_failed')
+                return tuple(identities)
+            if len(identities)>=256 or identity in identities:
+                raise ClipboardFailure('format_unsupported')
+            identities.append(identity);previous=identity
+
+    def _snapshot_formats(self,identities,budget,sequence):
+        handles=[];total=0
+        for identity in identities:
+            handle=self.user.GetClipboardData(identity)
+            size=self.kernel.GlobalSize(handle) if handle else 0
+            if not size or self.sequence()!=sequence:raise ClipboardFailure('format_delayed')
+            total+=size
+            if total>budget:raise ClipboardFailure('snapshot_limit')
+            handles.append((identity,handle,size))
+        formats=tuple((identity,self._read_handle(handle,size)) for identity,handle,size in handles)
+        if self.sequence()!=sequence:raise ClipboardFailure('clipboard_changed')
+        return ClipboardSnapshot(sequence,formats)
+
     def snapshot(self, budget):
         with self._opened():
-            sequence = self.sequence()
-            identities = []
-            previous = 0
-            while True:
-                ctypes.set_last_error(0)
-                identity = self.user.EnumClipboardFormats(previous)
-                if not identity:
-                    if ctypes.get_last_error():
-                        raise ClipboardFailure('clipboard_failed')
-                    break
-                if len(identities) >= 256 or identity in identities:
-                    raise ClipboardFailure('format_unsupported')
-                identities.append(identity)
-                previous = identity
+            sequence=self.sequence();raw=self._format_ids();identities=raw
+            has_ole=any(self.registered[name] in raw for name in OLE_FORMATS)
+            if has_ole:
+                try:identities=raster_candidate(raw,self.registered)
+                except ValueError:raise ClipboardFailure('format_unsupported') from None
             # Windows synthesizes CF_BITMAP for a DIB. Preserve the source
             # DIB bytes rather than misinterpreting a GDI handle as HGLOBAL.
-            if 8 in identities or 17 in identities:
+            elif 8 in identities or 17 in identities:
                 identities = [identity for identity in identities if identity != 2]
             if any(identity not in self.allowed for identity in identities):
                 raise ClipboardFailure('format_unsupported')
-            handles = []
-            total = 0
-            for identity in identities:
-                handle = self.user.GetClipboardData(identity)
-                size = self.kernel.GlobalSize(handle) if handle else 0
-                if not size or self.sequence() != sequence:
-                    raise ClipboardFailure('format_delayed')
-                total += size
-                if total > budget:
-                    raise ClipboardFailure('snapshot_limit')
-                handles.append((identity, handle, size))
-            formats = tuple((identity, self._read_handle(handle, size)) for identity, handle, size in handles)
-            if self.sequence() != sequence:
+            if not has_ole:return self._snapshot_formats(identities,budget,sequence)
+        # OLE may call the source application. Never hold OpenClipboard while
+        # obtaining that proof, and never use a proof from another clipboard.
+        if self._format_probe is None:
+            from .clipboard_formats import ClipboardFormatProbe
+            self._format_probe=ClipboardFormatProbe()
+        if self._format_probe.read()!=(sequence,raw):
+            raise ClipboardFailure('clipboard_changed')
+        with self._opened():
+            if self.sequence()!=sequence or self._format_ids()!=raw:
                 raise ClipboardFailure('clipboard_changed')
-            return ClipboardSnapshot(sequence, formats)
+            return self._snapshot_formats(identities,budget,sequence)
 
     def _allocate(self, data):
         handle = self.kernel.GlobalAlloc(2, len(data))  # GMEM_MOVEABLE
@@ -696,7 +715,10 @@ class NativeClipboard:
 
     def stage(self, formats, expected):
         self._token = uuid.uuid4().hex.encode('ascii')
-        return self.replace((*formats, (self.tx_format, self._token)), expected)
+        # Temporary dictation must not become a history/cloud item. Explicit
+        # copy and original restoration retain their existing policy instead.
+        exclusion=self.registered['ExcludeClipboardContentFromMonitorProcessing']
+        return self.replace((*formats,(exclusion,b'\0\0\0\0'),(self.tx_format,self._token)),expected)
 
     def _package_family(self,process):
         query=getattr(self.kernel,'GetPackageFamilyName',None)
@@ -962,6 +984,9 @@ class NativeClipboard:
         time.sleep(seconds)
 
     def close(self):
+        if self._format_probe is not None:
+            self._format_probe.close()
+            self._format_probe=None
         if self._selection_probe is not None:
             self._selection_probe.close()
             self._selection_probe = None

@@ -1,87 +1,81 @@
 # Hugin Context
 
-Status: implementation
+Status: accepted pilot baseline; reviewed integration in progress
 Owner: Brian
-Type: application
-Data boundary: Privater Quellcode, kuratierte Konfiguration, Paket-/Modelllocks und bestaetigte kleine synthetische Stimmreferenzen. Keine persoenlichen Diktate, Dokumente, Audioaufnahmen, Credentials, Rohlogs, Modellgewichte oder virtuellen Umgebungen in Git.
-Source truth: `valhalla-hq/hugin`
+Repository: private `valhalla-hq/hugin`; runtime Mjolnir.
+Data boundary: curated source, configuration, locks and approved synthetic voice
+references. No personal dictation, clipboard/image contents, recordings,
+credentials, raw logs, model weights or virtual environments in Git.
 
-## Goal
+## Current objective and authorization
 
-Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-14-hugin-v1 erstellt und die schrittweise Umsetzung beauftragt. Kleine native Oberflaeche, XBUTTON2 und Alt+Y fuer Diktat-Toggle, XBUTTON1 fuer Vorlesen-Toggle, Diktat stoppt Vorlesen, beide unveraenderten Stimmen Freya/deutsch-3 und Tyr/deutsch-a. Escape-Abbruch, ein letztes RAM-Diktat mit Kopieren/Loeschen, technische Diagnose ohne Inhalte. Whispering und PipPal laufen bis zur geprueften Umstellung weiter. Lokaler Einstieg C:/Users/brian/Hugin; vorhandene Planungsdateien erhalten und im ersten exklusiven Task uebernehmen.
+On 21 October 2026 Brian requested completion and saving of all finished work,
+then the recommended next reading stage. This authorizes consolidation of the
+finished PR11-18 stack through the central checked private integration workflow.
+It supersedes the former screenshot-task restriction against merging that stack.
+It does not authorize autostart/mouse-binding migration or claiming every V1
+hardware/target criterion passed. No new broad feature belongs in this baseline.
 
-## Current State
+## Accepted baseline
 
-- Private Initialisierung und Katalogregistrierung abgeschlossen. Pilot-PR https://github.com/valhalla-hq/hugin/pull/1 am unveränderten geprüften Head b3ee07cb18b94764a1ea24b56179ae329382b868 integriert; Merge cf1c70570b790211b54ce27e8a93b8e641703d69.
-- Restore-/Einstiegsnachweis aus PR2 integriert, main e762108bf189ce3428f6fba9cca6f2cbb412a7ce. Frühere Task-Ownership freigegeben.
-- Darstellungsauftrag umgesetzt: drei Nutzerreferenzen in Nachtblau/Violett und eigenes Raben-Icon, ohne Funktionserweiterung. Erster GPU-/Sprachpilot und sichtbarer Teststart beauftragt; geordnete vorübergehende Altstack-Pause ausdrücklich freigegeben. Siehe specs/2026-10-14-hugin-v1/style-pilot.md.
-- Nachtblau-/Violettoberfläche mit eigenem Raben-Icon integriert. 268 Vertrags-/Integrationsprüfungen und 48 Windows-Prüfungen ohne Skips grün. UI, GPU-Probe/Cancel-Racefix und Windows-cuBLAS-Fix unabhängig ohne offene Delta-Befunde geprüft. Nachweise/Grenzen: docs/pilot-2026-10-14.md.
-- Main cf1c705 vollständig aus 29 echten Modell-/CUDA-Dateien und 122 lokalen Wheels wiederhergestellt: drei frische Umgebungen, Versionen/pip check grün; Apply 279,716s, Wiederholung ohne Neuinstallation 63,824s. 44 Windows-Prüfungen ohne Skips und echte CPU-Probe aus der finalen Installation grün; GPU-/Hör-/physische Zielmatrix-Abnahme offen.
-- C:/Users/brian/Hugin ist ein geprüfter Junction zum sauberen _repos/hugin-Mainclone. Die sechs ursprünglichen Planungsdateien bleiben mit identischen Hashes in C:/Users/brian/Hugin-Planung-2026-10-14 erhalten. Keine venv verschoben.
-- Autorisierte Pause über normale Appaktionen bestätigt: Whispering/PipPal und alter Qwen-Worker beendet, PipPal-Profil und beide Startup-lnks hashidentisch. Alter STT-HTTP-Dienst im Standby unverändert. Eigener serieller GPU-Test für Whisper und Freya/Tyr samt Cancel und Familienabschluss erfolgreich. Keine produktive Umstellung oder Gesamtabnahme.
-- GitHub main-Protection-Abfrage liefert HTTP403 wegen Tarifgrenze; keine Policy geändert. Vertraglicher PR-/Review-/CI-Gate bleibt maßgeblich.
+- Source: d1331da7fa13573e23dd86a04ab4f3301c6b3fcf, PR18 tip.
+- Includes Word document-range handling, confirmed Codex dictation/selection
+  replacement, three original Whispering cues, Obsidian/Nocturne UI and motion,
+  active-mode highlighting, rounded control fixes and screenshot clipboard support.
+- Brian confirmed the Codex screenshot-plus-dictation scenario on 21 October.
+  Technical status at 10:22:31 MESZ: IDLE, native_target_captured,
+  target_captured, submitted, no error, no pending cleanup.
+- 462 contract/integration checks, focused/native evidence and independent reviews
+  passed. All three hosted checks passed at d1331da. See the closeout handoff for
+  the final cumulative review/check and integration proof.
+- Cumulative review found one additional wide-window clipping bug. The closeout
+  binds window/initial/minimum/font geometry to the same explicit 2048-pixel
+  raster bound; no silent cropped surfaces. Seven native visual checks pass.
+- Screenshot support is shared across applications for the proved format bundle;
+  other target applications/clipboard producers have not all been accepted.
+- Earlier target_changed and unassigned audio_failed observations are retained as
+  separate unproven causes. Do not label them fixed by the screenshot change.
 
-## Decisions
+## Running state and return path
 
-- Private by default.
-- Weitere Arbeit und routinemäßige private Integration folgen dem aktuellen zentralen Lifecycle-Vertrag; keine abweichende lokale Autoritätsregel.
+The live source is frozen at d1331da in
+C:/Users/brian/brian-projects/worktrees/hugin/hugin-screenshot-formats-mjolnir.
+It started 21 October at 10:20:24 MESZ after normal old-app exits. Fresh runtime
+receipts, not historical PIDs, determine current state. Normal Hugin Quit returns
+Whispering/PipPal through unchanged startup shortcuts. Preserve the source and
+ignored runtime helpers until normal exit. Never kill apps by name or stale PID.
 
-## Pilot-Kürzel
+C:/Users/brian/Hugin is a junction to the deployment clone _repos/hugin. Its
+runtime/worker inputs must stay byte-identical when advancing the checked source.
+No model, environment, voice, original sound asset or startup-link replacement.
+Historical helper plans pin an old deployment head: revalidate/update an owned
+launcher before any later restart; never blindly replay an old starter.
 
-- Nutzerauftrag: einfache Tasten ohne Fn. Strg+Alt+D toggelt Diktat,
-  Strg+Alt+V toggelt Vorlesen. UI und aktuelle Anleitungen angepasst.
-- 268 Vertrags-/Integrationsprüfungen, Dokumentprüfung und echte native
-  Registrierung/Freigabe beider neuer Kürzel samt dynamischem Escape grün.
-- Die laufende Testsitzung wird nach geprüfter Integration geordnet neu
-  gestartet; Rückweg über die unveränderten Altstack-Verknüpfungen erhalten.
+## Active work
 
-## Aktuelle Zwischenbasis und Folgeauftrag
+Exclusive closeout branch: codex/hugin-baseline-closeout-mjolnir.
+Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-baseline-closeout-mjolnir.
+Exact handoff: handoffs/2026-10-21-baseline-closeout.md.
+Older handoffs are historical checkpoints, not current launch instructions.
+Preflight/control: e3deecae6673a024aa9015a4387737fbec04c795.
+Ownership remains active until clean remote checkpoint/release proof.
 
-- Brian bestätigt am16.10. Google-Diktat einschließlich Überschreiben am
-  laufenden Source25d9c97ce5af41cf866907e99cbbb4572ca3cb77. Codex und Word
-  funktionieren laut seiner neuen Probe noch nicht; Ursachen sind offen.
-- Er beauftragt ausdrücklich, die vorhandenen Commits vollständig zu prüfen,
-  den aktuellen Stand über PR10 nach Main zu integrieren und die offenen
-  Fälle anschließend mit einer frischen PR fortzuführen. Dieser Schnitt
-  ersetzt die bisherige Bedingung, PR10 erst nach der gesamten Feldmatrix zu
-  mergen. Die Produktumstellung selbst bleibt an die Gesamtabnahme gebunden.
-- PR10: https://github.com/valhalla-hq/hugin/pull/10. Sieben geprüfte Commits
-  seit Main8e4ceabb718edb2c8d1b80e1b07b69e0f3b933bd, zuletzt Source25d9c97.
-  Die Gesamtprüfung fand zusätzlich einen verlorenen Dependency-Status beim
-  Probestart; Source052751b2476250bd430f5c6c0272eebc91c5feb2 korrigiert diesen
-  eng begrenzten Diagnosefehler. Aktuellen
-  Merge-/Mainhead und Checkstatus beim Pickup frisch aus GitHub lesen.
-- Funktionsumfang: frische einmalige Feldattestation unabhängig vom langsamen
-  Prozessabschluss; Clipboardfreigabe vor Cleanup; Capturestatus erhält gültige
-  Aufnahmebytes/RAM-Ergebnis; Feldbesitz folgt Enclosures statt Endordnung.
-  Nachweise: docs/delivery-completion-2026-10-16.md und docs/baseline-2026-10-16.md.
-- 412 Source-/Integrationsprüfungen18,399s,94 gezielte Checks0,463s und3 eigene
-  native Range-/IPC-Tests0,837s am Abschlussstand grün. Cursor, Teil-/Gesamtauswahl und Unicode sind im
-  Providermodell sowie eigenen Windows-Textfeld geprüft. Das beweist keine
-  Codex-/Word-Kompatibilität. Beide Fälle gehören in den nächsten Task.
-- Audio, Freya/Tyr und Aufnahme-Töne sind von Brian bestätigt. Keine neue
-  Audio-/UI-Funktion. Strg+Alt+D/V und Escape bleiben Pilotkürzel; Maus,
-  Alt+Y und Autostart erst nach geprüfter vollständiger Umstellung.
-- Laufzustand: neuer normaler Pilot25d9c97 gestartet, App/Supervisor frisch
-  beobachtet. Alter Diagnosepilot94ee13b ist beendet. Die laufende Sitzung
-  benötigt weiterhin den alten Taskworktree
-  C:/Users/brian/brian-projects/worktrees/hugin/hugin-pilot-fixes-mjolnir.
-  Dort keinen neuen Source entwickeln und den Pfad bis zum normalen Ende
-  erhalten. Die Rückkehr zu Whispering/PipPal erfolgt über den Supervisor.
-- Nach dem Merge Main-Deploymentclone sauber fast-forwarden; Worker-/Runtime-
-  Inputs sind unverändert. Laufender Controller bleibt25d9c97; der neue
-  Launcher-Diagnosefix wird dort erst nach einem Neustart aktiv. Rangeproduzent
-  und IPC sind gegenüber25d9c97 unverändert.
-  Seine alten Starter sind an alte Head-/Runtimewerte gebunden und müssen vor
-  späterem Neustart neu geprüft werden. Weitere Entwicklung in neuem exklusiven
-  Worktree ab Main; neue Draft-PR erst nach erstem inhaltlichem Folgecommit.
-- Ownership des alten Roots bleibt solange aktiv, wie die laufende App den
-  Sourcepfad benötigt. Danach reguläre Freigabe/Bereinigung. Andere alte
-  Helperworktrees werden nicht aus einem allgemeinen Aufräumwunsch gelöscht.
-- Alte Installationen, Profile, Startup-lnks und STT-Standby erhalten. Frühere
-  UI-Werkzeugablehnung nicht umgehen; der spätere autorisierte Appstart war
-  erfolgreich. Früherer RAM-Clipboardverlust ist nicht rückgängig gemacht.
+## Next stage agreed by Brian
 
-## Active Handoff
+Optional compact reading panel with current-section orientation; exact word
+highlighting deferred pending measured synchronization with Freya and Tyr.
+Pause/resume is the highest-value related control, but must preserve bounded
+streaming, prompt cancellation and dictation priority. No fixed-rate fake timing,
+no focus stealing, no extra speech model solely for animation, no new text log.
+Use a fresh task based on the integrated baseline and a reviewed light spec.
+Other proposed usability improvements: actionable errors and exact build identity.
 
-- `handoffs/2026-10-16-codex-word-followup.md`
+## Evidence and retained limits
+
+- docs/word-document-2026-10-19.md: native Word evidence and user dictation tests.
+- docs/whispering-cues-2026-10-19.md: pinned original sound identity and native output.
+- docs/obsidian-ui-2026-10-19.md and docs/ui-refinement-2026-10-21.md: UI/native checks.
+- docs/screenshot-formats-2026-10-21.md: format proof, native restoration and limits.
+- docs/baseline-closeout-2026-10-21.md: cumulative acceptance and integration scope.
+- specs/2026-10-14-hugin-v1/tasks.md retains unverified full target/device matrix,
+  performance, physical production bindings and autostart/login migration.

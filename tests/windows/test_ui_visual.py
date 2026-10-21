@@ -6,7 +6,7 @@ from tkinter import font,ttk
 import unittest
 from unittest.mock import patch
 
-from hugin.branding import BACKGROUND,FIELD,TEXT,ACCENT,ACTIVITY_COLORS,hugin_icon
+from hugin.branding import BACKGROUND,FIELD,TEXT,ACCENT,ACTIVITY_COLORS,MAX_SURFACE_SIDE,hugin_icon
 from hugin.ui import HuginWindow,View,tray_image
 
 
@@ -42,7 +42,7 @@ class NativeVisualContract(unittest.TestCase):
         window.root.update()
         for widget in descendants(window.root):
             if not widget.winfo_ismapped():continue
-            if widget.winfo_class() not in ('TButton','TCombobox','TLabel','Label','Text'):continue
+            if widget.winfo_class() not in ('TButton','Button','Checkbutton','TCombobox','TLabel','Label','Text'):continue
             with self.subTest(widget=str(widget)):
                 parent=widget.master
                 while parent is not None:
@@ -53,6 +53,14 @@ class NativeVisualContract(unittest.TestCase):
                     parent=parent.master
         line_height=font.Font(root=window.root,font=window.text.cget('font')).metrics('linespace')
         self.assertGreaterEqual(window.text.winfo_height(),line_height+2*int(window.text.cget('pady'))+2)
+        for name in ('dictation','reading'):
+            card=window.scene.bbox(window._items[name])
+            for suffix in ('_title','_key'):
+                bounds=window.scene.bbox(window._labels[name+suffix])
+                self.assertGreaterEqual(bounds[0],card[0])
+                self.assertGreaterEqual(bounds[1],card[1])
+                self.assertLessEqual(bounds[2],card[2])
+                self.assertLessEqual(bounds[3],card[3])
 
     def test_three_dpi_scales_keep_text_and_actions_inside_their_cards(self):
         for scale in (1,1.5,2):
@@ -71,18 +79,15 @@ class NativeVisualContract(unittest.TestCase):
                 self.assert_visible_controls(window)
                 self.close_window(window)
 
-    def test_popup_and_disabled_text_keep_dark_readable_colors(self):
+    def test_voice_controls_and_disabled_text_keep_dark_readable_colors(self):
         window=self.make_window()
         window.render(View(text='Synthetische Textauswahl'))
         style=ttk.Style(window.root)
         self.assertEqual(style.theme_use(),'clam')
         self.assertEqual(window.root.cget('background'),BACKGROUND)
-        self.assertEqual(style.lookup('TCombobox','fieldbackground',('readonly',)),FIELD)
-        popup=window.root.tk.call('ttk::combobox::PopdownWindow',str(window.voice))
-        listbox=str(popup)+'.f.l'
-        for option,expected in (('-background',FIELD),('-foreground',TEXT),
-                                ('-selectbackground',ACCENT),('-selectforeground',TEXT)):
-            self.assertEqual(window.root.tk.call(listbox,'cget',option),expected)
+        for button in window.voice_buttons.values():
+            self.assertEqual(button.cget('foreground'),TEXT)
+            self.assertTrue(button.cget('takefocus'))
         self.assertEqual(str(window.text.cget('state')),'disabled')
         self.assertEqual(window.text.cget('background'),FIELD)
         self.assertEqual(window.text.cget('foreground'),TEXT)
@@ -90,19 +95,36 @@ class NativeVisualContract(unittest.TestCase):
         self.assertNotEqual(window.text.cget('selectbackground'),FIELD)
         self.assertNotEqual(window.text.cget('inactiveselectbackground'),FIELD)
 
+    def test_native_window_limits_keep_raster_and_layout_identical(self):
+        from hugin.branding import backdrop,panel_surface
+        for factory in (backdrop,panel_surface):
+            image=factory(MAX_SURFACE_SIDE,300)
+            self.assertEqual(image.size,(MAX_SURFACE_SIDE,300))
+            self.assertEqual(image.getpixel((MAX_SURFACE_SIDE-20,150))[3],255)
+            with self.assertRaises(ValueError):factory(3000,1600)
+        window=self.make_window(4)
+        window.render(View(status='Synthetische Groessenprobe'))
+        window.show()
+        window.root.geometry('3000x1600')
+        self.assert_visible_controls(window)
+        width,height=window.scene.winfo_width(),window.scene.winfo_height()
+        self.assertLessEqual(width,MAX_SURFACE_SIDE)
+        self.assertLessEqual(height,MAX_SURFACE_SIDE)
+        self.assertEqual((window._images['background'].width(),window._images['background'].height()),
+                         (width,height))
+
     def test_existing_actions_and_controller_mode_remain_unchanged(self):
         window=self.make_window();actions=[]
         window.on_action=lambda *args:actions.append(args)
         window.render(View(status='Aufnahme',mode='CPU · Lokal',voice='tyr',
             text='Synthetischer Inhalt',activity='recording'))
-        self.assertEqual(window.mode.cget('text'),'CPU · Lokal')
-        self.assertEqual(window.status.cget('text'),'Aufnahme')
-        self.assertEqual(window.voice.current(),1)
+        self.assertEqual(window.scene.itemcget(window._labels['mode'],'text'),'CPU · Lokal')
+        self.assertEqual(window.scene.itemcget(window._labels['status'],'text'),'Aufnahme')
+        self.assertTrue(window.voice_buttons['tyr']._selected)
         self.assertEqual(window.text.get('1.0','end-1c'),'Synthetischer Inhalt')
         window.copy.invoke();window.clear.invoke()
-        next(widget for widget in descendants(window.root)
-             if widget.winfo_class()=='TButton' and widget.cget('text')=='Diagnose kopieren').invoke()
-        window.voice.current(0);window.voice.event_generate('<<ComboboxSelected>>')
+        window.diagnose.invoke()
+        window.voice_buttons['freya'].invoke()
         self.assertEqual(actions,[('copy',None),('clear',None),('diagnose',None),('voice','freya')])
         window.render(View())
         self.assertEqual(str(window.copy.cget('state')),'disabled')
@@ -124,6 +146,45 @@ class NativeVisualContract(unittest.TestCase):
                     self.assertGreaterEqual(bounds[1],size*.5)
                 self.assertLessEqual(icons[0].getpixel((0,0))[3],2)
         self.assertEqual(tray_image().tobytes(),hugin_icon(64).tobytes())
+
+    def test_mode_tiles_switch_without_layout_or_growing_images(self):
+        window=self.make_window();window.show();window.root.update()
+        def images():
+            return tuple(window.scene.itemcget(window._items[name],'image')
+                         for name in ('dictation','reading'))
+        window.render(View(activity='idle'))
+        idle=images();count=len(window.root.tk.call('image','names'))
+        for _ in range(3):
+            window.render(View(activity='recording',active_action='dictation'))
+            recording=images()
+            self.assertNotEqual(recording[0],idle[0])
+            self.assertEqual(recording[1],idle[1])
+            window.render(View(activity='playing',active_action='reading'))
+            reading=images()
+            self.assertEqual(reading[0],idle[0])
+            self.assertNotEqual(reading[1],idle[1])
+            window.render(View(activity='idle'))
+            self.assertEqual(images(),idle)
+        self.assertEqual(len(window.root.tk.call('image','names')),count)
+
+    def test_voice_button_corners_match_parent_even_during_hover_and_focus(self):
+        from PIL import ImageTk
+        for scale in (1,1.5,2):
+            window=self.make_window(scale);window.show();window.root.update()
+            parent=ImageTk.getimage(window._images['voices'])
+            card=window.scene.coords(window._items['voices'])
+            for name,button in window.voice_buttons.items():
+                at=window.scene.coords(window._windows[name])
+                offset=(round(at[0]-card[0]),round(at[1]-card[1]))
+                for focused in (False,True):
+                    button._focus_changed(focused)
+                    button._pointer(hover=True);button.step(immediate=True)
+                    frame=ImageTk.getimage(button._shown_image)
+                    for x,y in ((0,0),(frame.width-1,0),(0,frame.height-1),
+                                (frame.width-1,frame.height-1)):
+                        self.assertEqual(frame.getpixel((x,y)),parent.getpixel((offset[0]+x,offset[1]+y)))
+                self.assertEqual(int(button.cget('highlightthickness')),0)
+            self.close_window(window)
 
 
 if __name__=='__main__':unittest.main()

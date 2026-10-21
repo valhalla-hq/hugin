@@ -1,39 +1,50 @@
-"""Two original bounded PCM signals; no assets, models or system sound service."""
+"""Pinned local Whispering cues; no decoder or network in normal playback."""
 from __future__ import annotations
 
-import math
-import struct
+import hashlib
 import threading
 import time
 
-from .audio import PCMOutput
+from .audio import PCMOutput,MAX_PCM_WRITE_BYTES
 from .errors import HuginError
 
 
-def _pulse(frequency, milliseconds):
-    count = 24000*milliseconds//1000
-    fade = min(144,count//2)
-    samples=[]
-    for index in range(count):
-        edge=min(index,count-1-index,fade)/fade
-        envelope=math.sin(edge*math.pi/2)**2
-        samples.append(round(7500*envelope*math.sin(2*math.pi*frequency*index/24000)))
-    return struct.pack('<'+'h'*count,*samples)
+ASSET_DIRECTORY = '.runtime/cues/whispering-v7.11.0'
+CUE_FILES = {
+    'start': (16312,'005da1ff41ce6bd97c932da46b7d9408b3e56dd2f55dc4c4ff41581f5f04a6ca'),
+    'end': (24000,'590e77778d799601bb9fd102b58d45a1763448d5b2a9e04655acb9eff8dcfdfa'),
+    'complete': (64618,'9807f70fcfaf45886621fb82607cd23ef5e75f925d8eb74b7d6fc11b8461f7ce'),
+}
 
 
-_START = _pulse(420,35)+bytes(24000*2*45//1000)+_pulse(420,35)
-_END = _pulse(1000,65)+bytes(24000*2*25//1000)+_pulse(1600,90)
+def load_cue_signals(root):
+    """Read each fixed asset once, bounded before hashing or retaining bytes."""
+    signals={}
+    try:
+        for kind,(size,digest) in CUE_FILES.items():
+            with (root/ASSET_DIRECTORY/(kind+'.pcm')).open('rb') as source:
+                pcm=source.read(size+1)
+            if len(pcm)!=size or hashlib.sha256(pcm).hexdigest()!=digest:
+                raise ValueError
+            signals[kind]=pcm
+    except (OSError,ValueError):
+        raise HuginError('audio_failed','cue_asset') from None
+    return signals
 
 
-class RecordingCues:
-    """One capture writer; stop reaches it directly, outside capture FIFO.
+class DictationCues:
+    """One dictation writer; stop reaches it directly, outside capture FIFO.
 
     25ms is a bounded provisional acoustic tail, not an echo-free claim.
     Native hearing/loopback acceptance remains separate from these contracts.
     """
     tail_seconds = .025
 
-    def __init__(self, *, output=None, clock=time.monotonic):
+    def __init__(self, signals, *, output=None, clock=time.monotonic):
+        if (set(signals)!=set(CUE_FILES) or any(type(pcm) is not bytes or not pcm
+                or len(pcm)%2 or len(pcm)>MAX_PCM_WRITE_BYTES for pcm in signals.values())):
+            raise HuginError('audio_failed','cue_format')
+        self._signals=dict(signals)
         self.output=output if output is not None else PCMOutput(buffer_ms=100)
         self._clock=clock
         self._lock=threading.Lock()
@@ -51,7 +62,7 @@ class RecordingCues:
         with self._lock:return self._cleanup_pending
 
     def play(self, kind, job, cancelled):
-        if kind not in ('start','end'):
+        if kind not in self._signals:
             raise HuginError('protocol_invalid','capture_cue')
         with self._lock:
             if self._closed or self._cleanup_pending or self._active is not None:
@@ -59,7 +70,8 @@ class RecordingCues:
             if cancelled():return False
             local_cancel=threading.Event()
             self._active,self._cancel=job,local_cancel
-        deadline=self._clock()+.5
+        pcm=self._signals[kind]
+        deadline=self._clock()+len(pcm)/48000+.5
         def interrupted():return local_cancel.is_set() or cancelled() or self._clock()>=deadline
         def completed_or_cancelled(completed):
             if local_cancel.is_set() or cancelled():return False
@@ -70,7 +82,7 @@ class RecordingCues:
             if interrupted():return completed_or_cancelled(False)
             identity=(job,kind)
             self.output.start(identity)
-            completed=(self.output.write(_START if kind=='start' else _END,identity,interrupted)
+            completed=(self.output.write(pcm,identity,interrupted)
                 and self.output.drain(identity,interrupted))
             return completed_or_cancelled(completed)
         finally:

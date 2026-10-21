@@ -18,7 +18,7 @@ def module(name,**fields):
 
 
 class StartupContracts(unittest.TestCase):
-    def _failure_closes_io_before_instance_release(self,ui_failure=False,join_failure=False,cleanup_failure=False,window_failure=False,window_start_failure=False,window_interrupt=False):
+    def _failure_closes_io_before_instance_release(self,ui_failure=False,join_failure=False,cleanup_failure=False,window_failure=False,window_start_failure=False,window_interrupt=False,cue_failure=False):
         owners=[];guards=[];released=[];controllers=[];joined=[];commands=[]
         class Owner:
             def __init__(self,*args,**kwargs):self.closed=False;owners.append(self)
@@ -66,9 +66,12 @@ class StartupContracts(unittest.TestCase):
                 joined.append(True)
                 if join_failure: raise RuntimeError('synthetic interrupted join')
                 controllers[0]._closed=controllers[0].finish_io()
+        def cue_signals(root):
+            if cue_failure:raise HuginError('audio_failed','cue_asset')
+            return {}
         fakes={
             'hugin.audio':module('hugin.audio',Microphone=lambda *args:NS(),PCMOutput=Owner),
-            'hugin.cues':module('hugin.cues',RecordingCues=Owner),
+            'hugin.cues':module('hugin.cues',DictationCues=Owner,load_cue_signals=cue_signals),
             'hugin.ui':module('hugin.ui',HuginWindow=Window),
             'hugin.windows.input':module('hugin.windows.input',WindowsInputs=Owner),
             'hugin.windows.instance':module('hugin.windows.instance',InstanceGuard=Guard),
@@ -90,7 +93,9 @@ class StartupContracts(unittest.TestCase):
             self.assertIs(app._startup_owners[0],guards[0])
         else:
             self.assertTrue(guards[0].closed)
-            if window_start_failure or window_interrupt:
+            if cue_failure:
+                self.assertEqual(owners,guards,'asset failure must precede native owner construction')
+            elif window_start_failure or window_interrupt:
                 self.assertTrue(next(owner for owner in owners if isinstance(owner,Window)).closed)
             else:
                 self.assertTrue(released and all(released),'all started owners must close before mutex release')
@@ -100,6 +105,9 @@ class StartupContracts(unittest.TestCase):
 
     def test_owner_thread_start_failure_closes_io_before_instance_release(self):
         self._failure_closes_io_before_instance_release()
+
+    def test_missing_cue_assets_release_guard_before_native_io_is_constructed(self):
+        self._failure_closes_io_before_instance_release(cue_failure=True)
 
     def test_ui_loop_failure_joins_live_owner_before_instance_release(self):
         self._failure_closes_io_before_instance_release(ui_failure=True)
