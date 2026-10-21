@@ -38,6 +38,8 @@ class View:
     reading_index: int = 0
     reading_total: int = 0
     reading_paused: bool = False
+    reading_word: tuple[int,int] | None = None
+    reading_marking: str = ''
     panel_token: tuple[int,str] | None = None
     dictation_control: str = ''
     reading_control: str = ''
@@ -543,9 +545,12 @@ class HuginWindow:
         if old is None or old.panel_token!=view.panel_token:self._panel_notice=''
         now=time.monotonic()
         self.motion.update(view,now)
-        if old is not None and replace(view,audio_level=old.audio_level)==old:
+        if old is not None and replace(view,audio_level=old.audio_level,
+                reading_word=old.reading_word,reading_marking=old.reading_marking)==old:
+            if (view.reading_word,view.reading_marking)!=(old.reading_word,old.reading_marking):
+                self._render_reading_panel(view)
             # The UI has its own bounded paint clock. A 40Hz controller update
-            # with only a new meter value must not repaint all native controls.
+            # with only a meter/word update must not repaint all native controls.
             if self._visible and self.motion.phase(now)!=getattr(self,'_painted_phase',None):
                 self._paint(now,animate=not self.reduced_motion.get())
             return
