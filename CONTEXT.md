@@ -1,7 +1,8 @@
 # Hugin Context
 
-Status: audio-based word highlighting is implemented in an exclusive candidate;
-real GPU/clock checks passed; final independent review and rollout are pending.
+Status: audio-based word highlighting is integrated through PR33 and deployed.
+Real GPU/clock checks and both independent reviews passed. Brian accepted timing
+with both voices; his requested bold-word presentation refinement is in progress.
 Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
 
 ## Current intent and authorization
@@ -16,7 +17,7 @@ Routine checked private integration and normal deployment remain authorized.
 
 - Branch: codex/hugin-word-highlighting-mjolnir.
 - Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-word-highlighting-mjolnir.
-- Base/main: 11216cc13171064cbfe3716e10977daefec881f0 (PR32).
+- Feature main/deployment: fd81c169a0440e705301508039a51ad03a860071 (PR33).
 - Exact handoff: handoffs/2026-10-21-word-highlighting.md.
 - Spec/plan/tasks: specs/2026-10-21-word-highlighting/.
 - Evidence/limits: docs/word-highlighting-2026-10-21.md.
@@ -26,10 +27,14 @@ Routine checked private integration and normal deployment remain authorized.
 ## Accepted deployment and preservation
 
 C:/Users/brian/Hugin points to C:/Users/brian/brian-projects/_repos/hugin.
-The stopped accepted source is PR31 late field capture, merged as 4e18f746; PR32 only recorded
-Brian's successful click-away/return dictation test and is current deployed main.
-Brian confirmed normal tray Quit. Exclusive candidate GPU/clock probes passed
-and closed their resources; actual heard word agreement remains pending.
+The previously accepted source is PR31 late field capture, merged as 4e18f746;
+PR32 recorded Brian's successful click-away/return dictation test. After Brian's
+normal Quit, exclusive GPU/clock probes passed and closed their resources.
+PR33 was deployed under InstanceGuard to the clean stable clone; Hugin started
+at 17:32:15 local on 2026-10-21. Brian then confirmed that word timing fits both
+Freya and Tyr. He requests a visual refinement following PipPal: the current
+word should be bold rather than shown on a filled highlight. Candidate changes
+only the word tag to white bold text, with matching font size at each panel scale.
 No stored PID is termination authority. Whispering and PipPal remain disabled and must not auto-return.
 
 Accepted: screenshot plus dictation in Codex, clipboard fallback for Ctrl+V,

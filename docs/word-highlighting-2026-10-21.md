@@ -91,3 +91,14 @@ probe elapsed 65.020s; Controller CPU 1.375s; worker-family CPU 29.641s TTS and
 13.250s STT; individual peak committed memory 8,453,869,568/3,247,951,872 bytes.
 Both workers and native/executor resources closed. This establishes real
 pipeline/clock behavior, not perceptual voice/word accuracy or a p95 guarantee.
+
+## Hearing acceptance and visual refinement
+
+After PR33 deployment on 2026-10-21, Brian confirmed that word timing fits both
+Freya and Tyr. He then requested PipPal-inspired bold typography instead of the
+filled current-word highlight. PipPal's local webui/css/theme.css uses white,
+bold current-word text; webui/js/overlay.js applies the current-word class.
+Hugin's refinement uses its own Segoe UI bold tag, without a background fill,
+and scales it with the normal text. Original spans, audio alignment and native
+playback timing stay unchanged. This is a styling refinement of the accepted
+feature; it does not broaden the measured alignment coverage.
