@@ -165,15 +165,17 @@ class PresentationFactsContracts(unittest.TestCase):
         self.assertEqual(self.clipboard.submissions,['synthetic UI receipt'])
 
     def test_failed_or_cancelled_delivery_and_manual_copy_never_issue_success(self):
-        for failure in ('capture','restore','cancel'):
+        for failure in ('capture','partial','cancel'):
             with self.subTest(failure=failure):
                 self.setUp()
                 if failure=='capture':
                     self.clipboard.capture_target=lambda **_:NS(status='target_unverifiable',target=None)
-                elif failure=='restore':
-                    self.clipboard.deliver=lambda *a,**k:NS(status='clipboard_failed',submitted=True,restored=False)
+                elif failure=='partial':
+                    self.clipboard.deliver=lambda *a,**k:NS(status='clipboard_failed',submitted=True,copied=failure=='partial')
                 else:self.clipboard.cancel_at_commit=lambda:self.controller.command('cancel')
                 self.finish(self.recognize())
+                if failure!='cancel':self.assertEqual(self.controller.core.snapshot().error.code,
+                    'target_unverifiable' if failure=='capture' else 'clipboard_failed')
                 self.assertEqual(self.controller.view().completion_id,0)
                 self.assertEqual(self.controller.view().completion_until,0.0)
                 self.controller.command('copy');self.pump()

@@ -296,6 +296,33 @@ class WindowsAbiContracts(unittest.TestCase):
         backend.replace(snapshot.formats,staged)
         self.assertEqual(backend.user.data,expected)
 
+    def test_persistent_dictation_can_be_snapshotted_for_later_selection_capture(self):
+        # Exercise the production constructor's format ownership, then the real
+        # stage/snapshot implementation against rendered flat fake OS handles.
+        names={};next_id=[49152]
+        def register(name):
+            if name not in names:names[name]=next_id[0];next_id[0]+=1
+            return names[name]
+        user=Library();user.RegisterClipboardFormatW=register
+        with patch.object(ctypes,'WinDLL',side_effect=[user,Library()]):native=NativeClipboard()
+        backend,_,_=self.screenshot_fixture()
+        backend.registered=native.registered;backend.allowed=native.allowed;backend.tx_format=native.tx_format
+        backend.stage(((13,'finished\0'.encode('utf-16-le')),),7)
+        published=dict(backend.user.data)
+        self.assertEqual(next(iter(published)),native.registered['ExcludeClipboardContentFromMonitorProcessing'])
+        self.assertEqual(dict(backend.snapshot(1024).formats),published)
+
+    def test_cancel_after_allocations_is_checked_under_clipboard_lock_before_empty(self):
+        backend,original,_=self.screenshot_fixture();freed=[]
+        backend.kernel.GlobalFree=lambda handle:freed.append(handle) or 0
+        checks=[]
+        def current():checks.append(backend.user.opened);return False
+        with self.assertRaises(ClipboardFailure) as failure:
+            backend.stage(((13,b'T\0\0\0'),),7,still_current=current)
+        self.assertEqual(failure.exception.status,'cancelled')
+        self.assertEqual(checks,[True]);self.assertEqual(len(freed),3)
+        self.assertEqual(backend.user.data,original)
+
     def test_changed_sequence_or_format_set_after_ole_proof_never_reads_payload(self):
         for mutation in ('proof_sequence','proof_formats','sequence','formats'):
             backend,original,reads=self.screenshot_fixture()

@@ -12,6 +12,7 @@ import uuid
 SOURCE=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(SOURCE/'src'))
 from hugin.windows.process import OwnedProcess
+from hugin.bindings import BINDINGS
 
 # Installation inputs are separate from the reviewed controller/UI checkout.
 RUNTIME_INPUTS=('config','locks','assets','src/hugin/workers','src/hugin/protocol.py',
@@ -35,7 +36,7 @@ def plan(root,head,runtime_head):
         raise RuntimeError('runtime_inputs_changed')
     return dict(schema_version=1,checkout_head=head,source_root=str(SOURCE),
         runtime_root=str(root),runtime_head=runtime_head,worker_source_equal=True,
-        pilot_hotkeys=['Ctrl+Alt+D','Ctrl+Alt+V'],old_stack_return='disabled',
+        pilot_hotkeys=[binding.shortcut for binding in BINDINGS],old_stack_return='disabled',
         autostart_changes=False)
 
 

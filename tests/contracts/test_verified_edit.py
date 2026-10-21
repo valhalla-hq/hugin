@@ -12,7 +12,7 @@ from test_windows_clipboard import FakeClipboard
 
 
 class VerifiedEditPolicy(unittest.TestCase):
-    def test_parsed_generic_policy_delivers_unknown_app_and_preserves_clipboard(self):
+    def test_parsed_generic_policy_delivers_unknown_app_and_retains_dictation(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory);(root/'config').mkdir()
             (root/'proof.md').write_text('Synthetic capability pilot proof',encoding='utf-8')
@@ -22,13 +22,13 @@ class VerifiedEditPolicy(unittest.TestCase):
             profile=load_target_approvals(root)
             backend=FakeClipboard()
             backend.target=replace(backend.target,control_class='UnknownEditableApp',package_family=None)
-            baseline=backend.data.copy();delays=[]
+            delays=[]
             backend.sleep=delays.append
             service=ClipboardService(backend=backend)
             service.approve_verified_edits(profile.verified_edit.restore_delay_seconds)
             result=service.deliver('synthetic',backend.target,lambda:True)
-            self.assertEqual((result.status,result.submitted,result.restored),('submitted',True,True))
-            self.assertEqual((backend.pastes,delays,backend.data),(1,[.25],baseline))
+            self.assertEqual((result.status,result.submitted,result.copied),('submitted',True,True))
+            self.assertEqual((backend.pastes,delays,backend.data),(1,[.25],{13:'synthetic\0'.encode('utf-16-le')}))
 
     def test_package_override_precedes_generic_delay(self):
         backend=FakeClipboard();delays=[];backend.sleep=delays.append
@@ -41,7 +41,7 @@ class VerifiedEditPolicy(unittest.TestCase):
         self.assertTrue(service.deliver('synthetic',backend.target,lambda:True).submitted)
         self.assertEqual(delays,[.15])
 
-    def test_unknown_field_and_changed_focus_never_stage_or_paste(self):
+    def test_unknown_field_and_changed_focus_publish_without_paste(self):
         for invalid in ('no_target','no_range','changed_focus'):
             with self.subTest(invalid=invalid):
                 backend=FakeClipboard();service=ClipboardService(backend=backend)
@@ -52,7 +52,7 @@ class VerifiedEditPolicy(unittest.TestCase):
                 else:backend.target=replace(target,focus=201)
                 result=service.deliver('synthetic',target,lambda:True)
                 self.assertEqual(result.status,'target_changed' if invalid=='changed_focus' else 'target_unverifiable')
-                self.assertEqual((backend.mutations,backend.pastes),(0,0))
+                self.assertEqual((backend.mutations,backend.pastes),(1,0))
 
     def test_generic_policy_requires_bounded_delay_and_existing_evidence(self):
         with tempfile.TemporaryDirectory() as directory:

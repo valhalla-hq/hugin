@@ -92,6 +92,7 @@ class PilotSession(unittest.TestCase):
         head='a'*40;runtime_head='b'*40
         with patch.object(pilot,'git',side_effect=[head,'',runtime_head,'','']):
             report=pilot.plan(path.parent,head,runtime_head)
+            self.assertEqual(report['pilot_hotkeys'],['Alt+Y','Strg+Alt+V'])
         self.assertEqual(report['old_stack_return'],'disabled')
         for answers in ([head,'dirty'],[head,'','c'*40],[head,'',runtime_head,'dirty'],
                         [head,'',runtime_head,'','worker diff']):

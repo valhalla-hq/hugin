@@ -1,7 +1,7 @@
 # Maussteuerung und Windows-Anmeldung
 
 Die neue Belegung ist **Zurück = Diktat**, **Vorwärts = Vorlesen**.
-Strg+Alt+D/V und die Panel-Buttons bleiben verfügbar. Erneutes Drücken beendet
+Alt+Y (Diktat) und Strg+Alt+V (Vorlesen) und die Panel-Buttons bleiben verfügbar. Erneutes Drücken beendet
 die jeweilige Aktion; Diktat hat Vorrang vor Vorlesen. Während Hugin läuft,
 führen die Seitentasten keine Browsernavigation aus. Logitech muss weiterhin
 seine normalen Zurück-/Vorwärtsereignisse liefern; Hugin schreibt keine
@@ -66,3 +66,12 @@ Dateitransaktion, CLI-Persistenz und native Shell-Link-Erstellung haben getrennt
 Tests. Native Hook-Registrierung beweist noch keinen physischen Mausklick.
 Verknüpfungs-Readback und stiller Start beweisen noch keinen neuen Windows-Login.
 Die erste echte Anmeldung und Brians Mausprobe werden ausdrücklich nachgetragen.
+
+Stand 21.10.2026: PR28 ist integriert; die Umstellung wurde auf Mjolnir angewandt
+und über Windows-Verknüpfung und Startup-Inventar zurückgelesen. Nur Hugin ist
+von diesen drei Apps im Autostart. Die Original-Links sind bytegleich gesichert.
+Auch der noch laufende separate Whispering-STT-Dienst mit altem Maus-Hook wurde
+über sein bestehendes Stoppskript beendet. Hugin läuft aus der festen Installation
+im normalen Mausmodus; für die aktuelle Probe wurde das Fenster bewusst gezeigt.
+Zwei isolierte echte Starts ohne --show waren bereit und verborgen. Ein echter
+neuer Windows-Login wurde nicht ausgelöst.

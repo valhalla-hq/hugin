@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 from hugin.branding import BACKGROUND,FIELD,TEXT,ACCENT,ACTIVITY_COLORS,MAX_SURFACE_SIDE,hugin_icon
 from hugin.ui import HuginWindow,View,tray_image
+from hugin.bindings import DICTATION
 
 
 def descendants(widget):
@@ -87,7 +88,7 @@ class NativeVisualContract(unittest.TestCase):
                     text='Dieser Text ist ausschließlich eine Darstellungsprobe.',
                     components='Whisper · bereit    Qwen · bereit',
                     error='Synthetischer Diagnosehinweis: Der Prüfadapter meldet eine begrenzte Störung. Bitte erneut versuchen.',
-                    dictation_shortcut='Strg+Alt+D · erneut: fertig',
+                    dictation_shortcut=DICTATION.hint(pilot=True),
                     reading_shortcut='Text markieren · Strg+Alt+V · erneut: Stopp',
                     dictation_control='finish',reading_control='start',panel_token=(1,'RECORDING')))
                 window.show()

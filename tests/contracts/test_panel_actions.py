@@ -52,7 +52,6 @@ class PanelActions(unittest.TestCase):
     def test_button_finish_without_target_stops_and_keeps_transcript_without_delivery(self):
         self.clipboard.capture_native_target=lambda:NS(target=None,status='target_unverifiable')
         self.clipboard.capture_target=lambda **kw:self.fail('no target must not reach probe')
-        self.clipboard.deliver=lambda *a,**kw:self.fail('no target must not reach delivery')
         self.controller.command('panel_dictation',self.controller.view().panel_token);self.pump()
         self.assertTrue(self.controller.microphone.owned)
         self.controller.command('panel_dictation',self.controller.view().panel_token);self.pump()

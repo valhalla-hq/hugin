@@ -56,7 +56,7 @@ class WindowsInputContracts(unittest.TestCase):
             inputs.start()
             try:
                 self.assertEqual(backend.keys, {
-                    1: (1 | 2 | MOD_NOREPEAT, ord('D')),
+                    1: (1 | MOD_NOREPEAT, ord('Y')),
                     2: (1 | 2 | MOD_NOREPEAT, ord('V')),
                 })
                 for button, action, identity in ((1, 'dictation', 1), (2, 'read', 2)):
@@ -79,7 +79,7 @@ class WindowsInputContracts(unittest.TestCase):
         try:
             self.assertIsNone(backend.mouse)
             self.assertEqual(backend.keys, {
-                1: (1 | 2 | MOD_NOREPEAT, ord('D')),
+                1: (1 | MOD_NOREPEAT, ord('Y')),
                 2: (1 | 2 | MOD_NOREPEAT, ord('V')),
             })
             inputs.set_cancel_active(True)

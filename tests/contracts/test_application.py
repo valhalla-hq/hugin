@@ -48,18 +48,21 @@ class Output:
 
 
 class Clipboard:
-    def __init__(self): self.submissions = []; self.cancel_at_commit = None
+    def __init__(self): self.submissions = []; self.copies = []; self.cancel_at_commit = None
     def capture_native_target(self): return NS(target='target', status='target_captured')
     def capture_target(self, **kwargs): return NS(target='target', status='target_captured')
     def capture_selection(self, cancelled): return NS(text='Synthetischer Test.', status='captured')
     def deliver(self, text, target, still_current, *, authorize, commit):
+        if not still_current():return NS(status='cancelled',submitted=False,copied=False)
+        self.copies.append(text)
+        if target is None:return NS(status='target_unverifiable',submitted=False,copied=True)
         submitted=[False]
         def send():
             if self.cancel_at_commit:self.cancel_at_commit()
             if still_current() and authorize('transaction'):
                 self.submissions.append(text);submitted[0]=True
         commit('transaction',send)
-        return NS(status='submitted' if submitted[0] else 'cancelled',submitted=submitted[0],restored=True)
+        return NS(status='submitted' if submitted[0] else 'cancelled',submitted=submitted[0],copied=True)
     def copy(self, text): self.submissions.append(text); return NS(status='copied')
     def close(self): pass
 
@@ -137,7 +140,7 @@ class ApplicationContracts(unittest.TestCase):
 
     def assert_delivery_rejection(self, status, expected_code):
         self.clipboard.deliver = lambda *args, **kwargs: NS(
-            status=status, submitted=False, restored=False)
+            status=status, submitted=False, copied=False)
         self.dictation_ready()
         request,generation=self.pool.inference[-1]
         self.controller.worker_event(dict(type='result',engine='stt',engine_instance='actual-stt',
@@ -165,7 +168,6 @@ class ApplicationContracts(unittest.TestCase):
             with self.subTest(status=status):
                 self.setUp()
                 self.clipboard.capture_target=lambda **kwargs:NS(target=None,status=status)
-                self.clipboard.deliver=lambda *a,**k:self.fail('unverified capture reached delivery')
                 self.dictation_ready()
                 request,generation=self.pool.inference[-1]
                 self.controller.worker_event(dict(type='result',engine='stt',engine_instance='actual-stt',
@@ -176,12 +178,15 @@ class ApplicationContracts(unittest.TestCase):
                 checks=json.loads(self.controller.diagnostic())['input_checks']
                 self.assertEqual(checks['capture_field'],status if status!='private arbitrary provider detail' else 'unknown')
                 self.assertEqual(checks['delivery'],'not_attempted')
+                self.assertEqual(checks['clipboard'],'copied')
+                self.assertEqual(self.clipboard.copies,['synthetic retained dictation'])
+                self.assertEqual(self.clipboard.submissions,[])
+                self.assertIn('Strg+V',self.controller.view().error)
                 self.assertNotIn('private arbitrary provider detail',self.controller.diagnostic())
 
     def test_native_capture_failure_does_not_invent_a_field_probe(self):
         self.clipboard.capture_native_target=lambda:NS(target=None,status='target_changed')
         self.clipboard.capture_target=lambda **kwargs:self.fail('missing native basis reached UIA')
-        self.clipboard.deliver=lambda *a,**k:self.fail('missing native basis reached delivery')
         self.dictation_ready()
         request,generation=self.pool.inference[-1]
         self.controller.worker_event(dict(type='result',engine='stt',engine_instance='actual-stt',
@@ -189,12 +194,11 @@ class ApplicationContracts(unittest.TestCase):
         self.pump()
         self.assertEqual(self.controller.core.snapshot().error.code,'target_changed')
         self.assertEqual(json.loads(self.controller.diagnostic())['input_checks'],
-            {'capture_native':'target_changed','capture_field':'not_attempted','delivery':'not_attempted'})
+            {'capture_native':'target_changed','capture_field':'not_attempted','clipboard':'copied','delivery':'not_attempted'})
 
     def test_field_probe_exception_does_not_discard_successful_audio(self):
         def fail(**kwargs):raise RuntimeError('private provider payload')
         self.clipboard.capture_target=fail
-        self.clipboard.deliver=lambda *a,**k:self.fail('failed probe reached delivery')
         self.dictation_ready()
         request,generation=self.pool.inference[-1]
         self.controller.worker_event(dict(type='result',engine='stt',engine_instance='actual-stt',
@@ -207,6 +211,18 @@ class ApplicationContracts(unittest.TestCase):
 
     def test_clipboard_rejection_does_not_claim_target_changed(self):
         self.assert_delivery_rejection('format_unsupported','clipboard_failed')
+
+    def test_known_later_copy_suppresses_ctrl_v_hint_but_retains_publication_fact(self):
+        self.dictation_ready()
+        self.clipboard.deliver=lambda *a,**k:NS(status='clipboard_changed',copied=True,submitted=False)
+        request,generation=self.pool.inference[-1]
+        self.controller.worker_event(dict(type='result',engine='stt',engine_instance='actual-stt',
+            request_id=request,generation=generation,text='synthetic retained text'))
+        self.pump()
+        self.assertEqual(self.controller.view().text,'synthetic retained text')
+        self.assertNotIn('Strg+V',self.controller.view().error)
+        checks=json.loads(self.controller.diagnostic())['input_checks']
+        self.assertEqual((checks['clipboard'],checks['delivery']),('copied','clipboard_changed'))
 
     def test_cold_model_load_is_distinguished_from_transcription(self):
         self.controller.command('dictation');self.pump()
@@ -244,7 +260,7 @@ class ApplicationContracts(unittest.TestCase):
         waiting=[False]
         def deliver(*args,**kwargs):
             entered.set();release.wait(2)
-            return NS(status='cancelled',submitted=False,restored=False)
+            return NS(status='cancelled',submitted=False,copied=False)
         self.clipboard.deliver=deliver
         self.dictation_ready()
         self.controller.delivery_executor=ThreadPoolExecutor(1)
@@ -275,7 +291,7 @@ class ApplicationContracts(unittest.TestCase):
                 if current() and authorize('transaction'):self.clipboard.submissions.append(text)
             commit('transaction',send)
             threads.append(('finish',threading.get_ident()))
-            return NS(status='submitted',submitted=True,restored=True)
+            return NS(status='submitted',submitted=True,copied=True)
         self.clipboard.deliver=deliver
         request,generation=self.pool.inference[-1]
         self.controller.worker_event(dict(type='result',engine='stt',engine_instance='actual-stt',
@@ -357,7 +373,7 @@ class ApplicationContracts(unittest.TestCase):
                 raise RuntimeError('synthetic late submit failure')
         def deliver(*args,**kwargs):
             entered.set();release.wait(2)
-            return NS(status='cancelled',submitted=False,restored=False)
+            return NS(status='cancelled',submitted=False,copied=False)
         self.dictation_ready()
         self.clipboard.deliver=deliver
         executor=RunningThenFailed();self.controller.delivery_executor=executor
