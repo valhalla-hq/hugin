@@ -1,9 +1,9 @@
-# Reading panel candidate, 21 October 2026
+# Reading panel, 21 October 2026
 
 The accepted dictation/UI baseline is integrated through PR19/20. PR21 adds an
 optional reading panel: original current-section text, section count, pause /
 continue, stop and hide. The main window also provides keyboard controls and a
-session visibility toggle. Hiding does not stop speech. Automatic appearance
+session visibility control. Hiding does not stop speech. Automatic appearance
 preserves the foreground window; native placement failure disables only this
 optional display. No reading history or word-time estimator is added.
 
@@ -45,7 +45,28 @@ cancel/fault cleanup remain. No second alignment model or audio-file cache.
 
 No user clipboard, recording, text selection or live speech was used for these
 checks. Model/GPU peak memory, agent tokens and live section-transition cost are
-unmeasured. The previous pilot remains d1331da until a checked normal restart.
+unmeasured.
+
+## First pilot and visibility refinement
+
+PR21 merged as a52a51c after all three hosted checks passed for head 5448c79.
+After normal old-pilot exit and checked deployment update, that candidate
+started at 11:25:18 MESZ. Brian reported that reading generally works, but the
+checkbox for reopening the hidden panel was not discoverable enough. He chose
+explicit reopening in Hugin over automatic reopening for each new selection.
+
+The main window now has a styled keyboard-accessible button labelled
+Mitleseleiste einblenden/ausblenden. Hiding persists across reading jobs within
+the app session; showing restores the latest section, including paused state.
+No audio/worker or selection changes. Native placement failure still disables
+only the optional panel and retains main-window pause/stop.
+
+The existing own-window scenario first failed on the missing button, then
+passed using the real controls for hide, paused reopen, next-job retention and
+current-text restoration without changing the owned foreground window. Fourteen
+native UI/focus/motion checks passed in 7.568s. A synthetic preview was visually
+inspected and both hide and reopen were clicked. Independent read-only spec and
+standards review found no issues. This is not a new live voice acceptance.
 
 ## User pilot acceptance still required
 

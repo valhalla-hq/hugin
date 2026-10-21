@@ -19,6 +19,9 @@ panel and real pause/resume. It does not change dictation or migrate startup.
   reading, and never automatically activates or replaces the foreground window.
   Provide keyboard-accessible pause/stop controls in the main window as well.
   The panel toggle is a session preference, initially enabled in this pilot.
+  The main window has an explicit Einblenden/Ausblenden button. Hiding remains
+  effective across reading jobs until explicitly enabled again; enabling during
+  playback immediately restores its current section and pause state.
   Unavailable native placement disables only the optional panel and leaves
   main-window controls and speech available; no focus-changing fallback.
 - NFR-001: Preserve bounded streaming and one GPU owner. No full recording cache,
@@ -66,3 +69,6 @@ or application interaction. Record exact commands/results in tasks and handoff.
 ## Change log
 
 - 2026-10-21: Initial accepted direction, bounded to section orientation and pause.
+- 2026-10-21: After the first user trial, replace the unobtrusive checkbox with
+  an explicit show/hide button; Brian prefers deliberate reopening over automatic
+  reopening on the next selected text. Visibility still resets at app restart.
