@@ -150,6 +150,7 @@ class Controller:
         self._completions = {}
         self._queued_head = None
         self._audio_job = None
+        self._audio_section = 0
         self._snapshot = self.core.snapshot()
         self._runtime_error = None
         self._overflow = threading.Event()
@@ -245,7 +246,7 @@ class Controller:
             job = self._snapshot.job
             cue=self._invalidate_completion_cue(kind)
             starting_stop = kind == 'dictation' and job is not None and self._snapshot.state == c.State.STARTING
-            invalidates = starting_stop or kind in ('cancel','quit','system_pause','system_resume','devices_changed') or (job is not None and job.kind == c.JobKind.READING
+            invalidates = starting_stop or kind in ('cancel','quit','system_pause','system_resume','devices_changed') or (kind == 'read_stop' and job is not None and value == job.request_id and job.kind == c.JobKind.READING) or (job is not None and job.kind == c.JobKind.READING
                 and (kind in ('dictation','read') or kind == 'voice' and value != self._snapshot.voice))
             if invalidates and job:
                 self._token(job).set()
@@ -357,6 +358,11 @@ class Controller:
                 'copy':c.CopyResult,'clear':c.DeleteResult,'quit':c.Shutdown,
                 'system_pause':c.Cancel,'system_resume':c.Cancel,'devices_changed':c.Cancel}
             if event.kind == 'voice': event = c.VoiceSelected(event.value)
+            elif event.kind == 'read_pause':event = c.PauseReading(event.value)
+            elif event.kind == 'read_stop':
+                job=self.core.snapshot().job
+                if job is None or job.kind != c.JobKind.READING or event.value != job.request_id:return
+                event=c.Cancel()
             elif event.kind in ('system_pause','system_resume','devices_changed'):
                 self.handle(c.Cancel())
                 # Cancel while the registry still owns each worker; only then
@@ -614,7 +620,14 @@ class Controller:
                     if token.is_set(): return False
                     if self._audio_job != effect.job:
                         self.output.start(effect.job.request_id); self._audio_job = effect.job
-                    return self.output.write(effect.pcm,effect.job.request_id,token.is_set)
+                        self._audio_section = 0
+                    started=None
+                    if self._audio_section != effect.section.index:
+                        if self._audio_section and not self.output.drain(effect.job.request_id,token.is_set):return False
+                        def started():
+                            self._audio_section=effect.section.index
+                            self._post(c.SectionStarted(effect.job,effect.section))
+                    return self.output.write(effect.pcm,effect.job.request_id,token.is_set,started=started)
                 except Exception as error:
                     self._post(_Failure(_safe_error(error,'audio'))); return False
             future = self.audio_executor.submit(play)
@@ -623,6 +636,12 @@ class Controller:
                     if not audio_ack.done(): audio_ack.set_result(done.result())
                 future.add_done_callback(acknowledge)
             return True
+        elif isinstance(effect,c.PauseAudio):
+            try:
+                token=self._token(effect.job)
+                if not token.is_set() and not self.output.pause(effect.job.request_id,effect.paused) and not token.is_set():
+                    raise HuginError('audio_failed','audio_pause')
+            except Exception as error:self._post(_Failure(_safe_error(error,'audio_pause')),priority=0)
         elif isinstance(effect,c.DrainAudio):
             token = self._token(effect.job)
             def drain():
@@ -847,6 +866,9 @@ class Controller:
             c.State.TTS_PREPARING:'reading',c.State.TTS_PLAYING:'reading',
         }.get(snap.state,'')
         status=labels[snap.state]
+        if snap.reading_paused:
+            status='Vorlesen pausiert'
+            activity='idle'
         if loading and loading.job == snap.job and snap.job:
             status=('Whisper' if loading.engine == c.Engine.STT else 'Qwen')+' wird geladen'
         if snap.state == c.State.IDLE and retiring:
@@ -868,7 +890,11 @@ class Controller:
             detail='Erneut drücken, um das Diktat abzuschließen.' if snap.state == c.State.RECORDING else '',
             mode='Lokal · Pilot' if pilot else 'Lokal',components=components,
             error=MESSAGES.get(error,'') if error else '',activity=activity,audio_level=audio_level,
-            completion_id=completion_id,completion_until=completion_until,active_action=active_action)
+            completion_id=completion_id,completion_until=completion_until,active_action=active_action,
+            reading_job=snap.job.request_id if snap.job and snap.job.kind==c.JobKind.READING and snap.reading_total else '',
+            reading_text=snap.reading_section.text if snap.reading_section else '',
+            reading_index=snap.reading_section.index if snap.reading_section else 0,
+            reading_total=snap.reading_total,reading_paused=snap.reading_paused)
         if pilot:
             from dataclasses import replace
             view=replace(view,dictation_shortcut='Strg+Alt+D · erneut: fertig',

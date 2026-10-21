@@ -35,7 +35,13 @@ class Microphone:
 class Output:
     def __init__(self, calls): self.calls = calls
     def start(self, job): self.calls.append('player'); self.job=job
-    def write(self, pcm, job, cancelled): self.calls.append('audio'); return not cancelled()
+    def write(self, pcm, job, cancelled, *, started=None):
+        self.calls.append('audio')
+        if cancelled():return False
+        if started is not None:started()
+        return True
+    def pause(self,job,paused):
+        self.calls.append(('pause',job,paused));return getattr(self,'job',None)==job
     def drain(self, job, cancelled): return getattr(self,'job',None)==job and not cancelled()
     def stop(self): self.calls.append('reset')
     def close(self): pass
@@ -523,6 +529,73 @@ class ApplicationContracts(unittest.TestCase):
         # A valid empty stream follows the spoken stream in the same worker.
         self.pool.inference_futures[-1].set_result({'code':None,'cancelled':False});self.pump()
         self.assertEqual(self.controller.core.snapshot().state,c.State.IDLE)
+
+    def test_reading_view_follows_output_and_stale_controls_cannot_stop_new_reading(self):
+        text='Synthetischer Mitlesetext. '*35
+        self.clipboard.capture_selection=lambda cancelled:NS(text=text,status='captured')
+        self.controller.command('read');self.pump()
+        self.pool.future.set_result({'engine_instance':'actual-tts','device':'cuda'});self.pump()
+        job=self.controller.core.snapshot().job
+        self.assertEqual(self.controller.view().reading_job,job.request_id)
+        self.assertEqual(self.controller.view().reading_text,'')
+        held=[]
+        def delayed_write(pcm,identity,cancelled,*,started=None):
+            held.append(started);return not cancelled()
+        self.controller.output.write=delayed_write
+        first=self.controller.core.snapshot().gpu_slot
+        self.controller.handle(c.EngineAudio(first,b'\0\0'));self.pump()
+        self.assertEqual(self.controller.view().reading_index,0)
+        held.pop()();self.pump()
+        self.assertEqual(self.controller.view().reading_index,1)
+        self.assertNotIn('Synthetischer Mitlesetext',self.controller.diagnostic())
+        self.controller.command('read_pause',job.request_id);self.pump()
+        self.assertTrue(self.controller.view().reading_paused)
+        self.assertIn(('pause',job.request_id,True),self.calls)
+        self.pool.inference_futures[-1].set_result({'code':None,'cancelled':False});self.pump()
+        self.assertIsNone(self.controller.core.snapshot().gpu_slot)
+        self.controller.command('read_pause',job.request_id);self.pump()
+        second=self.controller.core.snapshot().gpu_slot
+        self.assertIsNotNone(second)
+        self.assertEqual(self.controller.view().reading_index,1)
+        self.controller.handle(c.EngineAudio(second,b'\0\0'));self.pump()
+        self.assertEqual(self.controller.view().reading_index,1)
+        held.pop()();self.pump()
+        self.assertEqual(self.controller.view().reading_index,2)
+        self.controller.command('read_stop',job.request_id);self.pump()
+        self.assertEqual(self.controller.view().reading_text,'')
+        self.pool.inference_futures[-1].set_result({'code':None,'cancelled':True});self.pump()
+        self.controller.command('read');self.pump()
+        new=self.controller.core.snapshot().job
+        self.assertNotEqual(new,job)
+        resets=self.calls.count('reset')
+        self.controller.command('read_pause',job.request_id)
+        self.controller.command('read_stop',job.request_id);self.pump()
+        self.assertEqual(self.controller.core.snapshot().job,new)
+        self.assertEqual(self.calls.count('reset'),resets)
+        self.assertFalse(self.controller.view().reading_paused)
+
+    def test_paused_reading_dictation_preempts(self):
+        self.controller.command('read');self.pump()
+        self.pool.future.set_result({'engine_instance':'actual-tts','device':'cuda'});self.pump()
+        op=self.controller.core.snapshot().gpu_slot;job=op.job
+        self.controller.handle(c.EngineAudio(op,b'\0\0'));self.pump()
+        self.controller.command('read_pause',job.request_id);self.pump()
+        self.controller.command('dictation');self.pump()
+        self.assertEqual(self.controller.core.snapshot().job.kind,c.JobKind.DICTATION)
+        self.assertEqual(self.controller.view().reading_job,'')
+        self.assertLess(self.calls.index('reset'),self.calls.index('microphone'))
+
+    def test_pause_failure_cancels_and_is_not_presented_as_paused(self):
+        self.controller.command('read');self.pump()
+        self.pool.future.set_result({'engine_instance':'actual-tts','device':'cuda'});self.pump()
+        op=self.controller.core.snapshot().gpu_slot
+        self.controller.handle(c.EngineAudio(op,b'\0\0'));self.pump()
+        self.controller.output.pause=lambda *args:False
+        self.controller.command('read_pause',op.job.request_id);self.pump()
+        self.assertIsNone(self.controller.core.snapshot().job)
+        self.assertEqual(json.loads(self.controller.diagnostic())['error_code'],'audio_failed')
+        self.assertFalse(self.controller.view().reading_paused)
+        self.assertEqual(self.controller.view().reading_text,'')
 
     def test_diagnostic_has_observed_engine_versions_profile_and_event_time(self):
         self.controller.command('cancel');self.pump()

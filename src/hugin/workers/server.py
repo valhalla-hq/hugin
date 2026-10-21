@@ -233,8 +233,12 @@ class WorkerServer:
                 producer_done = True
                 self.condition.notify_all()
             if started:
-                timeout = self.settings.limits['cancel_seconds'] if self.is_cancelled() or outcome['abort'].is_set() else self.settings.limits['ready_seconds']
-                writer.join(timeout)
+                # Normal playback credit belongs to the local sink, which may
+                # be paused. Initialization's readiness timer is not its owner.
+                # Cancel/fault still impose the existing bounded cleanup wait.
+                while writer.is_alive() and not self.is_cancelled() and not outcome['abort'].is_set():
+                    writer.join(.05)
+                writer.join(self.settings.limits['cancel_seconds'])
                 if writer.is_alive():
                     # Keep the held writer reachable. Family exit, rather than
                     # a terminal, is the remaining cleanup proof.

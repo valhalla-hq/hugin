@@ -32,6 +32,11 @@ class View:
     completion_until: float = 0.0
     dictation_shortcut: str = 'Vordere Taste oder Alt+Y · erneut: fertig'
     reading_shortcut: str = 'Text markieren · hintere Taste · erneut: Stopp'
+    reading_job: str = ''
+    reading_text: str = ''
+    reading_index: int = 0
+    reading_total: int = 0
+    reading_paused: bool = False
 
 
 def tray_image(color=ACCENT):
@@ -89,6 +94,7 @@ class HuginWindow:
         self._view=None;self._alive=True
         self.motion=Motion()
         self.reduced_motion=tk.BooleanVar(master=self.root,value=False)
+        self.reading_panel_enabled=tk.BooleanVar(master=self.root,value=True)
         self.scene=tk.Canvas(self.root,background=BACKGROUND,highlightthickness=0,
                              borderwidth=0,takefocus=False)
         self.scene.pack(fill='both',expand=True)
@@ -125,6 +131,17 @@ class HuginWindow:
                 command=lambda:self.on_action('diagnose',None),
                 scale=self.scale,wake=self._wake_animation)
         self._buttons=[*self.voice_buttons.values(),self.copy,self.clear,self.diagnose]
+        self.read_pause=SoftButton(self.scene,text='Pause',scale=self.scale,wake=self._wake_animation,
+            command=lambda:self._reading_action('read_pause'))
+        self.read_stop=SoftButton(self.scene,text='Stopp',scale=self.scale,wake=self._wake_animation,
+            command=lambda:self._reading_action('read_stop'))
+        self._buttons.extend((self.read_pause,self.read_stop))
+        self.reading_toggle=tk.Checkbutton(self.scene,text='Mitleseleiste anzeigen',
+            variable=self.reading_panel_enabled,command=self._reading_visibility,
+            background=BACKGROUND,foreground=MUTED,activebackground=BACKGROUND,
+            activeforeground=TEXT,selectcolor=FIELD,relief='flat',borderwidth=0,
+            highlightthickness=1,highlightbackground=BACKGROUND,highlightcolor=BLUE,
+            font=('Segoe UI',9),takefocus=True,padx=0,pady=0)
         self.motion_toggle=tk.Checkbutton(self.scene,text='Bewegung reduzieren',
             variable=self.reduced_motion,command=self._motion_changed,
             background=BACKGROUND,foreground=MUTED,activebackground=BACKGROUND,
@@ -151,6 +168,7 @@ class HuginWindow:
         for name,widget in [('text',self.text),('scroll',self.scrollbar),
                 ('freya',self.voice_buttons['freya']),('tyr',self.voice_buttons['tyr']),
                 ('copy',self.copy),('clear',self.clear),('diagnose',self.diagnose),
+                ('read_pause',self.read_pause),('read_stop',self.read_stop),('reading_toggle',self.reading_toggle),
                 ('motion',self.motion_toggle),('empty_hint',self.empty)]:
             self._windows[name]=self.scene.create_window(0,0,window=widget,anchor='nw')
         self.scene.bind('<Configure>',self._queue_layout)
@@ -165,6 +183,8 @@ class HuginWindow:
                     pystray.MenuItem('Diagnose kopieren',lambda:self.on_action('diagnose',None)),
                     pystray.MenuItem('Beenden',lambda:self.on_action('quit',None)))))
             self._tray.start()
+        from .reading_ui import ReadingPanel
+        self.reading_panel=ReadingPanel(self.root,self.scale,self.on_action,self._hide_reading)
         self.render(View())
         self._pump_after=self.root.after(25,self._pump)
 
@@ -213,7 +233,7 @@ class HuginWindow:
         if not self._alive or not self.scene.winfo_exists():return
         pixel_w,pixel_h=self.scene.winfo_width(),self.scene.winfo_height()
         if pixel_w<10 or pixel_h<10:return
-        size=(pixel_w,pixel_h,bool(self._view and self._view.error))
+        size=(pixel_w,pixel_h,bool(self._view and self._view.error),self._view.active_action)
         if size==self._last_size:return
         self._last_size=size
         s=self.scale;w=pixel_w/s;h=pixel_h/s
@@ -222,7 +242,7 @@ class HuginWindow:
         compact=h<640
         header=36 if compact else 52
         error_h=52 if self._view and self._view.error else 0
-        hero_h=max(64,min(170,h-360-error_h)) if compact else min(230,h*.29)
+        hero_h=max(48,min(170,h-372-error_h)) if compact else min(230,h*.29)
         title_y=header+hero_h-36
         self._center=(w/2,(title_y-32))
         self._logo_center=(w/2,header+(hero_h-72)/2)
@@ -232,7 +252,7 @@ class HuginWindow:
         section_gap=8 if compact else 12
         voice_y=tiles_y+tile_h+section_gap;voice_h=42 if compact else 47
         result_y=voice_y+voice_h+section_gap
-        footer_h=60 if compact else 72
+        footer_h=72
         result_h=max(134,h-result_y-footer_h-error_h)
         background=backdrop(pixel_w,pixel_h)
         self._image('background',background,0,0)
@@ -263,6 +283,8 @@ class HuginWindow:
                 active=background.crop((px,py,px+pw,py+ph))
                 active.alpha_composite(panel_surface(pw,ph,radius=round(16*s),highlighted=True))
                 self._tile_images[name]=(self._images[name],ImageTk.PhotoImage(active,master=self.root))
+                if self._view.active_action==name and not self._view.error:
+                    surfaces[name]=(active,px,py)
         self._render_action_tiles()
 
         def place_button(name,button,x,y,ww,hh,parent=None,selected=False):
@@ -318,8 +340,13 @@ class HuginWindow:
                     color='#edba92',width=inner)
         footer_y+=error_h
         self._label('escape','Esc · Abbrechen',pad,footer_y+3,size=8,color=MUTED)
-        self._place('motion',pad,footer_y+24,180,23)
-        place_button('diagnose',self.diagnose,w-pad-138,footer_y+14,138,32)
+        self._place('motion',pad,footer_y+34,180,23)
+        self._place('reading_toggle',w-pad-190,footer_y+34,190,23)
+        control_w=(tile_w-26)/2
+        place_button('read_pause',self.read_pause,pad+tile_w+gap+10,tiles_y+34,control_w,26,parent='reading')
+        place_button('read_stop',self.read_stop,pad+tile_w+gap+16+control_w,tiles_y+34,control_w,26,parent='reading')
+        self._reading_controls()
+        place_button('diagnose',self.diagnose,w-pad-138,footer_y-1,138,30)
         self._paint(time.monotonic(),animate=not self.reduced_motion.get())
         self._wake_animation()
 
@@ -501,13 +528,18 @@ class HuginWindow:
             self.text.configure(state='disabled')
         self.copy.configure(state='normal' if view.text else 'disabled')
         self.clear.configure(state='normal' if view.text else 'disabled')
+        self.read_pause.configure(text='Fortsetzen' if view.reading_paused else 'Pause',
+            state='normal' if view.reading_job and view.reading_index and not view.error else 'disabled')
+        self.read_stop.configure(state='normal' if view.reading_job and not view.error else 'disabled')
+        self._reading_controls()
+        self.reading_panel.render(view,self.reading_panel_enabled.get())
         if old is None or old.voice!=view.voice:
             for name,button in self.voice_buttons.items():
                 button._selected=view.voice==name
                 if button._shape:
                     width,height,_=button._shape
                     button.resize(width,height,selected=view.voice==name)
-        if old is None or bool(old.error)!=bool(view.error):
+        if old is None or bool(old.error)!=bool(view.error) or old.active_action!=view.active_action:
             self._last_size=None;self._queue_layout()
         self.scene.itemconfigure(self._labels['mode'],text=view.mode)
         self.scene.itemconfigure(self._labels['dictation_key'],text=view.dictation_shortcut)
@@ -542,6 +574,24 @@ class HuginWindow:
         self._visible=True
         self._wake_animation()
 
+    def _reading_action(self,kind):
+        if self._view and self._view.reading_job:self.on_action(kind,self._view.reading_job)
+
+    def _reading_controls(self):
+        active=bool(self._view and self._view.reading_job and not self._view.error)
+        for name in ('read_pause','read_stop'):
+            self.scene.itemconfigure(self._windows[name],state='normal' if active else 'hidden')
+        self.scene.itemconfigure(self._labels['reading_key'],state='hidden' if active else 'normal')
+        for item in (self._speaker,*self._glyphs[3:5]):
+            self.scene.itemconfigure(item,state='hidden' if active else 'normal')
+
+    def _reading_visibility(self):
+        if self._view:self.reading_panel.render(self._view,self.reading_panel_enabled.get())
+
+    def _hide_reading(self):
+        self.reading_panel_enabled.set(False)
+        self.reading_panel.clear()
+
     def hide(self):
         self._visible=False
         self._cancel_timer('_animation_after')
@@ -551,6 +601,10 @@ class HuginWindow:
         self._command('stop')
 
     def _forget_views(self):
+        panel=getattr(self,'reading_panel',None)
+        if panel is not None:
+            try:panel.clear()
+            except Exception:pass
         self._view=None
         updates=getattr(self,'_updates',None)
         if updates is not None:

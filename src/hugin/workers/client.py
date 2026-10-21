@@ -303,9 +303,11 @@ class WorkerClient:
                     if active['kind'] == 'transcribe' and event['code'] is None and not active['result_ended']:
                         raise invalid()
                     if active['kind'] == 'synthesize':
+                        # This is our local audio callback, not remote transport
+                        # readiness. Pause may hold it indefinitely; cancel and
+                        # failure wake it independently of playback credit.
                         self.condition.wait_for(lambda: self.failed or active['cancelled'] or
-                            active['accepted_audio'] == event['audio_bytes'],
-                            timeout=self.settings.limits['ready_seconds'])
+                            active['accepted_audio'] == event['audio_bytes'])
                         if self.failed or (not active['cancelled'] and active['accepted_audio'] != event['audio_bytes']):
                             raise invalid()
                 if active['receiver'] is not None:
