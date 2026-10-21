@@ -230,7 +230,13 @@ launcher with --root C:/Users/brian/Hugin --show, Hidden, at 16:36:02 local time
 UI readback shows ready, Lokal, Alt+Y, mouse mapping and panel buttons.
 Activation/preferences/controller-STT-TTS environment/desktop-setup manifest
 hashes match before/after deployment. No runtime/model/voice/setup changes.
-Physical click-away/return acceptance requested and still pending. Keep
-ownership active; packaging/login remain separate. Whispering/PipPal stay
-disabled. Rollback after normal Quit is previous main 7ac3cc6. Do not claim the
-intermittent physical bug fixed before live acceptance.
+On 21 October 2026 Brian confirmed correct insertion in the requested physical
+test: dictation starts, he clicks elsewhere, returns to the Codex text field,
+then stops. The question allowed Alt+Y or mouse Back; the answer does not identify
+which trigger was used or prove both repeated. This is acceptance of the bounded
+return-to-field flow on the deployed PR31 code. It does not establish the exact
+historical failure or every target/device combination. No further code change
+or restart accompanies this acceptance record. The late-field-capture task list
+is complete; keep broader task ownership active for packaging/login work.
+Whispering/PipPal stay disabled. Rollback after normal Quit is previous main
+7ac3cc6. PR32 records deployment and this physical acceptance.
