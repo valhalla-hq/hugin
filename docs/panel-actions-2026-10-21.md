@@ -22,9 +22,11 @@ ersten Abschnitts kommt **Pause/Fortsetzen** hinzu. Die Mitleseleiste lässt sic
 weiterhin separat ein- und ausblenden.
 
 Ein vorheriger Klick auf Hugins Titel oder Hintergrund aktiviert Hugin normal.
-In diesem Fall beim Diktat wieder ins Zielfeld klicken beziehungsweise den Text
-erneut markieren und dann direkt den Aktionsbutton wählen. Hugin zeigt dafür
-einen Hinweis; es aktiviert kein früheres Fenster aus einer gespeicherten Liste.
+Für automatisches Einfügen wieder ins Zielfeld klicken beziehungsweise den Text
+zum Vorlesen erneut markieren und dann direkt den Aktionsbutton wählen. Der
+Diktat-Button beendet die Aufnahme auch ohne gültiges Zielfeld: Der fertige Text
+bleibt dann in Hugin zum Kopieren erhalten. Nur beim Start des Vorlesens zeigt
+Hugin den Auswahlhinweis. Es aktiviert kein früheres Fenster aus einer Liste.
 
 ## Technische Prüfung und Grenzen
 
@@ -53,3 +55,20 @@ Windows nicht aktivieren. Der vollständige native Wiederholungslauf wurde über
 einen normalen Klick in einem eigenen Testfenster gestartet und bestand.
 Die echte Buttonprobe in Codex und Word nach dem Pilotwechsel bleibt gesonderte
 Nutzerabnahme; diese Prüfung ersetzt sie nicht.
+
+## Korrektur nach der ersten Buttonprobe
+
+Brian meldete eine nicht stoppbare Aufnahme. Der Diktat-Button hatte bei Hugin
+im Vordergrund keinen Befehl weitergegeben; ein nativer Regressionstest zeigte
+dies vor der Korrektur rot und danach grün. Die Zielprüfung darf nur die Übergabe
+blockieren, nicht das Ende der Aufnahme. Der Controller bewahrt den Text bei
+fehlendem Ziel unverändert im RAM auf; dies ist zusätzlich geprüft.
+
+Strg+Alt+D und Escape funktionierten im separaten synthetischen Hugin-Fenster
+über Windows-Tastatureingaben. Auch native WM_HOTKEY-Nachrichten durchlaufen
+die echte Eingabeschleife bis zum Controller erfolgreich. Kein Mikrofon,
+Sprachmodell oder privater Zwischenablageinhalt wurde dabei benutzt. Warum die
+physischen Tasten im gemeldeten Versuch nicht ankamen, bleibt ungeklärt.
+Die bestehende Aktivierungsbehandlung wurde nicht spekulativ verändert; Tk's
+[nativer Button-Handler](https://github.com/tcltk/tk/blob/core-8-6-branch/win/tkWinButton.c)
+und die vorhandenen nativen Fokusprüfungen wurden als Gegenprüfung herangezogen.
