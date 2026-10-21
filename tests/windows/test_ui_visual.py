@@ -129,5 +129,44 @@ class NativeVisualContract(unittest.TestCase):
                 self.assertLessEqual(icons[0].getpixel((0,0))[3],2)
         self.assertEqual(tray_image().tobytes(),hugin_icon(64).tobytes())
 
+    def test_mode_tiles_switch_without_layout_or_growing_images(self):
+        window=self.make_window();window.show();window.root.update()
+        def images():
+            return tuple(window.scene.itemcget(window._items[name],'image')
+                         for name in ('dictation','reading'))
+        window.render(View(activity='idle'))
+        idle=images();count=len(window.root.tk.call('image','names'))
+        for _ in range(3):
+            window.render(View(activity='recording',active_action='dictation'))
+            recording=images()
+            self.assertNotEqual(recording[0],idle[0])
+            self.assertEqual(recording[1],idle[1])
+            window.render(View(activity='playing',active_action='reading'))
+            reading=images()
+            self.assertEqual(reading[0],idle[0])
+            self.assertNotEqual(reading[1],idle[1])
+            window.render(View(activity='idle'))
+            self.assertEqual(images(),idle)
+        self.assertEqual(len(window.root.tk.call('image','names')),count)
+
+    def test_voice_button_corners_match_parent_even_during_hover_and_focus(self):
+        from PIL import ImageTk
+        for scale in (1,1.5,2):
+            window=self.make_window(scale);window.show();window.root.update()
+            parent=ImageTk.getimage(window._images['voices'])
+            card=window.scene.coords(window._items['voices'])
+            for name,button in window.voice_buttons.items():
+                at=window.scene.coords(window._windows[name])
+                offset=(round(at[0]-card[0]),round(at[1]-card[1]))
+                for focused in (False,True):
+                    button._focus_changed(focused)
+                    button._pointer(hover=True);button.step(immediate=True)
+                    frame=ImageTk.getimage(button._shown_image)
+                    for x,y in ((0,0),(frame.width-1,0),(0,frame.height-1),
+                                (frame.width-1,frame.height-1)):
+                        self.assertEqual(frame.getpixel((x,y)),parent.getpixel((offset[0]+x,offset[1]+y)))
+                self.assertEqual(int(button.cget('highlightthickness')),0)
+            self.close_window(window)
+
 
 if __name__=='__main__':unittest.main()

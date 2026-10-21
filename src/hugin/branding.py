@@ -73,18 +73,19 @@ def raven_mark(size, *, silver=True):
     return result.resize((size,size),Image.Resampling.LANCZOS)
 
 
-def panel_surface(width, height, *, accent=False, radius=18, strength=0.0):
+def panel_surface(width, height, *, accent=False, radius=18, strength=0.0, highlighted=False):
     from PIL import Image, ImageDraw, ImageOps
     width=max(1,min(int(width),2048));height=max(1,min(int(height),2048))
     ramp=Image.linear_gradient('L').resize((width,height))
     top=mix('#1c263a','#304786',strength) if not accent else mix('#253b79','#3f5ab3',strength)
     bottom='#101620' if not accent else '#142042'
+    if highlighted:top,bottom='#286894','#163750'
     result=ImageOps.colorize(ramp,top,bottom).convert('RGBA')
     mask=Image.new('L',(width,height))
     ImageDraw.Draw(mask).rounded_rectangle((0,0,width-1,height-1),radius=radius,fill=255)
     result.putalpha(mask)
     ImageDraw.Draw(result).rounded_rectangle((.5,.5,width-1.5,height-1.5),radius=radius,
-                          outline=mix(BORDER,BLUE,.25+strength*.55),width=1)
+                          outline='#9bd8ff' if highlighted else mix(BORDER,BLUE,.25+strength*.55),width=1)
     return result
 
 

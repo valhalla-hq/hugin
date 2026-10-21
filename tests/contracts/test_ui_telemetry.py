@@ -132,6 +132,22 @@ class PresentationFactsContracts(unittest.TestCase):
         self.assertEqual(self.controller.core.snapshot().state,c.State.DELIVERING)
         self.assertEqual(self.controller.view().activity,'processing')
 
+    def test_active_action_follows_workflow_and_clears_on_cancel_error_and_idle(self):
+        from dataclasses import replace
+        snapshot=self.controller.core.snapshot()
+        # Public coordinator snapshot -> Controller -> presentation boundary.
+        for states,expected in (((c.State.STARTING,c.State.RECORDING,c.State.TRANSCRIBING,
+                                   c.State.DELIVERING),'dictation'),
+                                ((c.State.TTS_PREPARING,c.State.TTS_PLAYING),'reading'),
+                                ((c.State.IDLE,c.State.CANCELLING,c.State.ERROR,c.State.STOPPING),'')):
+            for state in states:
+                with self.subTest(state=state),patch.object(self.controller.core,'snapshot',
+                        return_value=replace(snapshot,state=state)):
+                    self.assertEqual(self.controller.view().active_action,expected)
+                    self.controller._runtime_error=HuginError('audio_failed','fixture')
+                    self.assertEqual(self.controller.view().active_action,'')
+                    self.controller._runtime_error=None
+
     def test_accepted_delivery_owns_fixed_receipt_even_without_cues_and_duplicates_do_not_replay(self):
         self.controller.cues=None
         event=self.recognize()

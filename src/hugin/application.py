@@ -841,6 +841,11 @@ class Controller:
         activity = 'error' if error else {c.State.IDLE:'idle',c.State.RECORDING:'recording',
             c.State.TRANSCRIBING:'processing',c.State.DELIVERING:'processing',
             c.State.TTS_PLAYING:'playing'}.get(snap.state,'preparing')
+        active_action='' if error else {
+            c.State.STARTING:'dictation',c.State.RECORDING:'dictation',
+            c.State.TRANSCRIBING:'dictation',c.State.DELIVERING:'dictation',
+            c.State.TTS_PREPARING:'reading',c.State.TTS_PLAYING:'reading',
+        }.get(snap.state,'')
         status=labels[snap.state]
         if loading and loading.job == snap.job and snap.job:
             status=('Whisper' if loading.engine == c.Engine.STT else 'Qwen')+' wird geladen'
@@ -863,7 +868,7 @@ class Controller:
             detail='Erneut drücken, um das Diktat abzuschließen.' if snap.state == c.State.RECORDING else '',
             mode='Lokal · Pilot' if pilot else 'Lokal',components=components,
             error=MESSAGES.get(error,'') if error else '',activity=activity,audio_level=audio_level,
-            completion_id=completion_id,completion_until=completion_until)
+            completion_id=completion_id,completion_until=completion_until,active_action=active_action)
         if pilot:
             from dataclasses import replace
             view=replace(view,dictation_shortcut='Strg+Alt+D · erneut: fertig',

@@ -26,6 +26,7 @@ class View:
     components: str = 'Sprachkomponenten werden geprüft.'
     error: str = ''
     activity: str = 'preparing'
+    active_action: str = ''
     audio_level: float = 0.0
     completion_id: int = 0
     completion_until: float = 0.0
@@ -80,7 +81,7 @@ class HuginWindow:
         self.scene=tk.Canvas(self.root,background=BACKGROUND,highlightthickness=0,
                              borderwidth=0,takefocus=False)
         self.scene.pack(fill='both',expand=True)
-        self._images={};self._items={}
+        self._images={};self._items={};self._tile_images={}
         for name in ('background','dictation','reading','voices','result','header_logo','ambient','hero'):
             self._items[name]=self.scene.create_image(0,0,anchor='nw')
         self._labels={}
@@ -222,7 +223,8 @@ class HuginWindow:
         result_y=voice_y+voice_h+section_gap
         footer_h=60 if compact else 72
         result_h=max(134,h-result_y-footer_h-error_h)
-        self._image('background',backdrop(pixel_w,pixel_h),0,0)
+        background=backdrop(pixel_w,pixel_h)
+        self._image('background',background,0,0)
         self._image('header_logo',raven_mark(round(29*s)),pad*s,14*s)
         light_w,light_h=round(logo_size*1.8*s),round(logo_size*1.1*s)
         self._ambient_frames=[ImageTk.PhotoImage(ambient_light(light_w,light_h,index/9),
@@ -234,13 +236,30 @@ class HuginWindow:
         self._image('hero',raven_mark(round(logo_size*s)),
                     (w-logo_size)*s/2,(self._logo_center[1]-logo_size/2)*s)
         self.scene.itemconfigure(self._items['hero'],state='hidden' if hero_h<126 else 'normal')
-        for name,x,y,ww,hh,accent in (
-                ('dictation',pad,tiles_y,(inner-gap)/2,tile_h,True),
-                ('reading',pad+(inner+gap)/2,tiles_y,(inner-gap)/2,tile_h,False),
-                ('voices',pad,voice_y,inner,voice_h,False),
-                ('result',pad,result_y,inner,result_h,False)):
-            self._image(name,panel_surface(round(ww*s),round(hh*s),
-                        accent=accent,radius=round(16*s)),x*s,y*s)
+        surfaces={}
+        self._tile_images={}
+        for name,x,y,ww,hh in (
+                ('dictation',pad,tiles_y,(inner-gap)/2,tile_h),
+                ('reading',pad+(inner+gap)/2,tiles_y,(inner-gap)/2,tile_h),
+                ('voices',pad,voice_y,inner,voice_h),
+                ('result',pad,result_y,inner,result_h)):
+            px,py,pw,ph=round(x*s),round(y*s),round(ww*s),round(hh*s)
+            surface=background.crop((px,py,px+pw,py+ph))
+            surface.alpha_composite(panel_surface(pw,ph,radius=round(16*s)))
+            surfaces[name]=(surface,px,py)
+            self._image(name,surface,px,py)
+            if name in ('dictation','reading'):
+                active=background.crop((px,py,px+pw,py+ph))
+                active.alpha_composite(panel_surface(pw,ph,radius=round(16*s),highlighted=True))
+                self._tile_images[name]=(self._images[name],ImageTk.PhotoImage(active,master=self.root))
+        self._render_action_tiles()
+
+        def place_button(name,button,x,y,ww,hh,parent=None,selected=False):
+            self._place(name,x,y,ww,hh)
+            surface,bx,by=surfaces[parent] if parent else (background,0,0)
+            px,py,pw,ph=round(x*s)-bx,round(y*s)-by,round(ww*s),round(hh*s)
+            button.resize(pw,ph,selected=selected,
+                          backdrop=surface.crop((px,py,px+pw,py+ph)))
         self._label('brand','Hugin',pad+40,15,size=17,bold=True)
         self._label('mode',self._view.mode if self._view else 'Lokal',w-pad,23,
                     color=MUTED,anchor='e',size=9)
@@ -272,8 +291,8 @@ class HuginWindow:
         self._label('voice','Stimme',pad+17,voice_y+15,color=MUTED,size=10)
         voice_w=(inner-115)/2
         for index,(voice,button) in enumerate(self.voice_buttons.items()):
-            self._place(voice,pad+92+index*voice_w,voice_y+7,voice_w-7,33)
-            button.resize((voice_w-7)*s,33*s,selected=self._view.voice==voice)
+            place_button(voice,button,pad+92+index*voice_w,voice_y+7,voice_w-7,33,
+                         parent='voices',selected=self._view.voice==voice)
         self._label('result_title','Letztes Diktat',pad+17,result_y+13,size=11,bold=True)
         text_h=max(42,result_h-92)
         self._place('text',pad+16,result_y+39,inner-42,text_h)
@@ -282,15 +301,14 @@ class HuginWindow:
         self._label('empty','',pad+29,result_y+52,color=MUTED,size=10,width=inner-70)
         button_y=result_y+result_h-43
         for name,x,button in (('copy',w-pad-213,self.copy),('clear',w-pad-108,self.clear)):
-            self._place(name,x,button_y,92,31);button.resize(92*s,31*s)
+            place_button(name,button,x,button_y,92,31,parent='result')
         footer_y=result_y+result_h+10
         self._label('error',self._view.error,pad,footer_y,size=9,
                     color='#edba92',width=inner)
         footer_y+=error_h
         self._label('escape','Esc · Abbrechen',pad,footer_y+3,size=8,color=MUTED)
         self._place('motion',pad,footer_y+24,180,23)
-        self._place('diagnose',w-pad-138,footer_y+14,138,32)
-        self.diagnose.resize(138*s,32*s)
+        place_button('diagnose',self.diagnose,w-pad-138,footer_y+14,138,32)
         self._paint(time.monotonic(),animate=not self.reduced_motion.get())
         self._wake_animation()
 
@@ -396,6 +414,11 @@ class HuginWindow:
         self.scene.itemconfigure(self._labels['status'],text=status)
         self.scene.itemconfigure(self._labels['detail'],text=detail)
 
+    def _render_action_tiles(self):
+        for name,frames in self._tile_images.items():
+            selected=self._view.active_action==name and not self._view.error
+            self.scene.itemconfigure(self._items[name],image=frames[int(selected)])
+
     def _command(self,command):
         if command=='stop':self._stop_requested.set();return
         try:self._commands.put_nowait(command)
@@ -479,6 +502,7 @@ class HuginWindow:
         self.scene.itemconfigure(self._labels['dictation_key'],text=view.dictation_shortcut)
         self.scene.itemconfigure(self._labels['reading_key'],text=view.reading_shortcut)
         self.scene.itemconfigure(self._labels['error'],text=view.error)
+        self._render_action_tiles()
         self._render_state_text(time.monotonic())
         self.scene.itemconfigure(self._windows['empty_hint'],state='hidden' if view.text else 'normal')
         # The empty hint is never inserted into the RAM text widget.

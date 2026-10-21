@@ -46,6 +46,7 @@ def main():
             else:deadline=0
             previous=state
         current=replace(current,status=labels[state],activity='idle' if state=='complete' else state,
+            active_action='dictation' if state in ('recording','processing') else 'reading' if state=='playing' else '',
             audio_level=(.08+.25*math.sin(elapsed*3)**2) if state=='recording' else 0,
             completion_id=receipt,completion_until=deadline,
             error='Synthetische Vorschau: Das Zielfeld konnte nicht bestätigt werden.' if state=='error' else '',

@@ -84,7 +84,7 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Active Handoff
 
-- `handoffs/2026-10-19-ui-screenshot-pause.md`
+- `handoffs/2026-10-21-ui-refinement.md`
 
 ## Fortsetzung am 19.10.2026
 
@@ -286,3 +286,32 @@ Stop durch diesen Folgeauftrag. Arbeit auf ausdrücklichen Nutzerwunsch pausiert
 
 Pausencheckpoint als Draft-PR17 gesichert:
 https://github.com/valhalla-hq/hugin/pull/17.
+
+## Fortsetzung am 21.10.2026
+
+Brian hat den Task wieder aufgenommen; die exakt freigegebene Branch wurde nach
+Preflight/Remote-Nachweis regulär zurückübernommen. Ownership bleibt aktiv auf
+Mjolnir. Die folgenden Fakten ersetzen den Pausenstatus oben.
+
+Die aktive Diktieren-/Vorlesen-Kachel wird jetzt hellblau hervorgehoben, aus dem
+Controllerzustand einschließlich Vorbereitung/Verarbeitung abgeleitet. Idle,
+Abbruch und Fehler heben keine Kachel hervor. Runde native Buttons übernehmen
+den exakten Elternhintergrund und einen gerundeten Tastaturfokus; dunkle Ecken
+um Freya/Tyr entfallen. Logo, Animation und Originaltöne bleiben erhalten.
+453 Vertrags-/Integrationstests mit -S sowie 43 gezielte/native UI-Prüfungen
+grün; zwei unabhängige Reviews ohne materielle Befunde. Native Vorschauen für
+Diktat und Vorlesen visuell geprüft, Skalierungsfixtures 100/150/200% grün.
+
+Die manuelle Screenshotprobe um08:46:21 MESZ scheitert schon bei capture_field:
+target_changed, delivery=not_attempted, kein Cleanup offen. Technische Spur:
+_field_pattern Zeile168, fehlendes UIA-Feld oder keine bestätigte Tastaturfokus-
+Eigenschaft. Das ist kein nachgewiesener Clipboardformatfehler. Später nur
+unterstützte Textformate beobachtet; Kopieren der Diagnose hatte ursprüngliche
+Screenshotformate bereits ersetzt. Ursache der fehlenden Fokusbestätigung noch
+offen, keine Lockerung oder vorgetäuschte Behebung.
+
+Aktuell läuft der unveränderte alte Obsidian-Pilot d395f1e seit08:42:43 MESZ aus
+hugin-obsidian-ui-mjolnir. Neuer UI-Stand liegt ausschließlich im Taskworktree
+hugin-ui-screenshot-fix-mjolnir. Geprüften Pilotwechsel erst nach sauberem
+Checkpoint/CI und regulärem Ende der alten Sitzung samt zurückgekehrter Altapps.
+Aktueller Stand und genaue Fortsetzung: handoffs/2026-10-21-ui-refinement.md.
