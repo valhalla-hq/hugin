@@ -6,7 +6,9 @@ audio-based word timing and avoiding distracting section gaps. Base: main
 
 - REQ-001: Prepare a shorter first section for long selections. Keep natural
   boundaries where possible and avoid a tiny opening sentence followed by a
-  much larger section. Short selections remain a single section.
+  much larger section. Short selections remain a single section. Start/growth
+  budgets are soft: intact words and absorbing a small final remainder take
+  precedence, within the unchanged 240-character hard limit.
 - REQ-002: Preserve every spoken character, original word offsets and actual
   audio alignment before playback. No duration estimates or early unaligned audio.
 - REQ-003: Keep one prepared successor during playback, serial GPU ownership,
@@ -28,3 +30,5 @@ existing controller/native timing and cancellation tests protect REQ-003;
 same-worker baseline/candidate measurements on Freya/Tyr check NFR-001. Native
 silent playback measures scheduling gaps; final listening checks prosody and
 word agreement. Unverified perceptual results must remain explicit.
+Both ordinary synthetic fixtures must retain complete valid word alignment in
+both voices; a new section-only fallback is not an acceptable latency win.

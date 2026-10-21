@@ -24,6 +24,52 @@ from hugin.windows.instance import InstanceGuard
 from hugin.workers.client import EnginePool, WorkerClient
 from probe_live_audio import _Executor
 
+_HELD = []  # Failed sessions retain the guard and every owner for cleanup retry.
+
+
+class _ProbeSession:
+    def __init__(self, guard):
+        self.guard = guard
+        self.controller = None
+        self.executors = []
+        self.workers = []
+        self.io_closed = False
+
+    def cleanup(self):
+        if not self.io_closed:
+            try:
+                if self.controller is not None:
+                    self.controller.command('quit')
+                    deadline = time.monotonic() + 15
+                    while not self.controller.shutdown_ready() and time.monotonic() < deadline:
+                        self.controller.pump_once(.005); self.controller.tick()
+                    if not self.controller.shutdown_ready() or not self.controller.finish_io():
+                        return False
+                self.io_closed = True
+            except (Exception, KeyboardInterrupt):
+                return False  # Keep executors usable for the controller's retry.
+        complete = all(worker.closed for worker in self.workers)
+        for executor in self.executors:
+            try:
+                closed = executor.close_bounded(time.monotonic() + 3)
+            except (Exception, KeyboardInterrupt):
+                closed = False
+            complete = closed and complete
+        if complete:
+            try:
+                self.guard.close()
+            except (Exception, KeyboardInterrupt):
+                return False
+        return complete
+
+
+def retry_cleanup():
+    """Call on the owning thread; failed owners remain available for another try."""
+    for owner in list(_HELD):
+        if owner.cleanup():
+            _HELD.remove(owner)
+    return not _HELD
+
 PARAGRAPH = ('Guten Tag. Hugin markiert beim Vorlesen jedes gesprochene Wort. '
              'Wir machen eine kurze Pause, und lesen dann weiter. ') * 3
 LONG_SENTENCE = ('Bei dieser Sprachprobe lesen Freya und Tyr einen längeren Satz, '
@@ -66,11 +112,17 @@ class Microphone:
 
 
 def run(root):
+    if _HELD:
+        raise RuntimeError('probe_cleanup_pending')
     guard = InstanceGuard()
     if not guard.acquire():
+        guard.close()
         raise RuntimeError('Hugin must quit normally before the exclusive probe')
+    owner = _ProbeSession(guard)
+    _HELD.append(owner)
     controller = None
     instances, executors, runs = [], [], []
+    owner.workers = instances
     current, sections, alignment = {}, [], []
     marks = set()
     started, cpu = time.perf_counter(), time.process_time()
@@ -130,10 +182,12 @@ def run(root):
     try:
         pool = Pool(root, lambda event: controller.worker_event(event))
         executors = [_Executor(n) for n in (1, 1, 2, 1, 1)]
+        owner.executors = executors
         controller = ProbeController(load_settings(root), inputs=Inputs(), microphone=Microphone(),
             clipboard=Selection(), output=Output(), pool=pool, publish=publish,
             **dict(zip(('capture_executor', 'audio_executor', 'maintenance_executor',
                         'selection_executor', 'delivery_executor'), executors)))
+        owner.controller = controller
         candidate = c.Coordinator._split_selection
         cases = [('cold', 'freya', 'baseline', PARAGRAPH)]
         for voice in ('freya', 'tyr'):
@@ -167,21 +221,14 @@ def run(root):
                 worker_peak_commit_bytes={engine:value['peak_job_commit_bytes'] for engine,value in after.items()})
             runs.append(row)
             print(json.dumps(dict(stage='result', **row)), flush=True)
+        if any(worker.device != 'cuda' for worker in instances):
+            raise RuntimeError('probe_cpu_fallback')
     finally:
-        try:
-            if controller:
-                controller.command('quit')
-                deadline = time.monotonic() + 15
-                while not controller.shutdown_ready() and time.monotonic() < deadline:
-                    controller.pump_once(.005); controller.tick()
-                if not controller.shutdown_ready() or not controller.finish_io():
-                    raise RuntimeError('probe_cleanup_pending')
-            for executor in executors:
-                if not executor.close_bounded(time.monotonic() + 3):
-                    raise RuntimeError('probe_executor_cleanup_pending')
-        finally:
-            guard.close()
+        if not owner.cleanup():
+            raise RuntimeError('probe_cleanup_pending')
+        _HELD.remove(owner)
     return dict(runs=runs, workers_closed=all(w.closed for w in instances),
+        devices={worker.engine:worker.device for worker in instances},
         elapsed_seconds=round(time.perf_counter()-started, 3),
         controller_cpu_seconds=round(time.process_time()-cpu, 3),
         audible_speech=False, native_clock=True, content_persisted=False,

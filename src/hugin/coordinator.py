@@ -663,10 +663,13 @@ class Coordinator:
 
         A tiny opening sentence must not lead straight into a large successor:
         prefer natural boundaries in the last third of each budget and
-        grow by at most half the preceding section (with a 120-character floor).
+        grow by half the preceding section (with a 120-character floor).
+        Absorb a final <=40-character remainder instead of isolating its words.
+        Earlier word boundaries and whole tokens take precedence over this soft
+        budget; only a token exceeding the existing hard limit may be split.
         These bounds are a measured preparation policy, not estimated word times.
-        Whitespace-only spans need no engine call. Long tokens still split at the
-        budget; no spoken content is truncated and no section exceeds 240 chars.
+        Whitespace-only spans need no engine call. No spoken content is truncated
+        and no section exceeds 240 characters.
         """
         chunks: deque[str] = deque()
         offset = 0
@@ -674,14 +677,24 @@ class Coordinator:
         while offset < len(text):
             end = min(offset + budget, len(text))
             window = text[offset:end]
-            if end < len(text):
+            if len(text) - offset <= min(240, budget + 40):
+                end = len(text)
+            elif end < len(text):
                 sentence = [match for match in re.finditer(r'[.!?]["\'”’\)\]]*\s+|\n+', window)
                             if match.end() >= budget * 2 // 3]
-                whitespace = [match for match in re.finditer(r'\s+', window)
-                              if match.end() >= budget * 2 // 3] if not sentence else []
-                boundaries = sentence or whitespace
-                if boundaries:
-                    end = offset + boundaries[-1].end()
+                whitespace = list(re.finditer(r'\s+', window)) if not sentence else []
+                if sentence:
+                    # Once a suitably sized sentence ends, leave the next
+                    # sentence with its own continuation (for example a greeting).
+                    end = offset + sentence[0].end()
+                elif whitespace:
+                    end = offset + whitespace[-1].end()
+                else:
+                    # Preserve a single long word even if it exceeds the faster
+                    # start budget. The previous 240-character hard bound remains.
+                    hard_end = min(offset + 240, len(text))
+                    boundary = re.search(r'\s+', text[offset:hard_end])
+                    end = offset + boundary.end() if boundary else hard_end
             chunk = text[offset:end]
             if chunk.strip():
                 chunks.append(chunk)

@@ -29,6 +29,17 @@ InstanceGuard; real results not yet claimed. Stable C:/Users/brian/Hugin points
 to _repos/hugin and remains at reviewed main. Whispering/PipPal stay disabled.
 Never terminate via remembered PID. Prior word-highlight handoff retains history.
 
+Initial real run closed all workers. Warm starts improved 42–50%, gaps <=1.04ms,
+but Tyr's shifted 105-character remainder rejected alignment. A long sentence
+also left a lone final word. Candidate refinements keep the first suitable sentence
+boundary and absorb <=40-character final remnants. Independent reviews caught
+word fragmentation when early whitespace was discarded and probe guard release
+despite cleanup failure. Earlier whitespace/whole-token fallback now preserves
+words; probe retains session/guard and retryable owners on failure, keeping
+executors alive until controller cleanup, then closing all independently.
+Ten focused boundary and cleanup checks pass after red/green reproductions.
+Final real rerun and review remain pending; initial metrics are not acceptance.
+
 Next: inspect real measurements and tune only if evidence requires it; independent
 spec/standards reviews, hosted checks, exact-head merge and guarded stable update.
 Return path: base main after normal Quit. Listening acceptance remains necessary
