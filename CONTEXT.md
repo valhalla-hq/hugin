@@ -1,6 +1,6 @@
 # Hugin Context
 
-Status: physical panel-button focus correction reviewed; integration pending
+Status: panel buttons and focus correction integrated and accepted by Brian
 Owner: Brian
 Repository: private `valhalla-hq/hugin`; runtime Mjolnir.
 Data boundary: curated source, configuration, locks and approved synthetic voice
@@ -73,8 +73,10 @@ own_family_exited true, exit_code 0 and historical return_dispatched. Brian then
 closed both old apps normally. All temporary synthetic test windows are closed.
 Future sessions use the checked no-return starter; old automatic-return helpers
 must not be replayed. Fresh receipts determine current state, never stale PIDs.
-The last user-accepted UI source remains 6dd1bde105f0bac292f91e996f5933604adb7bb2
-(PR23), retained in hugin-reading-layout-mjolnir; its pilot also exited cleanly.
+The accepted running source is now 379df037d1567f9ea3882f1f0e07902dd4d416e5
+(PR26), frozen in hugin-button-target-mjolnir. Its current session receipt is
+.runtime/pilot-session-e02be514-5fb9-412b-82ee-57f7f0bdb4bf.json. Read it freshly
+before any later restart; the acceptance update leaves the session running.
 
 C:/Users/brian/Hugin is a junction to the deployment clone _repos/hugin. Its
 runtime/worker inputs must stay byte-identical when advancing the checked source.
@@ -85,14 +87,14 @@ launcher before any later restart; never blindly replay an old starter.
 ## Active work
 
 PR19/20, reading panel PR21, visibility PR22, layout PR23, panel actions PR24
-and stop/no-return PR25 are merged. Current base main/deployment is
-392977f2fc824dff30522f645156bc855bc0bf26.
+and stop/no-return PR25 plus focus correction PR26 are merged. The accepted
+implementation is merge e15205f303bc1e47ae37c1e46253b5e56519c5bb.
 PR11 is merged through ancestry;
 incorporated PR12-18 are closed. Closeout and inactive PR11-17 source ownerships
 were released through the workspace tool; their recovery files remain.
 
-Exclusive branch: codex/hugin-button-target-mjolnir.
-Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-button-target-mjolnir.
+Acceptance-record branch: codex/hugin-button-acceptance-mjolnir.
+Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-button-acceptance-mjolnir.
 PR: https://github.com/valhalla-hq/hugin/pull/26.
 Spec/plan/tasks: specs/2026-10-21-button-target/.
 Brian confirms recording now stops, but native target capture fails before any
@@ -106,8 +108,12 @@ only added style bits and retains ownership on failure. 483 contracts/integratio
 (26.496 s) and 32 native UI/focus/geometry/motion tests (12.818 s) pass. Native
 tests require their own foreground-eligible test window; background activation
 denial is not a product success. Independent spec and standards reviews found
-no material issues (23 and 61 focused pure checks); exact-head CI pending. Full live
-dictation/reading acceptance is still pending; the probe used no audio or payloads.
+no material issues (23 and 61 focused pure checks). Exact-head hosted runs
+39599004831, 39598999791 and 39599004686 passed; PR26 merged on 21 October 2026.
+Brian then repeatedly tested the running pilot and confirmed dictation/insertion,
+reading, stopping, and starting dictation while reading: speech is interrupted
+and recording starts as intended. This closes the requested panel-button flow.
+It does not establish a new Word, full device/target or physical shortcut matrix.
 PR25 source 0e283ac3ded9e34e34514ce8af884500fc5e47e7 in hugin-panel-stop-mjolnir
 has exited cleanly. Its .runtime/pilot-session-e9462fe7-0c69-4eb2-ba0f-d6b1cb1cf343.json
 now proves session_exited, exit_code 0, own_family_exited true and no started
@@ -115,7 +121,8 @@ shortcuts. No additional Quit request is needed before the next checked start.
 Physical mixed-DPI/monitor loss and full Freya/Tyr
 long-pause acceptance remain unverified beyond the user's general UI acceptance.
 Preflight/control: e3deecae6673a024aa9015a4387737fbec04c795.
-Current task ownership remains active until clean remote checkpoint/release proof.
+The live implementation worktree remains owned and frozen while running.
+Release the separate documentation worktree after its checked remote checkpoint.
 
 ## Active Handoff
 
