@@ -46,6 +46,14 @@ class WordTimingTests(unittest.TestCase):
             dict(word='rd', tokens=[2], start=.1, end=.2)], [1,2], 24000)
         self.assertEqual(result.status, 'rejected_path')
 
+    def test_leading_trailing_whitespace_and_newlines_keep_original_character_basis(self):
+        text = ' \n Grüße.\n '
+        records = [dict(word=' \n Grüße',tokens=[1],start=0,end=.5),
+            dict(word='.',tokens=[2],start=.5,end=.6),
+            dict(word='\n ',tokens=[3],start=.6,end=.6)]
+        self.assertEqual(bind_word_timing(text,records,[1,2,3],24000).words,
+            (WordTiming(3,9,0,12000),))
+
     def test_parser_requires_full_original_lexeme_coverage_and_bounded_exact_fields(self):
         valid = dict(status='aligned', words=[dict(start=0, end=4,
             start_sample=0, end_sample=4800)])

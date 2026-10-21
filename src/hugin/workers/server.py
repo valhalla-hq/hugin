@@ -12,6 +12,7 @@ import time
 
 from hugin.config import load_settings
 from hugin.errors import HuginError
+from hugin.word_timing import MAX_SECTION_PCM_BYTES, MAX_TEXT, alignment_payload
 from hugin.protocol import (Identity, Frame, read_control, write_control,
     read_frame, write_frame, invalid, validate_digest)
 
@@ -48,6 +49,7 @@ class WorkerServer:
         kind = command.get('type')
         base = {'schema_version','type','engine','engine_instance','request_id','generation'}
         extra = {'initialize': {'device'}, 'transcribe': {'length','sha256'},
+                 'align': {'length','sha256','text','language'},
                  'synthesize': {'text','voice','language'}, 'cancel': set(),
                  'credit': set(), 'shutdown': set(), 'offload': set()}
         if not isinstance(kind,str) or kind not in extra or set(command) != base | extra[kind]:
@@ -118,7 +120,9 @@ class WorkerServer:
 
     def _pcm(self, command, identity):
         length = command['length']
-        if type(length) is not int or not 0 < length <= self.settings.limits['capture_bytes'] or length % 2:
+        limit = self.settings.limits['capture_bytes']
+        if command['type'] == 'align': limit = min(limit, MAX_SECTION_PCM_BYTES)
+        if type(length) is not int or not 0 < length <= limit or length % 2:
             raise invalid()
         digest = validate_digest(command['sha256'])
         draft = bytearray()
@@ -281,6 +285,18 @@ class WorkerServer:
                             write_frame(self.data_out, Frame('text', identity, offset,
                                 raw[offset:offset+self.settings.limits['frame_bytes']]))
                     self.send('result_end', identity, length=len(raw), sha256=digest)
+            elif kind == 'align' and self.engine == 'stt':
+                text, language = command['text'], command['language']
+                if (not isinstance(text, str) or not text.strip() or len(text) > MAX_TEXT
+                        or language not in ('German','English')):
+                    raise invalid()
+                pcm = self._pcm(command, identity)
+                try:
+                    result = backend.align(pcm, text, language, self.is_cancelled)
+                finally:
+                    pcm.clear()
+                if not self.is_cancelled():
+                    self.send('alignment', identity, **alignment_payload(result))
             elif kind == 'synthesize' and self.engine == 'tts':
                 text, voice, language = command['text'], command['voice'], command['language']
                 if (not isinstance(text, str) or not text.strip() or len(text) > 600
