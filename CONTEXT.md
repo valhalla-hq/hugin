@@ -4,8 +4,9 @@ Status: Brian accepts the stable-layout style A and audio-based word timing.
 He now requests faster first speech with equally accurate marking and no
 distracting section gaps. The refined section policy passes 557 checks and real
 Freya/Tyr comparison: warm start 42.5–47.6% earlier, all fixture words aligned,
-native scheduling gaps <=0.74ms. PR37 is prepared for checked integration;
-deployment and listening feedback follow. Main deployment remains unchanged.
+native scheduling gaps <=0.74ms. PR37 is integrated and Hugin restarted with the
+new source at 19:09:21 local. Its own window showed readiness. Listening feedback
+on the new phrasing is pending; the speed improvement is a measured fixture result.
 Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
 
 ## Current intent and authorization
@@ -19,7 +20,7 @@ Routine checked private integration and normal deployment remain authorized.
 
 - Branch: codex/hugin-reading-start-mjolnir.
 - Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-reading-start-mjolnir.
-- Feature main/deployment: 8eee62192a399a0a1cf98f4d3b5193f3b0b5768a (PR35).
+- Feature main/deployment: 3c988de490796d6f5a31d29afe4960412a15fd0e (PR37).
 - Exact handoff: handoffs/2026-10-21-reading-start.md.
 - Spec/plan/tasks: specs/2026-10-21-reading-start/.
 - Evidence/limits: docs/word-highlighting-2026-10-21.md.
