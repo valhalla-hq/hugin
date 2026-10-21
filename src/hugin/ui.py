@@ -204,6 +204,7 @@ class HuginWindow:
         self.reading_panel=ReadingPanel(self.root,self.scale,self.on_action,self._hide_reading,
                                         self._reading_unavailable)
         self.render(View())
+        if self._action_focus is not None:self._action_focus.protect_window(self.root)
         self._pump_after=self.root.after(25,self._pump)
 
     def _native_caption(self):
