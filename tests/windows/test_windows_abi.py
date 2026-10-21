@@ -12,6 +12,9 @@ from hugin.windows.process import (NativeProcess, _StartupInfo, _StartupInfoEx,
                                    _ProcessInformation, _ExtendedLimits)
 from hugin.windows.input import NativeInputs
 from hugin.windows.instance import NativeMutex
+from hugin.windows.clipboard_formats import RASTER_FORMATS
+
+RASTER_NAMES={name:50000+index for index,name in enumerate(RASTER_FORMATS)}
 
 
 class Function:
@@ -136,6 +139,7 @@ class WindowsAbiContracts(unittest.TestCase):
 
     def test_unknown_format_fails_before_any_data_materialization(self):
         backend = object.__new__(NativeClipboard)
+        backend.registered=RASTER_NAMES
         @contextmanager
         def opened():
             yield
@@ -156,6 +160,7 @@ class WindowsAbiContracts(unittest.TestCase):
             'Chromium internal source RFH token':49154,
             'Chromium internal source URL':49155,
             'Hugin.Private.ClipboardTransaction.v1':49156}
+        names.update(RASTER_NAMES)
         library=Library()
         library.functions['RegisterClipboardFormatW']=lambda name:names[name]
         with patch.object(ctypes,'WinDLL',return_value=library):
@@ -198,6 +203,7 @@ class WindowsAbiContracts(unittest.TestCase):
 
     def test_native_snapshot_accounts_all_sizes_before_copying(self):
         backend = object.__new__(NativeClipboard)
+        backend.registered=RASTER_NAMES
         @contextmanager
         def opened():
             yield
@@ -220,6 +226,7 @@ class WindowsAbiContracts(unittest.TestCase):
 
     def test_null_delayed_data_fails_before_mutation(self):
         backend = object.__new__(NativeClipboard)
+        backend.registered=RASTER_NAMES
         @contextmanager
         def opened():
             yield
@@ -234,6 +241,81 @@ class WindowsAbiContracts(unittest.TestCase):
         with self.assertRaises(ClipboardFailure) as failure:
             backend.snapshot(1024)
         self.assertEqual(failure.exception.status, 'format_delayed')
+
+    def screenshot_fixture(self):
+        backend=object.__new__(NativeClipboard)
+        backend.registered=RASTER_NAMES;backend.allowed={8,17,*RASTER_NAMES.values()}
+        backend.tx_format=51000;backend._unfreed=set();backend.hwnd=100
+        png,cloud,history=(RASTER_NAMES[name] for name in
+            ('PNG','CanUploadToCloudClipboard','CanIncludeInClipboardHistory'))
+        original={RASTER_NAMES['DataObject']:None,2:None,png:b'\x89PNG\r\n\x1a\nfixture',
+                  cloud:b'\0'*4,history:b'\1\0\0\0',RASTER_NAMES['Ole Private Data']:None,
+                  8:b'DIB fixture',17:b'DIBV5 fixture'}
+        allocations={};reads=[]
+        class ClipboardOS:
+            current=7;data=dict(original);opened=False
+            def EnumClipboardFormats(self,previous):
+                keys=list(self.data);index=keys.index(previous)+1 if previous else 0
+                return keys[index] if index<len(keys) else 0
+            def GetClipboardSequenceNumber(self):return self.current
+            def GetClipboardOwner(self):return 100
+            def GetClipboardData(self,identity):
+                if self.data[identity] is None:raise AssertionError('metadata/GDI materialized')
+                reads.append(identity);return identity
+            def EmptyClipboard(self):self.data={};self.current+=1;return 1
+            def SetClipboardData(self,identity,handle):
+                self.data[identity]=allocations[handle];self.current+=1;return handle
+        class MemoryOS:
+            def GlobalSize(self,handle):return len(backend.user.data[handle])
+        @contextmanager
+        def opened(**_):
+            self.assertFalse(backend.user.opened);backend.user.opened=True
+            try:yield
+            finally:backend.user.opened=False
+        backend.user=ClipboardOS();backend.kernel=MemoryOS();backend._opened=opened
+        backend._read_handle=lambda handle,size:backend.user.data[handle][:size]
+        def allocate(data):
+            handle=len(allocations)+60000;allocations[handle]=data;return handle
+        backend._allocate=allocate
+        def proof():
+            self.assertFalse(backend.user.opened)
+            return (7,tuple(original))
+        backend._format_probe=NS(read=proof)
+        return backend,original,reads
+
+    def test_screenshot_snapshot_stage_and_restore_preserve_image_and_policy_bytes(self):
+        backend,original,reads=self.screenshot_fixture()
+        snapshot=backend.snapshot(1024)
+        expected={key:value for key,value in original.items() if value is not None}
+        self.assertEqual(dict(snapshot.formats),expected)
+        self.assertEqual(reads,list(expected))
+        staged=backend.stage(((13,b'T\0\0\0'),),snapshot.sequence)
+        exclusion=RASTER_NAMES['ExcludeClipboardContentFromMonitorProcessing']
+        self.assertEqual(backend.user.data[exclusion],b'\0'*4)
+        self.assertIn(backend.tx_format,backend.user.data)
+        backend.replace(snapshot.formats,staged)
+        self.assertEqual(backend.user.data,expected)
+
+    def test_changed_sequence_or_format_set_after_ole_proof_never_reads_payload(self):
+        for mutation in ('proof_sequence','proof_formats','sequence','formats'):
+            backend,original,reads=self.screenshot_fixture()
+            def proof():
+                if mutation=='proof_sequence':return (8,tuple(original))
+                if mutation=='proof_formats':return (7,tuple(original)[:-1])
+                if mutation=='sequence':backend.user.current+=1
+                if mutation=='formats':backend.user.data[52000]=b'foreign'
+                return (7,tuple(original))
+            backend._format_probe=NS(read=proof)
+            with self.subTest(mutation=mutation),self.assertRaises(ClipboardFailure) as failure:
+                backend.snapshot(1024)
+            self.assertEqual(failure.exception.status,'clipboard_changed')
+            self.assertEqual(reads,[])
+
+    def test_ole_metadata_with_other_formats_rejects_before_probe_or_materialization(self):
+        backend,_,reads=self.screenshot_fixture();backend.user.data[52000]=b'unknown'
+        backend._format_probe=NS(read=lambda:self.fail('unknown bundle must not invoke OLE'))
+        with self.assertRaises(ClipboardFailure) as failure:backend.snapshot(1024)
+        self.assertEqual(failure.exception.status,'format_unsupported');self.assertEqual(reads,[])
 
     def test_all_replacement_allocations_precede_empty_clipboard(self):
         backend = object.__new__(NativeClipboard)
@@ -289,7 +371,7 @@ class WindowsAbiContracts(unittest.TestCase):
             events.append('authorize')
             return True
         backend.commit_paste(10,target,lambda:events.append('current') or True,authorize,sentinel)
-        self.assertEqual(events,['lock','sequence','sequence','native','modifiers','current','authorize','send','unlock'])
+        self.assertEqual(events,['lock','sequence','native','sequence','modifiers','current','authorize','send','unlock'])
 
     def test_failed_close_after_send_keeps_possible_submission_fact(self):
         backend = object.__new__(NativeClipboard)

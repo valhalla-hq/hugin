@@ -84,7 +84,7 @@ Brian hat am 14.10.2026 Spec und Plan unter C:/Users/brian/Hugin/specs/2026-10-1
 
 ## Active Handoff
 
-- `handoffs/2026-10-21-ui-refinement.md`
+- `handoffs/2026-10-21-screenshot-formats.md`
 
 ## Fortsetzung am 19.10.2026
 
@@ -318,3 +318,29 @@ hugin-obsidian-ui-mjolnir. Neuer UI-Stand liegt ausschließlich im Taskworktree
 hugin-ui-screenshot-fix-mjolnir. Geprüften Pilotwechsel erst nach sauberem
 Checkpoint/CI und regulärem Ende der alten Sitzung samt zurückgekehrter Altapps.
 Aktueller Stand und genaue Fortsetzung: handoffs/2026-10-21-ui-refinement.md.
+
+## Nachgewiesener Screenshotformat-Fall am 21.10.2026
+
+Die folgenden Fakten ersetzen den Laufstatus oben. Der UI-Pilot c378743 wurde
+nach bestaetigtem regulaerem Ende der vorherigen Apps um09:16:07 MESZ gestartet
+und bleibt im Worktree hugin-ui-screenshot-fix-mjolnir unveraendert. Die neue
+manuelle Codexprobe um09:17:25 meldet erfolgreiche Feldaufnahme, anschliessend
+format_unsupported/clipboard_failed. Das ist von der frueheren Fokusablehnung
+zu unterscheiden. Frische technische Enumeration einer Screenshotkopie belegt
+PNG, DIB/DIBV5, abgeleitetes Bitmap, zwei History-/Cloudrichtlinien und OLE-
+Verwaltungsformate; public OLE liefert PNG als IStream und Bitmap als GDI.
+
+Neuer exklusiver Taskworktree hugin-screenshot-formats-mjolnir, Branch
+codex/hugin-screenshot-formats-mjolnir, Basis PR17/c378743. Ownership Mjolnir
+aktiv. Die Implementierung bewahrt Bild-/Richtlinienbytes und laesst OLE-
+Verwaltungsformate nur nach vollstaendiger, sequenzgebundener Pruefung des
+geschlossenen Bildformatsatzes weg. Unbekannte Formate bleiben abgelehnt.
+Metadatenhelper begrenzt und besitzgefuehrt, temporaerer Diktattext vom Verlauf/
+Cloud ausgeschlossen. Oberflaeche, Animation, Originaltoene und Feldschutz
+unveraendert. 462 reine Tests und60 gezielte Checks gruen, getrennte Reviews
+ohne Produktbefund. Native Endpruefung und menschliche Abnahme noch offen;
+keine Behebung behaupten und laufenden Source nicht aendern.
+
+Details: docs/screenshot-formats-2026-10-21.md. Exakter aktiver Handoff:
+handoffs/2026-10-21-screenshot-formats.md. Main bleibt defe3d8; keine Integration
+des alten Draftstapels und keine Bindungs-/Autostartmigration.
