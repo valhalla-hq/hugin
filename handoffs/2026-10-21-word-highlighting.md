@@ -81,22 +81,29 @@ root is C:/Users/brian/Hugin junction to C:/Users/brian/brian-projects/_repos/hu
 No setting/runtime/startup change. Parent/helper ownership remains active for
 this savepoint; no cleanup or release has been claimed.
 
-Next: finish Brian's visual follow-up, which replaces the filled highlight with
+Brian's completed visual follow-up replaces the filled highlight with
 bold white current-word text like PipPal. The source read is local PipPal
 webui/css/theme.css (current-word rule) and webui/js/overlay.js (current class).
-Candidate touches only reading_ui.py's tag/font styling; accepted audio/word
+PR34 touches only reading_ui.py's tag/font styling; accepted audio/word
 selection remains unchanged. Five existing hidden native word-panel checks pass
 after the styling edit (1.138s). An owned synthetic panel was visually checked:
 the active word is white and bold, without a filled highlight. Native font
 readback at normal and small scales confirms matching normal/bold font sizes.
 The preview uses a standard discoverable wrapper only for inspection; the
-production panel wrapper and focus behavior are unchanged. Finish independent
-review, checked PR34 integration and normal restart. Source rollback for this styling is
+production panel wrapper and focus behavior are unchanged. Independent review
+of exact head f005b260faec25b2f5aa92f488be764588bf915e found no issues; all three
+hosted checks passed. PR34 merged at 2026-10-21T15:40:44Z as
+f4bcc43704f5907bc848c41d9add2b281cd1f78f. After Brian's normal Quit, the clean
+stable clone updated under InstanceGuard; source tree is
+b7c958fe453029ba1de63d5c96d89a4187877a2f. Hugin restarted at 17:41:27 local.
+Its own window was observed preparing reading with Tyr. No input was sent.
+Final visual preference feedback is not yet recorded. Source rollback for this styling is
 PR33 fd81c169; whole-feature rollback is 11216cc after normal Quit.
 Packaging and next-login proof remain separate.
 
-Starter: Continue Hugin word highlighting from this exact handoff. PR33 is
-merged, deployed and hearing-accepted. Complete the requested bold-word styling
-from this active parent worktree and preserve the accepted
+Starter: Continue Hugin from this exact handoff. PR33 is merged, deployed and
+hearing-accepted; PR34 bold-word styling is reviewed, merged and running.
+Receive any new feedback before further changes. Use this active parent
+worktree and preserve the accepted
 input/clipboard/startup behavior. Do not repeat completed GPU/native probes
 without new evidence or claim perceptual acceptance from those probes.

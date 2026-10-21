@@ -7,7 +7,7 @@
 - [x] Validate cancel/pause/hide/new-job/resource and compatibility boundaries.
 - [x] Independent review, full checks, private integration and normal restart.
 - [x] Real Freya/Tyr word-highlighting acceptance.
-- [ ] Apply and verify Brian's requested PipPal-inspired bold-word presentation.
+- [x] Apply and verify Brian's requested PipPal-inspired bold-word presentation.
 
 Final integrated checks: 546 passed in 23.637s; 5 native UI checks and 1 silent audio check passed.
 Real GPU/Controller measurements and known Freya fallback are recorded in
@@ -17,3 +17,5 @@ red/green regression guard and producer-epoch fix. Both final delta reviews of
 under InstanceGuard and Hugin started at 17:32:15 local on 2026-10-21.
 Brian subsequently confirmed matching word timing with both voices. The final
 presentation request changes only the active word styling; alignment is retained.
+PR34 is reviewed, merged as f4bcc437 and deployed. Five native UI checks and
+owned visual/font-scale verification passed; normal restart was at 17:41:27 local.
