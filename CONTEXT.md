@@ -2,8 +2,10 @@
 
 Status: Brian accepts the stable-layout style A and audio-based word timing.
 He now requests faster first speech with equally accurate marking and no
-distracting section gaps. The new section-policy candidate passes 549 checks;
-real Freya/Tyr comparison is in progress. Main deployment remains unchanged.
+distracting section gaps. The refined section policy passes 557 checks and real
+Freya/Tyr comparison: warm start 42.5–47.6% earlier, all fixture words aligned,
+native scheduling gaps <=0.74ms. PR37 is prepared for checked integration;
+deployment and listening feedback follow. Main deployment remains unchanged.
 Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
 
 ## Current intent and authorization
@@ -21,6 +23,7 @@ Routine checked private integration and normal deployment remain authorized.
 - Exact handoff: handoffs/2026-10-21-reading-start.md.
 - Spec/plan/tasks: specs/2026-10-21-reading-start/.
 - Evidence/limits: docs/word-highlighting-2026-10-21.md.
+- New measurements: docs/reading-start-2026-10-21.md.
 - Control: 05181f9a99374ff8b298c626f903304f36ac8926.
 - Ownership remains active. Previous completed feature history remains in
   handoffs/2026-10-21-word-highlighting.md.

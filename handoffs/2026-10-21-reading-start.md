@@ -38,7 +38,18 @@ despite cleanup failure. Earlier whitespace/whole-token fallback now preserves
 words; probe retains session/guard and retryable owners on failure, keeping
 executors alive until controller cleanup, then closing all independently.
 Ten focused boundary and cleanup checks pass after red/green reproductions.
-Final real rerun and review remain pending; initial metrics are not acceptance.
+Final rerun passed: warm starts 42.5–47.6% earlier, all 54/43 fixture words aligned
+and marked with both voices, native scheduling gaps <=0.74ms. Runtime CUDA verified;
+workers closed and guard released. Report is ignored .runtime/reading-start-measure.json;
+curated metrics, source refs, CPU/memory and limits are in
+docs/reading-start-2026-10-21.md. No personal or audible input/output.
+
+Review also caught a retry readiness issue in the probe. A real Controller with
+fake first-failing I/O reproduced it; Quit is now processed before readiness,
+and publication remains usable during cleanup. Four cleanup guards pass; full
+557-check suite passed 23.701s plus docs check. Independent spec and standards
+delta reviews cleared 1cdad90afc3ca6b804f5e573e9340f421b259501. PR37:
+https://github.com/valhalla-hq/hugin/pull/37. Final docs/hosted gate and merge remain.
 
 Next: inspect real measurements and tune only if evidence requires it; independent
 spec/standards reviews, hosted checks, exact-head merge and guarded stable update.

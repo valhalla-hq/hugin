@@ -22,6 +22,9 @@ behaelt ihre Position waehrend der App-Sitzung. Details und verbleibende Hoerpro
 [Mitleseleiste](docs/reading-panel-2026-10-21.md). Die integrierte Wortmarkierung ordnet
 die Wörter dem erzeugten Audio zu und hebt sie anhand der tatsächlichen
 Wiedergabe hervor. Vorbereitung und Prüfgrenzen: [Wortmarkierung](docs/word-highlighting-2026-10-21.md).
+Die kürzere erste Vorbereitung und schrittweise Folgeabschnitte reduzieren die
+gemessene Wartezeit bei geladenen Modellen um 42–48 Prozent. Methode und Grenzen:
+[Schnellerer Vorlesestart](docs/reading-start-2026-10-21.md).
 
 - Hintere Daumentaste / Zurück (XBUTTON1) oder Alt+Y: Diktat starten/stoppen und Text einfügen.
 - Vordere Daumentaste / Vorwärts (XBUTTON2) oder Strg+Alt+V: markierten Text vorlesen/stoppen.
