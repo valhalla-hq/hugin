@@ -1,8 +1,8 @@
 # Hugin Context
 
-Status: audio-based word highlighting is integrated through PR33; Brian accepted
-timing with both voices. His bold-word presentation refinement is integrated
-through PR34 and running after a normal restart.
+Status: audio-based word highlighting and the bold-word refinement are deployed
+through PR34. Brian accepts function/timing but reports text shifting when a
+word becomes bold. Stable-layout style comparison is prepared; selection pending.
 Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
 
 ## Current intent and authorization
@@ -37,7 +37,9 @@ word should be bold rather than shown on a filled highlight. PR34 changes only
 the word tag to white bold text, with matching font size at each panel scale.
 It passed independent review and exact-head hosted checks, deployed under
 InstanceGuard and started at 17:41:27 local. The own window was observed preparing
-reading with Tyr. Final visual preference feedback remains welcome, not claimed.
+reading with Tyr. Brian then confirmed function but rejected the shifting text
+layout caused by changing word weight. The running app is unchanged while a
+separate synthetic native preview compares three stable-layout alternatives.
 No stored PID is termination authority. Whispering and PipPal remain disabled and must not auto-return.
 
 Accepted: screenshot plus dictation in Codex, clipboard fallback for Ctrl+V,

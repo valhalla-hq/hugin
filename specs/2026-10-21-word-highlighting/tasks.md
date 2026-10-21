@@ -8,6 +8,7 @@
 - [x] Independent review, full checks, private integration and normal restart.
 - [x] Real Freya/Tyr word-highlighting acceptance.
 - [x] Apply and verify Brian's requested PipPal-inspired bold-word presentation.
+- [ ] Resolve bold-induced text movement; select and integrate a stable reading style.
 
 Final integrated checks: 546 passed in 23.637s; 5 native UI checks and 1 silent audio check passed.
 Real GPU/Controller measurements and known Freya fallback are recorded in
@@ -19,3 +20,6 @@ Brian subsequently confirmed matching word timing with both voices. The final
 presentation request changes only the active word styling; alignment is retained.
 PR34 is reviewed, merged as f4bcc437 and deployed. Five native UI checks and
 owned visual/font-scale verification passed; normal restart was at 17:41:27 local.
+Brian subsequently reported that bold changes shift following text. A synthetic
+native comparison reproduces that movement and verifies three alternatives with
+unchanged glyph positions. Choice and final implementation remain pending.

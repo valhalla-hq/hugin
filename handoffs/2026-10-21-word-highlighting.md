@@ -97,13 +97,39 @@ f4bcc43704f5907bc848c41d9add2b281cd1f78f. After Brian's normal Quit, the clean
 stable clone updated under InstanceGuard; source tree is
 b7c958fe453029ba1de63d5c96d89a4187877a2f. Hugin restarted at 17:41:27 local.
 Its own window was observed preparing reading with Tyr. No input was sent.
-Final visual preference feedback is not yet recorded. Source rollback for this styling is
+Brian subsequently confirmed function but found the moving text uncomfortable.
+Source rollback for this styling is
 PR33 fd81c169; whole-feature rollback is 11216cc after normal Quit.
 Packaging and next-login proof remain separate.
 
+## Current visual follow-up
+
+Brian requests experimenting with a calmer current-word style. The producing
+cause is the active tag switching normal Segoe UI to bold: the synthetic word
+aktuelle measures 54px normally and 62px bold at the panel size. A mapped native
+Tk reproduction found 84 character boxes moving when the old bold tag changed.
+The earlier font-size equality check did not cover glyph advance/line wrapping.
+
+Ignored .runtime/preview_word_styles.py opens the owned window Hugin · Ruhiger
+Lesefluss with synthetic text only, no audio/workers/input/clipboard. It compares
+A normal font + subtle blue fill, B normal font + accent underline, C constant
+bold font + subtle fill. All three retain exactly the same character boxes over
+19 current-word transitions. The preview closes itself after three minutes.
+It is a visual style preview, not a new timing implementation or app deployment.
+Brian has been asked which variant reads best; A was recommended. No answer is
+recorded yet, and no production style was changed for this follow-up. PR35 is
+draft again and contains the deployment/savepoint documentation; do not merge
+it using the earlier ready state while the next style scope is unresolved.
+
+Next: receive the style preference, apply the smallest tag/font-owner change,
+verify unchanged glyph positions plus existing native word-panel behavior,
+update review/PR scope, and integrate/deploy normally. Preserve the accepted
+audio timing and never compensate for width changes with guessed spacing.
+
 Starter: Continue Hugin from this exact handoff. PR33 is merged, deployed and
-hearing-accepted; PR34 bold-word styling is reviewed, merged and running.
-Receive any new feedback before further changes. Use this active parent
+hearing-accepted; PR34 bold-word styling is running but needs the stable-layout
+visual follow-up described above. Resolve the pending preview preference before
+its final styling. Use this active parent
 worktree and preserve the accepted
 input/clipboard/startup behavior. Do not repeat completed GPU/native probes
 without new evidence or claim perceptual acceptance from those probes.
