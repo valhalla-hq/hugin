@@ -12,7 +12,9 @@ integration. No target history, external focus restoration or clipboard bypass.
 - Worktree C:/Users/brian/brian-projects/worktrees/hugin/hugin-button-target-mjolnir.
 - Control/preflight e3deecae6673a024aa9015a4387737fbec04c795; ownership active.
 - Spec/plan/tasks: specs/2026-10-21-button-target/.
-- Review and hosted checks pending at this checkpoint; resolve PR/head freshly.
+- PR https://github.com/valhalla-hq/hugin/pull/26; resolve head/checks freshly.
+- Independent spec and standards reviews found no material issues; final hosted
+  checks and integration follow this checkpoint.
 
 ## Evidence and structural fix
 
@@ -36,6 +38,8 @@ selection/delivery proofs remain unchanged. No delays or cached targets added.
 - 483 contracts/integration pass in 26.496 s.
 - 32 native UI/focus/geometry/motion checks pass in 12.818 s.
 - Docs validator: 19 requirements/17 AC, no problems; whitespace clean.
+- Independent spec review: 23 focused pure checks; standards review: 61 focused
+  pure checks; no material findings. Neither review repeated physical UI input.
 - Physical probe red/green as above; no audio, transcription or clipboard payload.
 - Background native tests could not activate their own source fixture because
   Windows rejected SetForegroundWindow. A click-activated own harness passed.
@@ -48,10 +52,12 @@ selection/delivery proofs remain unchanged. No delays or cached targets added.
 
 ## Running source and recovery
 
-Live PR25 source is frozen at 0e283ac3ded9e34e34514ce8af884500fc5e47e7 in
+Previous PR25 source is 0e283ac3ded9e34e34514ce8af884500fc5e47e7 in
 C:/Users/brian/brian-projects/worktrees/hugin/hugin-panel-stop-mjolnir.
-Its .runtime/pilot-session-e9462fe7-0c69-4eb2-ba0f-d6b1cb1cf343.json proves the
-current no-return session; re-read before restart, never rely on historical PIDs.
+Its .runtime/pilot-session-e9462fe7-0c69-4eb2-ba0f-d6b1cb1cf343.json now proves
+session_exited, exit_code 0, own_family_exited true and started_shortcuts empty.
+No further Quit request is needed before the next checked start. Fresh receipts
+govern later live state, never historical PIDs.
 C:/Users/brian/Hugin is the clean deployment junction at base 392977f2fc824dff30522f645156bc855bc0bf26.
 Keep worker/runtime/model/asset inputs identical. tools/pilot_session.py exits
 without starting Whispering or PipPal. Never replay old auto-return helpers.
@@ -59,8 +65,7 @@ without starting Whispering or PipPal. Never replay old auto-return helpers.
 ## Pickup
 
 Read AGENTS.md, CONTEXT.md and this exact handoff. Finish independent reviews,
-exact-head checks and authorized integration. Ask only for normal Hugin tray
-Quit when the checked replacement is ready. Verify its receipt has exited,
-advance deployment, and run the checked starter with exact source/runtime heads.
+exact-head checks and authorized integration. The previous pilot already exited;
+advance deployment and run the checked starter with exact source/runtime heads.
 Then request the real button dictation/reading check. Keep live source frozen
 until orderly exit. Do not persist raw dictation, diagnostics or trace logs.

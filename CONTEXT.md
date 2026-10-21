@@ -1,6 +1,6 @@
 # Hugin Context
 
-Status: physical panel-button focus correction under review
+Status: physical panel-button focus correction reviewed; integration pending
 Owner: Brian
 Repository: private `valhalla-hq/hugin`; runtime Mjolnir.
 Data boundary: curated source, configuration, locks and approved synthetic voice
@@ -93,6 +93,7 @@ were released through the workspace tool; their recovery files remain.
 
 Exclusive branch: codex/hugin-button-target-mjolnir.
 Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-button-target-mjolnir.
+PR: https://github.com/valhalla-hq/hugin/pull/26.
 Spec/plan/tasks: specs/2026-10-21-button-target/.
 Brian confirms recording now stops, but native target capture fails before any
 field probe or delivery. Physical Codex-to-button tracing reproduced a NULL
@@ -104,16 +105,17 @@ No external history/refocus, clipboard or input-proof changes. Cleanup restores
 only added style bits and retains ownership on failure. 483 contracts/integration
 (26.496 s) and 32 native UI/focus/geometry/motion tests (12.818 s) pass. Native
 tests require their own foreground-eligible test window; background activation
-denial is not a product success. Reviews and exact-head CI pending. Full live
+denial is not a product success. Independent spec and standards reviews found
+no material issues (23 and 61 focused pure checks); exact-head CI pending. Full live
 dictation/reading acceptance is still pending; the probe used no audio or payloads.
-The live PR25 source remains frozen at 0e283ac3ded9e34e34514ce8af884500fc5e47e7
-in hugin-panel-stop-mjolnir. Its no-return receipt is
-.runtime/pilot-session-e9462fe7-0c69-4eb2-ba0f-d6b1cb1cf343.json. Fresh receipt
-state governs restart; normal Hugin Quit is sufficient, with no old-app return.
+PR25 source 0e283ac3ded9e34e34514ce8af884500fc5e47e7 in hugin-panel-stop-mjolnir
+has exited cleanly. Its .runtime/pilot-session-e9462fe7-0c69-4eb2-ba0f-d6b1cb1cf343.json
+now proves session_exited, exit_code 0, own_family_exited true and no started
+shortcuts. No additional Quit request is needed before the next checked start.
 Physical mixed-DPI/monitor loss and full Freya/Tyr
 long-pause acceptance remain unverified beyond the user's general UI acceptance.
 Preflight/control: e3deecae6673a024aa9015a4387737fbec04c795.
-Ownership remains active until clean remote checkpoint/release proof.
+Current task ownership remains active until clean remote checkpoint/release proof.
 
 ## Active Handoff
 
