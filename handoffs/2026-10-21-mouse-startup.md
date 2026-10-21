@@ -215,8 +215,22 @@ synthetic I/O, proving exactly one late capture and commit to field B.
 fixtures passed in 0.590s; docs validation passes.
 Only technical facts retained; no recordings/dictation/clipboard payload in Git.
 
-Independent spec and standards reviews have no open findings. Live app is
-unchanged. Next: checkpoint and exact-head CI/private merge, ask only for normal Hugin
-Quit before code deployment, then restart for Brian's click-away/return test.
-Whispering/PipPal stay disabled. Keep ownership active; packaging/login remain
-separate. Do not call the intermittent physical bug fixed before live acceptance.
+Independent spec and standards reviews confirmed no open findings for source
+22d513c5e471d8a7c5669beed49a1ca737a0d19a. PR31
+https://github.com/valhalla-hq/hugin/pull/31 merged that source at 14:34:53 UTC as
+4e18f7460e3004f7b25ecb09a08b0fca8fc986da after successful hosted runs
+39617479727, 39617490293 and 39617490238. Fresh PR identity/scope/head/checks
+were read before merge; no bypass or auto-merge. Remote main matches. Source
+CONTEXT blob 63fa58952f2760e1a33545daa45a328648883cd3 and handoff blob
+4cca2ce776fd4b1cabaf8cda1172ea4ac6174e47 were verified remotely.
+
+Brian confirmed normal Quit. No Hugin launcher/worker/probe remained before
+stable fast-forward from 7ac3cc6 to 4e18f74. Restart used the stable pythonw
+launcher with --root C:/Users/brian/Hugin --show, Hidden, at 16:36:02 local time.
+UI readback shows ready, Lokal, Alt+Y, mouse mapping and panel buttons.
+Activation/preferences/controller-STT-TTS environment/desktop-setup manifest
+hashes match before/after deployment. No runtime/model/voice/setup changes.
+Physical click-away/return acceptance requested and still pending. Keep
+ownership active; packaging/login remain separate. Whispering/PipPal stay
+disabled. Rollback after normal Quit is previous main 7ac3cc6. Do not claim the
+intermittent physical bug fixed before live acceptance.
