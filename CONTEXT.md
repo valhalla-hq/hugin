@@ -1,6 +1,6 @@
 # Hugin Context
 
-Status: mouse controls and startup migration integrated and applied; clipboard insertion defect reproduced; persistent dictation correction under verification.
+Status: PR29 integrated/deployed; latest physical dictation paths and Ctrl+V pass; earlier intermittent field-proof failure remains unexplained.
 Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
 Data boundary: curated source/configuration/locks and approved synthetic voice
 references only. No raw dictation, clipboard/image content, recordings,
@@ -10,14 +10,15 @@ credentials, model weights, virtual environments or local startup backups in Git
 
 Brian confirmed repeated successful dictation/insertion, reading, stopping and
 switching from reading to dictation with the PR26 panel buttons. PR26 and its
-PR27 acceptance record are merged. Main is
-460534fff76741427f6c380405916be1c7947f10.
+PR27 acceptance record are merged. Current deployed main is
+7f288d4bf2021712f4e4d3283058a22311c31376 (PR29).
 
 He now explicitly requests permanent mouse Back/XBUTTON1 = dictation and
 Forward/XBUTTON2 = reading, removing PipPal/Whispering login startup, and
-confirms Hugin should start silently after login. This supersedes the old
-opposite mouse mapping, Alt+Y and previous no-migration restrictions.
-Ctrl+Alt+D/V remain additional controls; existing panel buttons remain.
+confirms Hugin should start silently after login. The latest keyboard steering
+sets Alt+Y for dictation and retains Ctrl+Alt+V for reading. Existing panel
+buttons remain; the old opposite mouse mapping and no-migration restriction
+are superseded.
 Complete routine private integration and the requested Windows setup after
 checks/review. Production packaging follows this prerequisite; do not equate
 this increment with the entire V1 acceptance matrix.
@@ -28,7 +29,7 @@ this increment with the entire V1 acceptance matrix.
 - Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-mouse-startup-mjolnir.
 - Implementation base: 460534fff76741427f6c380405916be1c7947f10.
 - Integrated implementation: PR28, source fbf64afc282edc0356038474ffb3f1379a01666f.
-- Current follow-up: fix old clipboard format rejection and retain finished dictation for Ctrl+V.
+- Current follow-up: record PR29 deployment and physical acceptance; investigate intermittent field-proof rejection on recurrence.
 - Control/preflight: 05181f9a99374ff8b298c626f903304f36ac8926.
 - Ownership: active until final checkpoint/release; runtime uses stable deployment.
 - Active handoff: `handoffs/2026-10-21-mouse-startup.md`.
@@ -45,7 +46,8 @@ Final checks: 494 contracts/integration, 20.721 s; native shortcut roundtrip,
 spec/standards reviews have no remaining findings. Prepare-retry and same-thread
 input-cleanup retry fixes are included with red/green guards. Exact-head hosted checks and both reviews passed. PR28 merged as
 6239f4fcf28cb249e51681bd056aa16795d7efdf; deployment and startup migration are
-complete. Physical mouse and next-login acceptance remain pending.
+complete. Latest physical dictation acceptance is recorded below; next-login
+and permanent resolution of the earlier intermittent rejection remain open.
 
 ## Running source and deployment
 
@@ -115,9 +117,37 @@ persistence, supported formatted-text snapshot and exact restoration passed in
 fixture corrected that test setup. Foreign file clipboard was refused before
 mutation. No user's field received synthetic input.
 
-Brian has now closed Hugin normally; fresh process inventory showed no Hugin
-pythonw launch. The requested disposable text was restored; copying is released.
-Stable deployment remains clean PR28 until checked integration. No application
-is currently running. Task ownership remains active for checked merge, normal
-restart and physical mouse/Alt+Y plus Ctrl+V acceptance. Only Hugin is restarted;
-old apps stay disabled. No production installer or actual next-login claim.
+PR29 merged at 2026-10-21T13:44:15Z as
+7f288d4bf2021712f4e4d3283058a22311c31376, checked source
+d5aa060f3fb6f408963703e1536a6c7442691335. Both independent reviews clear;
+hosted checks 39609867294, 39609951874 and 39609951730 attempt 2 succeeded.
+The latter rerun resolved an inconsistent GitHub completed-run/pending-job state;
+no check was bypassed. Stable main fast-forwarded cleanly; runtime/model inputs
+and activation stayed identical. Normal Hugin launched at 15:44:38 Europe/Berlin.
+Native window readback confirmed ready, Lokal, Back/Alt+Y and Forward/Ctrl+Alt+V.
+Hugin is running from the stable installation; do not edit its files live.
+
+Brian confirms Ctrl+V inserts the last dictation, but automatic insertion fails
+with both Alt+Y and mouse Back. Fresh diagnosis: native_target_captured,
+capture_field=target_unverifiable, clipboard=copied, delivery=not_attempted;
+error_code=target_unverifiable. The new clipboard behavior is accepted. The
+remaining failure is before insertion, in focused-field proof. Exact failed
+provider condition is not yet known; do not weaken the proof speculatively.
+An ignored, bounded read-only diagnostic reused the product's isolated target
+probe. A focused empty Codex field passed. During a 45-second observation with
+55 samples, field proof passed during Brian's dictation tests. A later sample
+rejected a Document range at selection_probe.py:264 because its read-only
+attribute did not explicitly prove false. This is an observed rejection site,
+not proof of the cause of Brian's earlier failed dictation. A final separate
+probe passed with focused Edit control type 50004. No document/clipboard payload
+was recorded, no windows activated and no input/audio generated by the probes.
+The observation finished; no diagnostic helper remains running.
+
+Brian confirms the current Alt+Y/mouse dictation attempts and explicitly the
+Fertig & einfügen button work. Ctrl+V fallback was separately confirmed. No
+production code changed between the failed and successful attempts, so do not
+claim the intermittent error permanently fixed. Next recurrence needs exact
+failed-field facts before a correction. Keep task ownership active. Production
+packaging, full target matrix and actual next login remain open; old apps stay
+disabled. Only these curated context/handoff updates are being checkpointed;
+the ignored diagnostic script and raw probe output stay out of Git.
