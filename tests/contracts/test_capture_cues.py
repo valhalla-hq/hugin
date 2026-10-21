@@ -150,13 +150,21 @@ class CaptureCueContracts(unittest.TestCase):
     def pump(self):
         while self.controller.pump_once():pass
 
-    def test_hardware_cue_gate_and_stop_cue_precede_slow_target_and_engine(self):
+    def test_hardware_cue_gate_and_stop_cue_precede_engine_and_delivery_target(self):
         self.controller.command('dictation');self.pump()
         self.assertEqual(self.calls,['mic_unarmed','start_cue',('arm',100.025)])
         self.assertEqual(self.controller.core.snapshot().state,c.State.RECORDING)
         self.controller.command('dictation');self.pump()
-        self.assertEqual(self.calls[-3:],['mic_close','end_cue','uia'])
+        self.assertEqual(self.calls[-2:],['mic_close','end_cue'])
+        self.assertNotIn('uia',self.calls)
         self.assertEqual(self.pool.starts,['stt'])
+        self.pool.future.set_result({'engine_instance':'actual-stt','device':'cpu'});self.pump()
+        request,generation=self.pool.inference[-1]
+        self.controller.worker_event(dict(type='result',engine='stt',engine_instance='actual-stt',
+            request_id=request,generation=generation,text='cue ordering test'));self.pump()
+        self.assertEqual(self.calls.count('uia'),1)
+        self.assertGreater(self.calls.index('uia'),self.calls.index('end_cue'))
+        self.assertEqual(self.clipboard.submissions,['cue ordering test'])
 
     def test_start_failure_and_start_cue_failure_never_arm_or_emit_end_cue(self):
         for failure in ('mic','cue'):

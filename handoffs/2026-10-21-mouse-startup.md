@@ -174,3 +174,49 @@ Preserve the live stable deployment and successful clipboard/binding behavior.
 Latest physical insertion passes, but the earlier field-proof failure has no
 proven cause. Do not infer it was fixed by clipboard publication or by the
 read-only probe. Record a recurrence precisely before any further input fix.
+
+## Click-away/return follow-up
+
+PR30's documentation checkpoint is merged as7ac3cc6526d5cd85b5439b31cd273c8730e9ec91;
+deployment has that clean head, with identical application source to PR29. Task
+worktree fast-forwarded from its pushed checkpoint to that main before edits.
+Preflight again confirms control05181f9a and exclusive same-task continuation.
+
+Brian requests reliable clicking elsewhere during recording and returning to
+the field before stop, using the last chosen cursor, and a Whispering source
+comparison. The physical repetition again passed. A bounded read-only 45-second
+observation completed55 samples, showing Group/Edit and Document/Edit changes.
+At one Document rejection the whole range's read-only attribute was unknown/mixed
+and its selected range explicitly false. Parallel observation is not the
+historical failed capture; no direct cause is claimed from it. All probes exited.
+
+Whispering7.11.0 pinned a6b15c28's desktop.ts invokes write_text; lib.rs195-240
+publishes text, waits50ms and sends Ctrl+V to the current focus, then optionally
+restores prior text. Hugin now adapts late capture timing while retaining the
+native stop basis, exact field/selection proof, final commit guard and persistent
+dictation clipboard. No foreign focus activation or unverified paste.
+Important semantic consequence: only the native stop basis remains pinned.
+UIA identity is first chosen at delivery. A Chromium surface sharing native
+HWND/focus without native caret/selection may accept a different UIA field or
+caret selected after stop. This is intentional late selection, not preservation
+of the former pre-recognition UIA identity; test it through the real controller,
+service and native capture boundary with synthetic provider I/O.
+
+New spec/plan/tasks: specs/2026-10-21-late-field-capture/. Full field capture moves
+from StopRecording's worker to StageDelivery's worker after final text; no second
+probe/retry path is added. A public controller regression was red for unavailable
+field at stop but recovered field at text completion (no insertion), now green.
+After-stop target change/cancel, permanent failure, copy fallback and controller
+responsiveness also pass. Updated cue test proves microphone/end cue precede
+recognition and one later field probe. The same-native/UIA-switch guard passes
+through Controller, ClipboardService and NativeClipboard.capture_target with
+synthetic I/O, proving exactly one late capture and commit to field B.
+504 contracts/integration passed in 22.627s; 2 own hidden RichEdit native UIA
+fixtures passed in 0.590s; docs validation passes.
+Only technical facts retained; no recordings/dictation/clipboard payload in Git.
+
+Independent spec and standards reviews have no open findings. Live app is
+unchanged. Next: checkpoint and exact-head CI/private merge, ask only for normal Hugin
+Quit before code deployment, then restart for Brian's click-away/return test.
+Whispering/PipPal stay disabled. Keep ownership active; packaging/login remain
+separate. Do not call the intermittent physical bug fixed before live acceptance.

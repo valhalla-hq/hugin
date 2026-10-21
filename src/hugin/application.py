@@ -594,10 +594,7 @@ class Controller:
                                 if not self.cues.play('end',effect.job,token.is_set) and not token.is_set():
                                     raise HuginError('audio_failed','capture_end_cue')
                             except Exception:self._post(_CueFailure(HuginError('audio_failed','capture_end_cue')))
-                        if target is not None and not token.is_set():
-                            bound_target=self._capture_target_outcome(effect.job,'capture_field',
-                                lambda:self.clipboard.capture_target(expected=target,cancelled=token.is_set))
-                        else:
+                        if target is None:
                             self._input_status(effect.job,'capture_field','not_attempted')
                 except Exception as cause:
                     error = _safe_error(cause,'capture')
@@ -714,6 +711,16 @@ class Controller:
             def deliver():
                 try:
                     captured=effect.target
+                    # Recognition may outlast a focus transition. Keep only the
+                    # native stop basis until final text exists; bind the field
+                    # once here, immediately before the existing commit proof.
+                    if (isinstance(captured,_CapturedTarget)
+                            and captured.status=='native_target_captured'
+                            and captured.target is not None and current()):
+                        native_target=captured.target
+                        captured=self._capture_target_outcome(effect.job,'capture_field',
+                            lambda:self.clipboard.capture_target(expected=native_target,
+                                cancelled=lambda:not current()))
                     eligible=isinstance(captured,_CapturedTarget) and captured.status=='target_captured' and captured.target is not None
                     result=self.clipboard.deliver(effect.text,captured.target if eligible else None,current,
                         authorize=authorize,commit=commit)
