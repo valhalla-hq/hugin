@@ -6,7 +6,7 @@ from tkinter import font,ttk
 import unittest
 from unittest.mock import patch
 
-from hugin.branding import BACKGROUND,FIELD,TEXT,ACCENT,ACTIVITY_COLORS,hugin_icon
+from hugin.branding import BACKGROUND,FIELD,TEXT,ACCENT,ACTIVITY_COLORS,MAX_SURFACE_SIDE,hugin_icon
 from hugin.ui import HuginWindow,View,tray_image
 
 
@@ -94,6 +94,24 @@ class NativeVisualContract(unittest.TestCase):
         self.assertEqual(window.text.cget('selectforeground'),TEXT)
         self.assertNotEqual(window.text.cget('selectbackground'),FIELD)
         self.assertNotEqual(window.text.cget('inactiveselectbackground'),FIELD)
+
+    def test_native_window_limits_keep_raster_and_layout_identical(self):
+        from hugin.branding import backdrop,panel_surface
+        for factory in (backdrop,panel_surface):
+            image=factory(MAX_SURFACE_SIDE,300)
+            self.assertEqual(image.size,(MAX_SURFACE_SIDE,300))
+            self.assertEqual(image.getpixel((MAX_SURFACE_SIDE-20,150))[3],255)
+            with self.assertRaises(ValueError):factory(3000,1600)
+        window=self.make_window(4)
+        window.render(View(status='Synthetische Groessenprobe'))
+        window.show()
+        window.root.geometry('3000x1600')
+        self.assert_visible_controls(window)
+        width,height=window.scene.winfo_width(),window.scene.winfo_height()
+        self.assertLessEqual(width,MAX_SURFACE_SIDE)
+        self.assertLessEqual(height,MAX_SURFACE_SIDE)
+        self.assertEqual((window._images['background'].width(),window._images['background'].height()),
+                         (width,height))
 
     def test_existing_actions_and_controller_mode_remain_unchanged(self):
         window=self.make_window();actions=[]

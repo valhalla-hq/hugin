@@ -9,6 +9,7 @@ TEXT = '#e9eef7'
 MUTED = '#a5b1c9'
 ACCENT = '#5166dd'
 BLUE = '#8daaff'
+MAX_SURFACE_SIDE = 2048
 ACTIVITY_COLORS = {
     'idle':'#8295cb', 'recording':'#a9bdff', 'processing':'#6378e6',
     'playing':'#91a8ed', 'complete':'#cfddff', 'error':'#e9b780',
@@ -73,9 +74,17 @@ def raven_mark(size, *, silver=True):
     return result.resize((size,size),Image.Resampling.LANCZOS)
 
 
+def surface_size(width, height):
+    """A raster has exactly its requested size; oversized layout is an error."""
+    width,height=int(width),int(height)
+    if not (1 <= width <= MAX_SURFACE_SIDE and 1 <= height <= MAX_SURFACE_SIDE):
+        raise ValueError('surface size outside supported range')
+    return width,height
+
+
 def panel_surface(width, height, *, accent=False, radius=18, strength=0.0, highlighted=False):
     from PIL import Image, ImageDraw, ImageOps
-    width=max(1,min(int(width),2048));height=max(1,min(int(height),2048))
+    width,height=surface_size(width,height)
     ramp=Image.linear_gradient('L').resize((width,height))
     top=mix('#1c263a','#304786',strength) if not accent else mix('#253b79','#3f5ab3',strength)
     bottom='#101620' if not accent else '#142042'
@@ -109,7 +118,7 @@ def hugin_icon(size=64,color=ACCENT):
 def backdrop(width, height):
     """Low-resolution soft light plus vector ribbons, generated only on resize."""
     from PIL import Image, ImageDraw, ImageFilter
-    width=max(1,min(int(width),2048));height=max(1,min(int(height),2048))
+    width,height=surface_size(width,height)
     result=Image.new('RGBA',(width,height),BACKGROUND)
     small=(max(1,width//4),max(1,height//4))
     glow=Image.new('RGBA',small)

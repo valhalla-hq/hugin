@@ -12,7 +12,7 @@ from tkinter import ttk
 
 from .errors import HuginError
 from .branding import (BACKGROUND,CARD,FIELD,BORDER,TEXT,MUTED,ACCENT,BLUE,
-                       ACTIVITY_COLORS,hugin_icon,raven_mark,backdrop,panel_surface,mix,ambient_light)
+                       ACTIVITY_COLORS,MAX_SURFACE_SIDE,hugin_icon,raven_mark,backdrop,panel_surface,mix,ambient_light)
 from .motion import Motion
 
 
@@ -36,6 +36,15 @@ class View:
 
 def tray_image(color=ACCENT):
     return hugin_icon(64,color)
+
+
+def window_geometry(dpi_scale, screen_height):
+    """Fit layout and font scaling into the same bounded raster workspace."""
+    scale=max(1,min(dpi_scale,MAX_SURFACE_SIDE/780,screen_height*.90/480))
+    available=screen_height/scale
+    min_height=round(min(620,available*.90)*scale)
+    height=max(min_height,round(min(780,available*.86)*scale))
+    return scale,round(620*scale),height,round(460*scale),min_height
 
 
 class HuginWindow:
@@ -63,11 +72,13 @@ class HuginWindow:
         self.root=tk.Tk(className='Hugin')
         self.root.withdraw()
         self.root.title('Hugin')
-        self.scale=max(1,self.root.winfo_fpixels('1i')/96)
-        available=self.root.winfo_screenheight()/self.scale
-        height=min(780,round(available*.86))
-        self.root.geometry(f'{round(620*self.scale)}x{round(height*self.scale)}')
-        self.root.minsize(round(460*self.scale),round(min(620,available*.90)*self.scale))
+        dpi_scale=max(1,self.root.winfo_fpixels('1i')/96)
+        self.scale,width,height,min_width,min_height=window_geometry(dpi_scale,self.root.winfo_screenheight())
+        if self.scale < dpi_scale:
+            self.root.tk.call('tk','scaling',96*self.scale/72)
+        self.root.maxsize(MAX_SURFACE_SIDE,MAX_SURFACE_SIDE)
+        self.root.geometry(f'{width}x{height}')
+        self.root.minsize(min_width,min_height)
         self.root.configure(background=BACKGROUND)
         self.root.protocol('WM_DELETE_WINDOW',self.hide)
         from PIL import ImageTk

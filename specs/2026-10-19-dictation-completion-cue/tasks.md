@@ -10,8 +10,9 @@
   eigenständiges Hörbeispiel; ungemessene Kosten und Hörgrenzen nennen. Alle CC.
 - [x] CC-T05: Getrennte Spec-/Standardsreviews, aktueller Context/Handoff und
   privater überprüfter Remotecheckpoint. Keine Änderung des laufenden Piloten.
-- [ ] CC-T06: Neue Pilotsitzung nach geordnetem Wechsel, menschlicher Hörtest
-  und echter Diktattest: genau drei zeitlich richtige Töne. Kein Enter/Absenden.
+- [x] CC-T06: Neue Pilotsitzung und echter Diktattest erfolgt; Brian verlangte
+  danach staerkere Trennung und waehlte schliesslich die Originalklaenge. Die
+  synthetischen Varianten sind damit abgeloest; finale Nachweise im Originalton-Task.
 
 ## Klangpräzisierung nach Brians Test
 
@@ -23,5 +24,6 @@
 - [x] CC-T09a: Brian hat die kräftige Doppelfolge gehört und ausgewählt. CC-006.
 - [x] CC-T09b: Neue Sitzung am geprüften Head288c835 gestartet, UI Bereit,
   kein Fehler/Cleanup. Geordneter Wechsel und Rückweg geprüft. CC-006.
-- [ ] CC-T09c: Echtes Diktat mit Doppeltönen durch Brian in der App testen.
-  Neue laufende Version und ihre Helfer bis zum normalen Ende erhalten. CC-006.
+- [x] CC-T09c: Brian testete die Doppelfolge in der App ("schon ganz gut") und
+  beauftragte danach Original-Whispering-Toene. Diese Variante ist abgeschlossen
+  und durch WC-T01–04 abgeloest. CC-006.

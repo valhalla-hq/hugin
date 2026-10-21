@@ -1,5 +1,11 @@
 # Screenshot clipboard preservation
 
+Closeout update: all three hosted checks passed at d1331da. That exact pilot
+started at 10:20:24 MESZ on 21 October after normal old-app exits. Brian confirmed
+screenshot-plus-dictation success in Codex; 10:22:31 metadata reports submitted,
+no error and no pending cleanup. This supersedes the pending-acceptance notes
+below; the historical native-test limits remain. See baseline-closeout-2026-10-21.md.
+
 ## Evidence and cause
 
 The manual Codex attempt at 09:17:25 MESZ captured the native target and field,
