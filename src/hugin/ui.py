@@ -45,7 +45,7 @@ def tray_image(color=ACCENT):
 
 def window_geometry(dpi_scale, screen_height):
     """Fit layout and font scaling into the same bounded raster workspace."""
-    scale=max(1,min(dpi_scale,MAX_SURFACE_SIDE/780,screen_height*.90/480))
+    scale=max(1,min(dpi_scale,MAX_SURFACE_SIDE/780,screen_height*.90/520))
     available=screen_height/scale
     min_height=round(min(620,available*.90)*scale)
     height=max(min_height,round(min(780,available*.86)*scale))
@@ -181,7 +181,8 @@ class HuginWindow:
                     pystray.MenuItem('Beenden',lambda:self.on_action('quit',None)))))
             self._tray.start()
         from .reading_ui import ReadingPanel
-        self.reading_panel=ReadingPanel(self.root,self.scale,self.on_action,self._hide_reading)
+        self.reading_panel=ReadingPanel(self.root,self.scale,self.on_action,self._hide_reading,
+                                        self._reading_unavailable)
         self.render(View())
         self._pump_after=self.root.after(25,self._pump)
 
@@ -239,13 +240,13 @@ class HuginWindow:
         compact=h<640
         header=36 if compact else 52
         error_h=52 if self._view and self._view.error else 0
-        hero_h=max(48,min(170,h-372-error_h)) if compact else min(230,h*.29)
+        hero_h=max(48,min(170,h-420-error_h)) if compact else min(230,h*.29,h-465-error_h)
         title_y=header+hero_h-36
         self._center=(w/2,(title_y-32))
         self._logo_center=(w/2,header+(hero_h-72)/2)
         logo_size=max(40,min(146,hero_h-76))
         tiles_y=header+hero_h+8
-        tile_h=64 if compact else 83
+        tile_h=112 if compact else 128
         section_gap=8 if compact else 12
         voice_y=tiles_y+tile_h+section_gap;voice_h=42 if compact else 47
         result_y=voice_y+voice_h+section_gap
@@ -338,7 +339,9 @@ class HuginWindow:
         footer_y+=error_h
         self._label('escape','Esc · Abbrechen',pad,footer_y+3,size=8,color=MUTED)
         self._place('motion',pad,footer_y+34,180,23)
-        place_button('reading_toggle',self.reading_toggle,w-pad-190,footer_y+30,190,28)
+        toggle_w=min(230,tile_w-20)
+        place_button('reading_toggle',self.reading_toggle,pad+tile_w+gap+(tile_w-toggle_w)/2,
+                     tiles_y+tile_h-38,toggle_w,28,parent='reading')
         control_w=(tile_w-26)/2
         place_button('read_pause',self.read_pause,pad+tile_w+gap+10,tiles_y+34,control_w,26,parent='reading')
         place_button('read_stop',self.read_stop,pad+tile_w+gap+16+control_w,tiles_y+34,control_w,26,parent='reading')
@@ -589,12 +592,13 @@ class HuginWindow:
 
     def _render_reading_panel(self,view):
         try:self.reading_panel.render(view,self.reading_panel_enabled)
-        except OSError:
-            # Optional native placement must not stop speech or dictation.
-            # Main-window pause/stop remain available; no risky focus fallback.
-            self.reading_panel.clear()
-            self.reading_panel_enabled=False
-            self.reading_toggle.configure(text='Mitleseleiste nicht verfügbar',state='disabled')
+        except OSError:self._reading_unavailable()
+
+    def _reading_unavailable(self):
+        # Optional placement/drag failure leaves speech and main controls usable.
+        self.reading_panel.clear()
+        self.reading_panel_enabled=False
+        self.reading_toggle.configure(text='Mitleseleiste nicht verfügbar',state='disabled')
 
     def _hide_reading(self):
         self._reading_visibility(False)
@@ -629,6 +633,8 @@ class HuginWindow:
         self._forget_views()
         for name in ('_animation_after','_layout_after','_pump_after'):
             self._cancel_timer(name)
+        panel=getattr(self,'reading_panel',None)
+        if panel is not None:panel.close()
         if self._tray:
             self._tray.close()
             if not self._tray.closed:raise HuginError('interface_failed','tray_cleanup')
