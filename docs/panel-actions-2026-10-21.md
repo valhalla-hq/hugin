@@ -93,3 +93,13 @@ Prüfungen, einschließlich normaler Aktivierung, Tastaturbedienung, erneutem
 Anzeigen und wiederholbarer Freigabe. Die Probe verwendete keine Aufnahme und
 keine Zwischenablageinhalte; echtes Einfügen und Vorlesen werden nach dem
 Pilotwechsel gesondert geprüft.
+
+## Nutzerabnahme am 21. Oktober 2026
+
+Brian hat den korrigierten Piloten mehrfach getestet und bestätigt Diktieren
+mit Einfügen, Vorlesen und Stoppen. „Diktat starten“ unterbricht laufendes
+Vorlesen und beginnt anschließend die Aufnahme wie gewünscht. Der angefragte
+Button-Ablauf ist damit abgenommen. Diese Rückmeldung bezieht sich auf den
+aktuellen Pilotversuch; eine zusätzliche Word-, Geräte- oder Tastenkürzelmatrix
+wird daraus nicht abgeleitet. Der laufende Quellstand ist
+379df037d1567f9ea3882f1f0e07902dd4d416e5 aus PR26.
