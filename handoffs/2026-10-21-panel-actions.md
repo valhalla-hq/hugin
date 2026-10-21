@@ -13,6 +13,7 @@ change under the current central lifecycle. No new binding/autostart policy.
 - Branch: codex/hugin-panel-actions-mjolnir; base main 35528f4ab8315b23e3fb848aacfc6bbcc343d4b9.
 - Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-panel-actions-mjolnir.
 - Ownership active. Resolve exact checkpoint/PR/checks from fresh Git state.
+- PR: https://github.com/valhalla-hq/hugin/pull/24.
 - Preflight/control e3deecae6673a024aa9015a4387737fbec04c795.
 - Spec/plan/tasks: specs/2026-10-21-panel-actions/.
 
@@ -32,7 +33,7 @@ behavior; message fixture and registration ownership were corrected. Full suite
 initially identified __new__ fixtures missing the new constructor-owned field;
 those fixtures were updated. Final full check: 477 tests in 22.505s, green.
 Docs validator: 19 requirements/17 AC, no problems. Native GUI harness: 26 tests
-green, including actual activation messages/Tk click bindings, owned
+in 11.493s, green, including actual activation messages/Tk click bindings, owned
 selection/focus retention, cleanup retry and compact/DPI placement. Earlier
 background activation was blocked by Windows; ordinary own-window activation
 allowed the repeated run. No global input, personal clipboard or speech models.

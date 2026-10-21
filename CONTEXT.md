@@ -80,6 +80,7 @@ were released through the workspace tool; their recovery files remain.
 
 Exclusive new branch: codex/hugin-panel-actions-mjolnir.
 Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-panel-actions-mjolnir.
+PR: https://github.com/valhalla-hq/hugin/pull/24 (resolve current checks/integration fresh).
 Spec/plan/tasks: specs/2026-10-21-panel-actions/. Native per-button activation
 handling preserves external focus. Controller generation/state tokens reject
 queued duplicate/stale actions. Capture, clipboard and delivery remain unchanged.
