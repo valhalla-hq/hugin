@@ -75,3 +75,37 @@ Check that no words are lost/repeated, the displayed section is useful, hiding
 keeps speech playing, and dictation still takes priority. Verify real monitor
 placement and focus while working in the target application. Keep these open
 until observed; the previous screenshot/dictation acceptance does not cover them.
+
+## Movable Obsidian follow-up
+
+Brian accepted explicit show/hide in the 9d6273f pilot started at 12:08:15 MESZ.
+He then requested cohesive rounded styling, visibility inside the main reading
+card, and moving the overlay across the desktop without reopening elsewhere.
+
+The header now provides a drag handle and hint. The panel remembers its actual
+session position across hide/show and new reading jobs. Only first show follows
+the foreground monitor. Later shows/drop use the remembered rectangle and the
+current monitor work area; unavailable monitors clamp to the nearest reachable
+area. Hiding still clears text and drag state, while coordinates remain in RAM.
+
+Existing branding draws the outer gradient, rounded text area and correctly
+composited button backgrounds. The native window region rounds the real outer
+corners. Windows owns a successfully assigned region; an untransferred region
+whose deletion fails remains owned until successful explicit window cleanup.
+See the primary API contracts for [SetWindowRgn](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowrgn),
+[CreateRoundRectRgn](https://learn.microsoft.com/en-us/windows/win32/api/wingdi/nf-wingdi-createroundrectrgn)
+and [MonitorFromRect](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-monitorfromrect).
+
+Verification: guard-first geometry, header drag and in-card placement failures;
+471 full contracts/integration passed in 20.629s; final scoped native UI/focus/
+geometry/motion checks passed 19 in 9.482s. Region-transfer/deletion fault injection
+first reproduced lost ownership, then proved retained ownership and cleanup retry.
+Synthetic native preview was visually inspected: rounded surfaces and centered
+action fit. Real pointer drag moved it from (600,788) to (380,760); after hiding
+and reopening through the main card it returned to (380,760). Preview closed
+normally. This used synthetic text, no personal clipboard or live speech.
+
+Physical cross-monitor/DPI movement and actual monitor disconnection remain for
+Brian's pilot; own-window and geometry fixtures do not prove those hardware cases.
+Surface/region work is tied to size changes, but UI/GPU cost and memory peaks are
+not benchmarked here. No audio/worker/model/runtime-environment change is included.

@@ -9,10 +9,11 @@ Der lokale Einstieg `C:\Users\brian\Hugin` zeigt auf den sauberen Main-Deploymen
 ## Verbindlicher Funktionsumfang
 
 Die integrierte Pilotstufe aus PR21 ergaenzt eine optionale Mitleseleiste mit
-Abschnittsanzeige, Pause/Fortsetzen und Stopp. Im Hauptfenster laesst sie sich
+Abschnittsanzeige, Pause/Fortsetzen und Stopp. Im Vorlesen-Panel laesst sie sich
 mit "Mitleseleiste einblenden/ausblenden" steuern. Ausblenden gilt auch fuer
 weitere Texte bis zum bewussten Einblenden; beim App-Neustart ist sie wieder
-aktiviert. Details und verbleibende Hoerprobe:
+aktiviert. Die abgerundete Leiste laesst sich am Kopfbereich verschieben und
+behaelt ihre Position waehrend der App-Sitzung. Details und verbleibende Hoerprobe:
 [Mitleseleiste](docs/reading-panel-2026-10-21.md).
 
 - Vordere Daumentaste oder Alt+Y: Diktat starten/stoppen und Text einfügen.

@@ -61,6 +61,13 @@ class NativeVisualContract(unittest.TestCase):
                 self.assertGreaterEqual(bounds[1],card[1])
                 self.assertLessEqual(bounds[2],card[2])
                 self.assertLessEqual(bounds[3],card[3])
+        card=window.scene.bbox(window._items['reading'])
+        toggle=window.scene.bbox(window._windows['reading_toggle'])
+        self.assertGreaterEqual(toggle[0],card[0])
+        self.assertLessEqual(toggle[2],card[2])
+        self.assertGreaterEqual(toggle[1],card[1])
+        self.assertLessEqual(toggle[3],card[3])
+        self.assertAlmostEqual((toggle[0]+toggle[2])/2,(card[0]+card[2])/2,delta=1)
 
     def test_three_dpi_scales_keep_text_and_actions_inside_their_cards(self):
         for scale in (1,1.5,2):
