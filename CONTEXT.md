@@ -308,7 +308,10 @@ _field_pattern Zeile168, fehlendes UIA-Feld oder keine bestätigte Tastaturfokus
 Eigenschaft. Das ist kein nachgewiesener Clipboardformatfehler. Später nur
 unterstützte Textformate beobachtet; Kopieren der Diagnose hatte ursprüngliche
 Screenshotformate bereits ersetzt. Ursache der fehlenden Fokusbestätigung noch
-offen, keine Lockerung oder vorgetäuschte Behebung.
+offen, keine Lockerung oder vorgetäuschte Behebung. Brian bestätigt anschließend,
+dass der Schreibcursor im Textbereich sichtbar blieb. Der neue lokale passive
+Trace unterscheidet deshalb Aufrufstufe und vorhandenen Fokuspointer, ohne
+zusätzliche Providerabfragen oder Inhaltszugriff; isolierter Test/Review grün.
 
 Aktuell läuft der unveränderte alte Obsidian-Pilot d395f1e seit08:42:43 MESZ aus
 hugin-obsidian-ui-mjolnir. Neuer UI-Stand liegt ausschließlich im Taskworktree

@@ -42,6 +42,8 @@ are in scope. Do not integrate the older draft stack or migrate autostart/bindin
   65 and 43 pure tests respectively. They did not certify native rendering.
 - Docs validator: 19 requirements/17 acceptance criteria, no problems;
   `git diff --check` clean. Exact pushed-head CI must be checked before launch.
+- Hosted baseline and both contract workflows passed at implementation head
+  d2ce9c7 (runs 39558595142, 39558588547, 39558594936).
 
 ## Reproduced failure and unresolved question
 
@@ -56,8 +58,9 @@ separate 19 October `format_unsupported` case.
 Later read-only enumeration found stable CF_UNICODETEXT/CF_LOCALE/CF_TEXT/
 CF_OEMTEXT only. The supplied diagnostic had already replaced the screenshot
 clipboard, so original formats remain unknown. No clipboard bytes read/written.
-Brian was asked whether the writing cursor remained in the composer after the
-attachment and through stop; answer was still pending at checkpoint preparation.
+Brian confirms that the writing cursor was in the composer and that focus stayed
+there through stop. This conflicts with the provider's focus rejection; it does
+not establish which producer call lost that confirmation.
 Do not guess a target or loosen identity/editability guards.
 
 ## Running state and pilot preparation
@@ -78,7 +81,15 @@ The candidate-only trace adds bounded producer call stages and whether the
 already-held focus pointer exists, with no additional provider queries or text.
 SHA256 9912B6606B7653819AF06E8A07EC28F4DC4AA4D25768F160674E18A0630658A2.
 Its isolated fixture passed for absent and unfocused elements, unchanged result
-and no second provider-property query. Old live helper is untouched.
+and no second provider-property query. Independent review found no material issue
+in this diagnostic delta. Old live helper is untouched.
+
+Plan mode passed for the clean pushed implementation head
+`d2ce9c74b157b322e999ccf0ab66a67ae5ac3f79`, including unchanged worker inputs,
+runtime head and return shortcuts. Repeat for the final documentation head.
+Brian was asked to quit old Hugin normally, then its returned Whispering/PipPal,
+and answer ready. This manual shutdown was pending when this checkpoint was
+prepared; do not infer completion from the request or from stale process IDs.
 
 Before candidate launch, prove clean exact checked HEAD and run plan mode with
 the existing runtime Python and `.runtime/pilot_candidate_session.pyw --head
@@ -93,8 +104,8 @@ raw logs or generated previews belong in Git. No dependency or setting changes.
 
 ## Pick up here
 
-1. Resolve Brian's focus answer and compare the same screenshot with an explicit
-   composer click/visible cursor. Operate Codex manually only; leave original
+1. Brian confirms a visible cursor throughout the failed attempt. Repeat the
+   screenshot attempt under the improved passive trace. Operate Codex manually only; leave original
    clipboard untouched if it fails again. Read sanitized status/trace.
 2. Verify exact pushed-head CI and prepare/perform the checked UI pilot switch
    through normal exits. Do not report the new UI as live until verified.

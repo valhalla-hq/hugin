@@ -39,10 +39,13 @@ CF_LOCALE, CF_TEXT and CF_OEMTEXT, all supported. It fetched no data handles
 or clipboard contents and changed nothing. The supplied diagnostic had already
 been copied, so this is not proof of the original screenshot formats.
 
-No target guard or clipboard contract is relaxed. The next comparison is a
-manual attempt with the same attachment, explicit click into the composer,
-visible writing cursor, then dictation without changing focus. An absent
-focus is not authorization to guess another input field.
+Brian subsequently confirms that the writing cursor remained in the composer
+through stop. The user-visible cursor and provider focus confirmation disagree;
+the failing call stage still needs isolation. The candidate-only passive trace
+records the producer call stages and presence of the already-held pointer,
+without querying the provider again. Its isolated fixture and independent review
+passed. No target guard or clipboard contract is relaxed. Repeat the manual
+attempt under this trace; an absent focus is not authority to guess another field.
 
 ## Verification
 
@@ -57,6 +60,8 @@ focus is not authorization to guess another input field.
   65 pure checks; standards lens ran 43. These reviewers did not inspect
   native rendering or operate devices.
 - Docs validator: 19 requirements, 17 acceptance criteria, no problems.
+- Hosted baseline and both contract workflows passed on d2ce9c7: runs
+  39558595142, 39558588547 and 39558594936. Recheck the final checkpoint head.
 
 Native synthetic recording and reading previews showed the correct active tile
 and parent-matching voice-button corners. Both exited automatically. Exact-head
