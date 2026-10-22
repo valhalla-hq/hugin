@@ -2,15 +2,24 @@
 
 Status am22.10.2026: Hugin1.0.0 ist als privater Offline-Installer gebaut,
 im regulären Benutzerordner installiert und nach Reparaturinstallation geprüft.
-Ergebnis abgeschlossen: hugin-production-build, Mjolnir. PR47 ist checked als
+Produktionsbuild abgeschlossen: hugin-production-build, Mjolnir. PR47 ist checked als
 c17b35818b0ac47a0dae6b20b78528ac9d0e74b9 nach Main übernommen; saubere Quellkopie
 unter InstanceGuard aktualisiert, alle Artefaktinputs und Source-Einstellungen
 unverändert. Installiertes Hugin läuft normal und zeigt im eigenen geprüften
 Fenster „Bereit für dein Diktat“, Lokal/Freya und die richtigen Tastenhinweise.
-Exakter Handoff: handoffs/2026-10-22-production-build.md. Nur Markdown-Schlussbeleg
-und zentrale technische Freigabe/Bereinigung dieses Checkpoints stehen noch aus;
-Eigentum bleibt bis zum CLI-Releasebeleg aktiv.
-Abschlussbeleg: https://github.com/valhalla-hq/hugin/pull/48 (nur Markdown).
+PR48 ist als e82e9a625f897a0eda33479637a3a802bd2d2636 integriert. Der alte
+Produktions-Arbeitsbaum wurde nach zentralem Releasebeleg entfernt; Sicherungen
+und Nachweise bleiben im Releaseordner erhalten.
+
+Heutiger Speicherpunkt: input-login-acceptance, Mjolnir. Brian bestätigt nach
+manuellem Beenden/Neustarten alle vier tatsächlichen Bedienwege erfolgreich:
+Maus zurück und Alt+Y starten/beenden Diktat einschließlich Einfügen; Maus
+vorwärts und Strg+Alt+V starten/stoppen Vorlesen. Quelle ist Brians direkte
+Testbestätigung vom22.10.2026, keine zusätzliche automatische Klicksimulation.
+Es gab keine neue Windows-Anmeldung. Brian verschiebt diese wegen laufender
+Arbeit ausdrücklich auf morgen,23.10.2026. Heute weder abmelden noch neu starten
+oder weitere Eingabe-/Hörtests anfordern. Hugin und andere Programme weiterlaufen lassen.
+Exakter aktiver Handoff: handoffs/2026-10-22-input-login-acceptance.md.
 
 Installer: C:/Users/brian/Hugin-Releases/1.0.0-3b6bc4304a87/ (exe +4bins,
 alle fünf Ziel-SHA256-Werte geprüft). Installationsroot:
@@ -27,14 +36,16 @@ Forward/Strg+Alt+V liest; Escape und Panel-Buttons bleiben. Source-Stimme und
 Aktivierung sind unverändert. Whispering/PipPal bleiben deaktiviert. Die alte
 Quellinstallation bleibt Rückweg; alle Original-Sicherungen behalten.
 
-Nächster echter Login, physische Mausprobe und breite Geräte-/Zielmatrix bleiben
-offen. Lokal unsigniert; kein öffentlicher Upload, neue Kosten, Abmelden/Neustart
+Die physische Maus-/Tastenprobe ist durch Brian bestätigt. Nächster echter Login
+und breite Geräte-/Zielmatrix bleiben offen. Lokal unsigniert; kein öffentlicher
+Upload, neue Kosten, Abmelden/Neustart
 oder Sicherheits-/Treiberänderung. Alte60s-Abbruchursache bleibt Hypothese;
 frische installierte Kette mit begrenzter120s-Frist besteht, cancel2/exit5 bleiben.
-Nächster Schritt: reinen Markdown-Schlussbeleg checked integrieren. Geprüfte
-Nachweise und Original-Sicherungen liegen zusätzlich im Releaseordner/verification.
-Nach Remote-Beleg zentral freigeben und nur den Entwicklungsarbeitsbaum bereinigen.
-Keine weiteren Appänderungen, Wiederholungstests oder Neustarts erforderlich.
+Nächster Schritt am23.10.2026: erst nach Brians regulärer neuer Windows-Anmeldung
+prüfen, ob Hugin ohne manuellen Start still im Infobereich läuft. Danach die
+Maus-/Tastenbelegung nach Anmeldung bestätigen. Ein manueller App-Neustart oder
+Entsperren ersetzt diesen Nachweis nicht. Heute nur den Markdown-Speicherpunkt
+sauber pushen; kein neuer Build, keine Appänderung und keine Automatisierung.
 
 ## Frühere Nachweise und Verlauf
 
@@ -66,27 +77,29 @@ Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
 
 ## Current intent and authorization
 
-Build the productive Windows app and offline installer from main5140213.
-Verify per-user installation, startup readback, repeated starts/reinstallation
-and permanent input profile while preserving accepted clipboard/UI/audio timing.
-Specifications: specs/2026-10-22-production-build/. Routine checked private
-integration and the final local installation switch are authorized. Actual
-next-login evidence remains separate; no sign-out is implied.
+Save today's successful manual restart and four physical input tests in the
+project's Git checkpoint. Production implementation is complete; preserve its
+immutable artifact and running app. Only actual post-login acceptance remains,
+deferred by Brian to23October2026. No logout, restart, scheduler or new runtime
+change today. Keep this Save checkpoint active for continuation.
 
 ## Active Handoff
 
-- `handoffs/2026-10-22-production-build.md`
-- Branch: codex/hugin-production-build-mjolnir.
-- Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-production-build-mjolnir.
-- Base: 5140213e6019f3b9f47025cd2f6ce08ba15cbce7.
-- Spec/plan/tasks: specs/2026-10-22-production-build/.
-- Evidence/limits: docs/review-fixes-2026-10-22.md.
-- PR: https://github.com/valhalla-hq/hugin/pull/47 (Draft).
-- Control: 05181f9a99374ff8b298c626f903304f36ac8926.
-- Ownership active for production-build implementation and verification.
+- `handoffs/2026-10-22-input-login-acceptance.md`
+- Branch: codex/input-login-acceptance-mjolnir.
+- Worktree: C:/Users/brian/brian-projects/worktrees/hugin/input-login-acceptance-mjolnir.
+- Base: e82e9a625f897a0eda33479637a3a802bd2d2636.
+- Scope: Markdown acceptance receipt; no runtime/installer change.
+- Evidence/limits: PRODUCTION-BUILD.md, manual acceptance dated22October2026.
+- PR: created after this first meaningful checkpoint; match exact task branch.
+- Control: 46e362d1d3284d712757fc2f0e67a165dbf3a41c.
+- Ownership active for input-login-acceptance (Save, not release).
+- Prior completed production handoff: handoffs/2026-10-22-production-build.md.
 - Prior completed review-fixes handoff: handoffs/2026-10-22-review-fixes.md.
 - Prior accepted natural-sections result: handoffs/2026-10-22-natural-sections.md.
 - Prior accepted codec optimization: handoffs/2026-10-22-tts-throughput.md.
+
+## Historical review-fix receipt
 
 All five corrections are implemented at head4a5d46b, source tree398876de.
 584 full checks pass; all584 also pass independently with absent/Freya/Tyr
