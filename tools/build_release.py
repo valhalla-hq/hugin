@@ -70,15 +70,20 @@ def copy_assets(payload,source):
         output.write_bytes(pcm)
 
 
-def launcher(payload,version,work):
-    from hugin.branding import hugin_icon
-    hugin_icon(256).save(payload/'Hugin.ico',format='ICO',sizes=[(16,16),(32,32),(48,48),(64,64),(128,128),(256,256)])
+def launcher(payload,version,work,head):
+    # The icon producer and native recipe come from the same pinned tree as the
+    # payload. Never reread a mutable worktree midway through a long build.
+    subprocess.run([str(payload/'.runtime/controller/Scripts/python.exe'),'-B','-c',
+        "import sys;from hugin.branding import hugin_icon;hugin_icon(256).save(sys.argv[1],format='ICO',sizes=[(16,16),(32,32),(48,48),(64,64),(128,128),(256,256)])",
+        str(payload/'Hugin.ico')],check=True)
     source=work/'HuginLauncher.cs'
-    source.write_text((ROOT/'packaging/HuginLauncher.cs').read_text(encoding='utf-8').replace('@VERSION@',version),encoding='utf-8')
+    source.write_text(git('show',head+':packaging/HuginLauncher.cs').replace('@VERSION@',version),encoding='utf-8')
+    target=work/'InstallationTarget.cs'
+    target.write_text(git('show',head+':packaging/InstallationTarget.cs'),encoding='utf-8')
     compiler=Path(os.environ['WINDIR'])/'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
     subprocess.run([str(compiler),'/nologo','/target:winexe','/platform:x64','/optimize+',
-        '/codepage:65001','/reference:System.Windows.Forms.dll','/win32icon:'+str(payload/'Hugin.ico'),
-        '/out:'+str(payload/'Hugin.exe'),str(source)],check=True)
+        '/codepage:65001','/reference:System.Web.Extensions.dll','/reference:System.Windows.Forms.dll','/win32icon:'+str(payload/'Hugin.ico'),
+        '/out:'+str(payload/'Hugin.exe'),str(source),str(target)],check=True)
     return dict(compiler_sha256=digest(compiler),launcher_sha256=digest(payload/'Hugin.exe'))
 
 
@@ -86,25 +91,25 @@ def build(source,output,iscc):
     if sys.platform!='win32' or sys.version_info[:3]!=(3,12,10):raise ValueError('build_requires_pinned_windows_python')
     if git('status','--porcelain'):raise ValueError('build_requires_clean_source')
     head=git('rev-parse','HEAD')
-    version=subprocess.check_output([sys.executable,'-B','-c',
-        'import sys;sys.path.insert(0,"src");from hugin import __version__;print(__version__)'],cwd=ROOT,text=True).strip()
+    import ast
+    version=ast.literal_eval(git('show',head+':src/hugin/__init__.py').split('__version__ = ',1)[1].splitlines()[0])
     source=Path(source).resolve();output=Path(output).resolve();iscc=Path(iscc).resolve()
     if output.exists() or output==source or output.is_relative_to(source):raise ValueError('build_output_must_be_new_separate_directory')
-    lock=load_wheel_lock(ROOT)
-    validate_wheelhouse(source/'.runtime/wheelhouse',lock,require_manifest=True)
     if sys.base_prefix==sys.prefix or not (Path(sys.base_prefix)/'tcl').is_dir():raise ValueError('build_python_base_invalid')
     output.mkdir(parents=True,exist_ok=False);payload=output/'app';payload.mkdir()
     work=output/'build-evidence';work.mkdir()
     started=time.perf_counter();cpu=time.process_time()
     archive=subprocess.check_output(['git','-C',str(ROOT),'archive','--format=tar',head,'--',*SOURCE_PATHS])
     with tarfile.open(fileobj=io.BytesIO(archive)) as files:files.extractall(payload,filter='data')
+    lock=load_wheel_lock(payload)
+    validate_wheelhouse(source/'.runtime/wheelhouse',lock,require_manifest=True)
     verify_voice_assets(load_settings(payload))
     for profile in PROFILES:
         print(json.dumps(dict(stage='private_runtime',profile=profile)),flush=True)
         materialize_profile(payload,source,profile,lock,work)
     print(json.dumps(dict(stage='locked_models_cuda_cues')),flush=True)
     copy_assets(payload,source)
-    native=launcher(payload,version,work)
+    native=launcher(payload,version,work,head)
     records=inventory(payload)
     manifest=dict(schema_version=1,app='Hugin',version=version,source_commit=head,
         python_version=PYTHON,package_profiles={p:{w.name:w.version for w in lock.profiles[p]} for p in PROFILES},files=records)
@@ -116,10 +121,12 @@ def build(source,output,iscc):
         '--report',str(work/'portable-probe.json')],check=True)
     installer=output/'installer';installer.mkdir()
     print(json.dumps(dict(stage='compile_installer',payload_bytes=sum(r['size'] for r in records),files=len(records))),flush=True)
+    recipe=work/'Hugin.iss'
+    recipe.write_text(git('show',head+':packaging/Hugin.iss'),encoding='utf-8-sig')
     with (work/'inno.txt').open('w',encoding='utf-8') as log:
-        subprocess.run([str(iscc),'/DPayload='+str(payload),'/DVersion='+version,'/DOutput='+str(installer),str(ROOT/'packaging/Hugin.iss')],check=True,stdout=log,stderr=subprocess.STDOUT)
+        subprocess.run([str(iscc),'/DPayload='+str(payload),'/DVersion='+version,'/DCommitShort='+head[:12],'/DManifestSHA='+digest(payload/'release-manifest.json'),'/DOutput='+str(installer),str(recipe)],check=True,stdout=log,stderr=subprocess.STDOUT)
     artifacts=inventory(installer)
-    receipt=dict(schema_version=1,version=version,source_commit=head,source_tree=git('rev-parse','HEAD:src'),
+    receipt=dict(schema_version=1,version=version,source_commit=head,source_tree=git('rev-parse',head+':src'),
         unsigned=True,installer_files=artifacts,payload_files=len(records),payload_bytes=sum(r['size'] for r in records),
         wall_seconds=round(time.perf_counter()-started,3),controller_cpu_seconds=round(time.process_time()-cpu,3),
         native=native,iscc_sha256=digest(iscc),base_python_exe_sha256=digest(Path(sys.base_prefix)/'python.exe'),

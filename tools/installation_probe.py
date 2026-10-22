@@ -8,7 +8,7 @@ import sys
 import threading
 import time
 
-sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'))
+sys.path[:0]=[str(Path(__file__).resolve().parents[1]/'src'),str(Path(__file__).resolve().parent)]
 from hugin.config import load_settings,verify_voice_assets
 from hugin.cues import load_cue_signals
 from production_package import load_release,verify_release
@@ -22,6 +22,7 @@ from importlib import metadata
 root=Path(sys.argv[1]).resolve();profile=sys.argv[2]
 assert sys.flags.isolated and not any(not Path(p).resolve().is_relative_to(root) for p in sys.path)
 cuda=os.add_dll_directory(str(root/'.runtime/cuda'))
+report_stream=sys.stdout;sys.stdout=sys.stderr
 if profile=='controller':
     import tkinter,PIL,sounddevice,comtypes,pystray
     assert tkinter.Tcl().eval('info patchlevel')=='8.6.15'
@@ -34,6 +35,7 @@ for dist in metadata.distributions():
     name=re.sub(r'[-_.]+','-',dist.metadata['Name'].lower())
     assert name not in versions
     versions[name]=dist.version
+sys.stdout=report_stream
 print(json.dumps(dict(prefix=sys.prefix,isolated=bool(sys.flags.isolated),versions=versions)))
 '''
 
@@ -41,19 +43,41 @@ print(json.dumps(dict(prefix=sys.prefix,isolated=bool(sys.flags.isolated),versio
 def private_profile(root,profile,expected):
     from hugin.windows.process import OwnedProcess
     executable=root/'.runtime'/profile/'Scripts/python.exe'
-    owner=OwnedProcess([str(executable),'-B','-c',PROFILE_CODE,str(root),profile],
-        stdin=subprocess.DEVNULL,stderr=subprocess.DEVNULL,cwd=str(root),
-        env={**os.environ,'HF_HUB_OFFLINE':'1','TRANSFORMERS_OFFLINE':'1','HF_HUB_DISABLE_TELEMETRY':'1','DO_NOT_TRACK':'1'})
-    _HELD.append(owner);captured=[]
-    reader=threading.Thread(target=lambda:captured.append(owner.stdout.read(65537)),daemon=True)
+    try:
+        owner=OwnedProcess([str(executable),'-B','-c',PROFILE_CODE,str(root),profile],
+            stdin=subprocess.DEVNULL,stderr=subprocess.DEVNULL,cwd=str(root),
+            env={**os.environ,'HF_HUB_OFFLINE':'1','TRANSFORMERS_OFFLINE':'1','HF_HUB_DISABLE_TELEMETRY':'1','DO_NOT_TRACK':'1'})
+    except Exception as error:
+        partial=getattr(error,'owner',None)
+        if partial is not None:
+            _HELD.append(partial)
+            if getattr(partial,'process_created',None) is False or partial.poll() is not None:
+                try:partial.close();_HELD.remove(partial)
+                except Exception:pass
+        raise
+    _HELD.append(owner);captured=[];read_errors=[]
+    def read_report():
+        try:
+            parts=[];size=0
+            while True:
+                piece=owner.stdout.read(65537-size)
+                if not piece:break
+                parts.append(piece);size+=len(piece)
+                if size>65536:raise ValueError('private_profile_capacity')
+            captured.append(b''.join(parts))
+        except Exception as error:read_errors.append(error)
+    reader=threading.Thread(target=read_report,daemon=True)
     reader.start()
     try:
-        try:code=owner.wait(timeout=90)
-        except subprocess.TimeoutExpired:
-            owner.kill();owner.wait(timeout=5)
-            raise RuntimeError('private_profile_timeout') from None
+        deadline=time.monotonic()+90
+        while owner.poll() is None:
+            if read_errors or time.monotonic()>=deadline:
+                owner.kill();owner.wait(timeout=5)
+                raise RuntimeError('private_profile_read_failed' if read_errors else 'private_profile_timeout')
+            time.sleep(.01)
+        code=owner.wait(timeout=0)
         reader.join(3)
-        if reader.is_alive() or not captured or len(captured[0])>65536 or code!=0:
+        if reader.is_alive() or read_errors or not captured or code!=0:
             raise RuntimeError('private_profile_failed_'+profile)
         facts=json.loads(captured[0])
         if facts['versions']!=expected:raise RuntimeError('installed_package_versions_differ_'+profile)
@@ -81,11 +105,13 @@ def check_inputs(root):
             bindings=[dict(action=b.action,shortcut=b.shortcut,mouse=b.mouse) for b in BINDINGS],
             physical_clicks_tested=False)
     finally:
-        if inputs is not None and not inputs.closed:
-            try:inputs.stop()
-            finally:
-                if not inputs.closed:_HELD.append((guard,inputs))
-        if inputs is None or inputs.closed:guard.close()
+        try:
+            if inputs is not None and not inputs.closed:inputs.stop()
+        finally:
+            if inputs is None or inputs.closed:
+                try:guard.close()
+                except Exception:_HELD.append(guard);raise
+            else:_HELD.append((guard,inputs))
 
 
 def main():

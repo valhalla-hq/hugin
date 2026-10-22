@@ -1,6 +1,10 @@
 # Plan
 
-Use Inno Setup with a stable per-user AppId and install root under LocalAppData.
+Use Inno Setup with a stable per-user AppId and immutable per-build roots under
+LocalAppData/Programs/Hugin/releases/<version>-<commit>. Stable shortcuts select
+the current release. New builds never merge with old executable files; old roots
+retain preferences/backups as return paths. Native preflight holds root/ancestor
+directory identities and permits only the authenticated same-build repair.
 Bundle full private CPython trees with isolated relative search paths; keep
 existing .runtime/{profile}/Scripts/python.exe worker paths. Rebuild package
 trees from SHA256-locked local wheels, not copied live venvs. Models/CUDA/cues
@@ -30,3 +34,8 @@ and public signing/distribution stay separate; no paid tool or hidden updater.
 Return path: normally quit installed Hugin, restore only the exact owned prior
 startup link from retained backup, then launch the preserved source installation.
 No backup/data deletion is part of the final migration. Keep build outputs ignored.
+
+Installer success requires configuration and guard release; failed post-install
+configuration returns exit11, shows failure and never offers app launch. Uninstall
+configuration runs in InitializeUninstall before Inno deletes payload files.
+All payload, icon/native and installer recipe inputs use the pinned Git commit.

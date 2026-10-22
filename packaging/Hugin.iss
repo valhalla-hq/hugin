@@ -4,6 +4,12 @@
 #ifndef Version
   #error Version is required
 #endif
+#ifndef CommitShort
+  #error CommitShort is required
+#endif
+#ifndef ManifestSHA
+  #error ManifestSHA is required
+#endif
 #ifndef Output
   #error Output is required
 #endif
@@ -13,7 +19,9 @@ AppId={{9835C52D-2C14-48B5-B03C-637F14587661}
 AppName=Hugin
 AppVersion={#Version}
 AppPublisher=Brian
-DefaultDirName={localappdata}\Programs\Hugin
+DefaultDirName={localappdata}\Programs\Hugin\releases\{#Version}-{#CommitShort}
+UsePreviousAppDir=no
+DisableDirPage=yes
 DefaultGroupName=Hugin
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64os
@@ -48,12 +56,8 @@ Source: "{#Payload}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs cr
 Name: "{group}\Hugin"; Filename: "{app}\Hugin.exe"; WorkingDir: "{app}"
 Name: "{autodesktop}\Hugin"; Filename: "{app}\Hugin.exe"; WorkingDir: "{app}"; Tasks: desktopicon
 
-[Registry]
-; Retained ownership fact permits reinstalling into retained user state after uninstall.
-Root: HKCU; Subkey: "Software\Hugin\Installer"; ValueType: string; ValueName: "InstallLocation"; ValueData: "{app}"
-
 [Run]
-Filename: "{app}\Hugin.exe"; Parameters: "--show"; Description: "Hugin starten"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\Hugin.exe"; Parameters: "--show"; Description: "Hugin starten"; Flags: nowait postinstall skipifsilent; Check: SetupCompleted
 
 [Code]
 type
@@ -64,9 +68,9 @@ function HuginProcessTimes(Process: THandle; var Creation, ExitTime, KernelTime,
   external 'GetProcessTimes@kernel32.dll stdcall';
 
 var GuardReady, GuardRelease, UninstallHelper: String;
-    GuardHeld: Boolean;
+    GuardHeld, SetupSucceeded, SetupAttempted: Boolean;
 
-function AcquireGuard(Helper: String): Boolean;
+function AcquireGuard(Helper, Target, Manifest: String): Boolean;
 var Creation, ExitTime, KernelTime, UserTime: THuginFileTime; Started: Int64;
     Code, Count: Integer; Status: AnsiString;
 begin
@@ -76,8 +80,9 @@ begin
   GuardReady := GetTempDir + 'hugin-' + IntToStr(HuginCurrentProcessId) + '-' + IntToStr(Random(1000000000));
   GuardRelease := GuardReady + '.release';
   if not Exec(Helper, '--install-guard ' + IntToStr(HuginCurrentProcessId) + ' ' + IntToStr(Started) +
-      ' "' + GuardReady + '" "' + GuardRelease + '"', '', SW_HIDE, ewNoWait, Code) then exit;
-  for Count := 1 to 50 do begin
+      ' "' + GuardReady + '" "' + GuardRelease + '" "' + RemoveBackslashUnlessRoot(Target) +
+      '" "' + Manifest + '" {#ManifestSHA}', '', SW_HIDE, ewNoWait, Code) then exit;
+  for Count := 1 to 3000 do begin
     if LoadStringFromFile(GuardReady, Status) then begin
       Result := Status = 'ready'; GuardHeld := Result; exit;
     end;
@@ -106,26 +111,14 @@ begin
 end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;
-var Existing: String; Found: TFindRec; NonEmpty: Boolean;
 begin
   ExtractTemporaryFile('Hugin.exe');
-  NonEmpty := False;
-  if FindFirst(AddBackslash(WizardDirValue) + '*', Found) then begin
-    try
-      repeat
-        if (Found.Name <> '.') and (Found.Name <> '..') then NonEmpty := True;
-      until not FindNext(Found);
-    finally FindClose(Found); end;
-  end;
-  if NonEmpty then
-    if not RegQueryStringValue(HKCU, 'Software\Hugin\Installer', 'InstallLocation', Existing) or
-       not SameText(RemoveBackslashUnlessRoot(Existing), RemoveBackslashUnlessRoot(WizardDirValue)) then begin
-      Result := 'Der Zielordner enthält Dateien einer unbekannten Installation. Bitte einen leeren Ordner wählen.'; exit;
-    end;
+  ExtractTemporaryFile('release-manifest.json');
   if not GuardHeld then
-    if not AcquireGuard(ExpandConstant('{tmp}\Hugin.exe')) then begin
+    if not AcquireGuard(ExpandConstant('{tmp}\Hugin.exe'), WizardDirValue,
+        ExpandConstant('{tmp}\release-manifest.json')) then begin
       ReleaseGuard;
-      Result := 'Bitte Hugin über sein Symbol im Infobereich regulär beenden und erneut versuchen. Es werden keine Apps automatisch beendet.';
+      Result := 'Hugin muss regulär beendet sein. Der Zielordner muss leer sein oder zu genau diesem unveränderten Build gehören. Es wurden keine Programmdateien installiert.';
     end;
 end;
 
@@ -141,20 +134,46 @@ end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
-  if CurStep = ssPostInstall then begin ConfigureInstalled(False); ReleaseGuard; end;
+  if CurStep = ssPostInstall then begin
+    SetupAttempted := True;
+    try
+      ConfigureInstalled(False);
+      ReleaseGuard;
+      SetupSucceeded := True;
+    finally
+      if GuardRelease <> '' then ReleaseGuard;
+    end;
+  end;
 end;
 
 function InitializeUninstall: Boolean;
 begin
   UninstallHelper := GetTempDir + 'hugin-uninstall-' + IntToStr(HuginCurrentProcessId) + '-' + IntToStr(Random(1000000000)) + '.exe';
   Result := CopyFile(ExpandConstant('{app}\Hugin.exe'), UninstallHelper, True);
-  if Result then Result := AcquireGuard(UninstallHelper);
+  if Result then Result := AcquireGuard(UninstallHelper, ExpandConstant('{app}'),
+      ExpandConstant('{app}\.hugin-installation\manifest.json'));
+  if Result then begin
+    try ConfigureInstalled(True);
+    except Result := False; end;
+  end;
   if not Result then MsgBox('Bitte Hugin regulär beenden. Die Deinstallation wurde nicht gestartet.', mbError, MB_OK);
 end;
 
-procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+function SetupCompleted: Boolean;
+begin Result := SetupSucceeded; end;
+
+function GetCustomSetupExitCode: Integer;
 begin
-  if CurUninstallStep = usUninstall then ConfigureInstalled(True);
+  Result := 0;
+  if SetupAttempted and not SetupSucceeded then Result := 11;
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if (CurPageID = wpFinished) and SetupAttempted and not SetupSucceeded then begin
+    WizardForm.FinishedHeadingLabel.Caption := 'Hugin wurde nicht fertig eingerichtet';
+    WizardForm.FinishedLabel.Caption := 'Die Einrichtung ist fehlgeschlagen. Hugin wird nicht gestartet. Einstellungen und Sicherungen bleiben erhalten. Bitte das Installationsprotokoll prüfen.';
+  end;
 end;
 
 procedure DeinitializeSetup;

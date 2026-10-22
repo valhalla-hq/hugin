@@ -53,7 +53,7 @@ internal static class HuginLauncher
     {
         // Parent identity includes creation time and an observed process handle.
         // The guard never terminates any process and survives until release/exit.
-        if (args.Length != 5) return 2;
+        if (args.Length != 8) return 2;
         bool held = false;
         using (Process parent = Process.GetProcessById(Int32.Parse(args[1])))
         using (Mutex mutex = new Mutex(false, InstanceName()))
@@ -64,8 +64,15 @@ internal static class HuginLauncher
             {
                 try { held = mutex.WaitOne(0); } catch (AbandonedMutexException) { held = true; }
                 if (!held) { Status(args[3], "busy"); return 3; }
-                Status(args[3], "ready");
-                while (!parent.WaitForExit(100) && !File.Exists(args[4])) { }
+                try
+                {
+                    using (InstallationTarget target=InstallationTarget.Open(args[5],args[6],args[7]))
+                    {
+                        Status(args[3], "ready");
+                        while (!parent.WaitForExit(100) && !File.Exists(args[4])) { }
+                    }
+                }
+                catch { if (!File.Exists(args[3])) Status(args[3], "target_changed"); return 4; }
             }
             finally
             {

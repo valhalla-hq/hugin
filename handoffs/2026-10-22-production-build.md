@@ -48,3 +48,16 @@ Starter: Continue Hugin production-build from this exact handoff. Follow the
 spec/plan/tasks, preserve the accepted behavior, finish installer and local
 verification before routine checked private integration. Do not develop in
 the stable clone or overwrite settings. Release only from clean remote proof.
+
+Update before next build: first experimental stage failed before installer
+compilation because isolated Python did not include its tools directory. Fixed
+both entrypoint search paths; all three staged private profiles now import and
+match 7/21/94 locked distributions. No installer installed. Full suite602 passes
+in25.357s. Native target ownership3 cases pass, including redirected ancestor,
+unknown/changed payload refusal and held root/ancestor rename refusal. A genuine
+Inno negative post-install fixture returns11 rather than false success. Separate
+review found old-payload mixture, path-string authority, false success, fragmented
+stdout, partial owner retention and mutable late recipe reads; candidate fixes
+use immutable per-build roots, authenticated manifest/root native lease, explicit
+success facts, bounded pipe reads and pinned Git sources. Repeated native/full
+review and actual offline artifact/install/voices/persistence remain pending.
