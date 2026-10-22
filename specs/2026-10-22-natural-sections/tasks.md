@@ -5,4 +5,4 @@
 - [x] Cover punctuation/abbreviation/bounds compatibility and run focused checks (AC-002).
 - [x] Compare real Freya/Tyr word coverage, transitions and preparation costs (AC-003).
 - [x] Independent review, exact-head CI, save and guarded deployment.
-- [ ] Record user hearing feedback or leave its exact continuation pending.
+- [x] Record Brian's hearing acceptance for both Freya and Tyr.

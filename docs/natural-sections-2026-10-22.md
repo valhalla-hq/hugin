@@ -67,5 +67,7 @@ Overlong unpunctuated sentences retain whole-word fallback under the240 cap.
 
 Native drain-to-next-submission measurements exclude any added preparation stall
 in these cases. They do not measure acoustic device onset or prove agreeable
-prosody; natural pauses inside generated speech remain. User hearing feedback
-for both voices is the remaining perceptual check after guarded deployment.
+prosody; natural pauses inside generated speech remain. After guarded deployment,
+Brian confirmed that section changes, word marking and smooth transitions fit
+both Freya and Tyr. This supplies the requested user hearing acceptance; it does
+not broaden the synthetic corpus or remove the documented model limitations.

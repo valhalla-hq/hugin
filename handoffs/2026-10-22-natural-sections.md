@@ -11,7 +11,7 @@ https://github.com/valhalla-hq/hugin/pull/42. Base main
 1c598dbf90dd5aa1aebf9f47a358f9d87f83ac8f. Control/preflight
 05181f9a99374ff8b298c626f903304f36ac8926. No open PR at task start.
 Specs: specs/2026-10-22-natural-sections/. Prior accepted throughput task:
-handoffs/2026-10-22-tts-throughput.md. Ownership remains active.
+handoffs/2026-10-22-tts-throughput.md. Release ownership after the final checkpoint.
 
 The new pure reading_sections producer owns punctuation interpretation once;
 Coordinator retains its existing producer seam and consumes original slices.
@@ -51,20 +51,23 @@ tree5e0930eee9589b91c4bddaeb73e056f306e529f0 matches the deployment.
 
 Normal pythonw/launch/root --show start at09:17:40 Europe/Berlin. The freshly
 selected own Hugin window was activated and observed showing Bereit für dein
-Diktat. No text, hotkey or clipboard was injected. Brian has been asked to hear
-both voices on multiple sentences and a long comma-separated sentence. Source
-and tests are complete; only perceptual feedback remains open. Ownership stays
-active with this exact continuation; no extra benchmark is due without a finding.
-No hearing acceptance is inferred from silent native playback. Return path is base
+Diktat. No text, hotkey or clipboard was injected. PR43 recorded that deployment
+and the pending hearing check; it merged as ed005aa89a3333e3e95cd33398718d495806bfaf.
+Only three Markdown files changed, with identical runtime source and checked
+main fast-forward while Hugin stayed running.
+
+Brian then explicitly answered that section changes, word marking and transitions
+fit both voices. This is user hearing acceptance, separate from the native silent
+measurements. Implementation, verification, integration, deployment and acceptance
+are complete. No further benchmark or source change is requested. Return path is base
 main after normal Quit. Never kill by remembered PID. Whispering/PipPal remain off.
 Commit only reviewed code/tests/specs/curated evidence/context/handoff, no raw
 audio/model files, personal content or logs. Save and remotely prove both context
 and this exact handoff before lifecycle release.
 
-Starter: Continue Hugin natural sections from this exact handoff. Implementation,
-real comparison,571 checks, independent review, PR42 integration and guarded
-deployment are complete. Obtain Brian's hearing feedback for sentence/clause
-transitions and word marking; then record acceptance or investigate the concrete
-finding. Do not repeat completed GPU tests or reopen unrelated performance,
-clipboard, shortcut or packaging work. Release only after the final checkpoint
-is clean and remotely proven through the control tool.
+Starter: Hugin natural sections are accepted and complete. Implementation, real
+comparison,571 checks, independent review, PR42 integration, guarded deployment
+and Brian's both-voice hearing acceptance are finished. Do not repeat completed
+GPU tests or reopen this task without a new request. Preserve the measured
+limitations and the running source. Release ownership only after the final
+checkpoint is clean and remotely proven through the control tool.
