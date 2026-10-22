@@ -28,6 +28,9 @@ Die dauerhafte Belegung lautet:
 Während einer Aufnahme das gewünschte Textfeld auswählen. Der fertige Text bleibt
 auch für Strg+V in der Zwischenablage. Beim ersten Vorlesen muss Hugin die Modelle
 und Rechenroutinen vorbereiten; spätere Texte verwenden die geladenen Komponenten.
+Die begrenzte Ladefrist beträgt dafür 120 Sekunden. Sie ist keine feste Wartezeit:
+Sobald die Engine bereit ist, arbeitet Hugin weiter. Abbrechen und reguläres
+Beenden behalten ihre eigenen kurzen Fristen.
 
 ## Aktualisierung und Deinstallation
 

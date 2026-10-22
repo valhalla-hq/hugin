@@ -111,3 +111,13 @@ is stopped and Source Startup restored. Staged rejected payload plus the exact
 missing tracked docs now passes2 normal hidden app starts (3.595s); this is an
 exploratory diagnosis only, not a released artifact. New Git-archive runtime
 closure guard passes. Include only curated tracked docs; all are Markdown.
+
+Quiet cold candidate reading failed again after63s with worker_failed/engine.
+Instrumented synthetic retry shows no engine exception and succeeds; TTS init
+29.732s, complete first audio42.162s, all34/40word marks retained. A new empty
+Numba cache engine-only probe completes31.280s, closed32.207s. The initial
+60s watchdog boundary is too tight for variable cold loading; OS cache remains
+uncontrolled, so the exact extra cold-I/O cost is not established. Increase
+ready_seconds to120, with a controller guard proving survival past60 and actual
+closure at120. Cancel2s/exit5s unchanged. Fresh installed cold read must still
+pass; these diagnostics do not accept the rejected artifact.

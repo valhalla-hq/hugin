@@ -3,7 +3,12 @@
 Status: Brian requests the production build including installer and persistent
 autostart/mouse/keyboard verification. Active task hugin-production-build on
 Mjolnir. Spec/plan/tasks: specs/2026-10-22-production-build/. Accepted source
-and running app remain main5140213 while the new build is prepared separately.
+remain main5140213 while the new build is prepared separately. Hugin is now
+normally stopped for real installer/native/voice checks. The first candidate
+was rejected for missing approval-document closure; original Startup and state
+are restored. Required tracked docs and production-consumer checks are fixed.
+A quiet cold reading attempt also reached the old60s initialization boundary;
+the bounded loading allowance is now120s, preserving separate cancel/exit bounds.
 No sign-out, public distribution or paid signing is authorized.
 
 Previous result: The five confirmed full-review findings are corrected, independently
