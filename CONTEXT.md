@@ -38,12 +38,23 @@ Routine checked private integration and normal deployment remain authorized.
 - Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-review-fixes-mjolnir.
 - Base: 46f157844917bbd601538b67413427f5129139e2.
 - Spec/plan/tasks: specs/2026-10-22-review-fixes/.
-- Evidence/limits: docs/natural-sections-2026-10-22.md.
+- Evidence/limits: docs/review-fixes-2026-10-22.md.
 - PR: https://github.com/valhalla-hq/hugin/pull/45.
 - Control: 05181f9a99374ff8b298c626f903304f36ac8926.
 - Ownership active through corrections, verification and deployment.
 - Prior accepted natural-sections result: handoffs/2026-10-22-natural-sections.md.
 - Prior accepted codec optimization: handoffs/2026-10-22-tts-throughput.md.
+
+All five corrections are implemented at head4a5d46b, source tree398876de.
+584 full checks pass; all584 also pass independently with absent/Freya/Tyr
+synthetic installed preferences, preserving their bytes and the actual stable
+preferences. The51 relevant native cases pass across the final runs. Real
+Freya/Tyr short-sentence and clause reads mark34/34 and40/40 words, with no
+added preparation stalls (candidate gaps<=0.86ms). Independent spec and
+standards review clears that source. Curated evidence is linked above.
+Brian normally quit Hugin for these checks; stable source remains46f1578 and
+the app is currently stopped. Exact-head CI, integration, guarded deployment
+and final ownership release remain; Whispering/PipPal remain disabled.
 
 ## Accepted deployment and preservation
 
