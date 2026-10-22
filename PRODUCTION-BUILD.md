@@ -11,9 +11,9 @@ Hugin wurde normal aus dem Installationsordner gestartet. Computer Use zeigt
 das eigene Fenster „Bereit für dein Diktat“, Modus Lokal, Stimme Freya sowie
 die richtigen Maus-/Tastenhinweise. Die App bleibt für Brian geöffnet.
 
-Dieser Markdown-Abschluss ändert keine Programm- oder Installerinputs. Der
-saubere Remote-Checkpoint wird anschließend durch den zentralen Workspace-
-Release bestätigt; bis zu dessen Beleg bleibt das technische Eigentum aktiv.
+Dieser Markdown-Abschluss ändert keine Programm- oder Installerinputs. PR48 ist
+als e82e9a625f897a0eda33479637a3a802bd2d2636 integriert; der zentrale Workspace-
+Release wurde am22.10.2026 um13:18Uhr MESZ bestätigt und der alte Arbeitsbaum entfernt.
 Nachweise und Original-Sicherungen liegen zusätzlich geprüft im Releaseordner
 unter `verification/`, damit sie beim Worktree-Abschluss erhalten bleiben.
 
@@ -120,6 +120,13 @@ bleibt als Rückweg erhalten. Whispering und PipPal werden nicht zurückgestarte
 
 ## Kosten und Prüfgrenzen
 
+Manuelle Abnahme am22.10.2026: Brian hat Hugin regulär beendet und manuell neu
+gestartet. Anschließend bestätigt er alle vier Abläufe erfolgreich: Diktatstart,
+Aufnahmeende und automatisches Einfügen sowohl mit hinterer Maustaste als auch
+Alt+Y; Vorlesestart und Stopp sowohl mit vorderer Maustaste als auch Strg+Alt+V.
+Dies ist eine direkte Nutzerbestätigung der physischen Bedienung, kein neuer
+automatischer Testlauf. Die automatischen Messwerte unten bleiben unverändert.
+
 Build: 812,357s Wandzeit (608,109s Installerkompilation), 71,172s Controller-CPU.
 Privater Import-/Integritätstest: 45,902s Wandzeit, 26,781s Controller-CPU.
 Lesekette: 78,839s Wandzeit, 1,047s Controller-CPU; Workerfamilien zusammen
@@ -128,7 +135,9 @@ STT3.249.823.744 Bytes. Das sind weder gemeinsamer Spitzen-RSS noch GPU-VRAM.
 Compiler-/Pip-Gesamt-CPU und Familien-Spitzenspeicher, Installer-CPU/Spitzenspeicher,
 Agenttokens und bitidentische Reproduktion sind ungemessen.
 
-Der nächste echte Windows-Login und Brians physische Mausbedienung der
-installierten Version bleiben eigene Abnahmen. Es wurden weder Anmeldung noch
-Neustart ausgelöst. Breite Geräte-, erhöhte Fremdprozess- oder Zielsoftware-Freigabe
-und öffentliche Verteilung werden nicht behauptet.
+Der echte Windows-Login bleibt offen: Heute gab es nur den manuellen App-Neustart.
+Brian verschiebt den Anmeldetest wegen laufender Arbeit auf23.10.2026. Dann prüfen,
+ob Hugin ohne manuellen Start still im Infobereich läuft und die Belegung auch
+nach Anmeldung gilt. Heute weder Abmelden/Neustart noch weitere Tests auslösen.
+Breite Geräte-, erhöhte Fremdprozess- oder Zielsoftware-Freigabe und öffentliche
+Verteilung werden nicht behauptet.
