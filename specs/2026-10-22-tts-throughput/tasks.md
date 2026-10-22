@@ -9,4 +9,5 @@
 - [x] Both independent lenses clear source5f123ee; evidence encoding corrected.
 - [x] Exact-head CI passed; PR39 merged and deployed under InstanceGuard; app restarted.
 - [x] Save the exact handoff with measurements, deployment and limits.
-- [ ] Receive Brian's listening feedback; no perceptual acceptance inferred from silent tests.
+- [x] Brian confirms word marking still fits and accepts leaving this version;
+  the additional speed is barely perceptible to him. Further optimization stopped.

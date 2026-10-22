@@ -7,7 +7,9 @@ Both voices retain complete fixture alignment, full-pipeline scheduling gaps
 <=0.84ms and pre/post-PCM cancellation<=0.56s. All 561 checks and docs check pass;
 both independent reviews cleared the change. PR39 merged as e4a1b04 and deployed
 under InstanceGuard. Hugin restarted at 08:31:59 local on22 October; its own
-window was observed loading Qwen for reading. Hearing feedback is pending.
+window was observed loading Qwen for reading. Brian confirms word marking still
+fits, barely notices the extra speed and explicitly accepts leaving this version.
+This bounded optimization is complete; no further performance work is pending.
 Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
 
 ## Current intent and authorization
@@ -27,7 +29,7 @@ Routine checked private integration and normal deployment remain authorized.
 - Evidence/limits: docs/word-highlighting-2026-10-21.md.
 - New measurements: docs/tts-throughput-2026-10-22.md.
 - Control: 05181f9a99374ff8b298c626f903304f36ac8926.
-- Ownership remains active for hearing feedback. Previous feature history remains
+- Ownership can be released after this accepted checkpoint is remotely proven. Previous feature history remains
   in handoffs/2026-10-21-reading-start.md and handoffs/2026-10-21-word-highlighting.md.
 
 ## Accepted deployment and preservation

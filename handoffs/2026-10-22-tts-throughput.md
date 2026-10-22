@@ -44,15 +44,17 @@ clean stable clone fast-forward from8f2c605 to that exact main. Reviewed source
 tree: d565c561a513f3fa5e8e10d0467b0af58869359b. Normal pythonw/launch/root --show
 start at08:31:59 Europe/Berlin. Its fresh own window was activated and observed
 showing Qwen wird geladen for reading; no input/hotkey or clipboard was sent.
-Brian was asked for both-voice hearing feedback, still pending. Stable source
+Brian was asked for both-voice hearing feedback. Stable source
 is verified; no old apps, preferences or startup settings changed.
 
-Next: receive listening feedback for both voices; silent playback is not hearing
-acceptance. Return path base main after normal Quit. Ownership stays active for
-the saved hearing continuation; no worktree cleanup is claimed.
+Brian then confirmed that word marking still fits and explicitly accepted leaving
+this version. The additional speed is barely perceptible to him. No further
+optimization is requested. The bounded feature is accepted and complete.
+Return path: base main after normal Quit. Release ownership only after this final
+checkpoint is clean and remotely proven; retained local reports need not be deleted.
 
 Starter: Continue Hugin's further TTS speed improvement from this exact handoff.
-The code, real measurements, checked merge and deployment are finished. Receive
-hearing feedback. Preserve the word
+The code, real measurements, checked merge, deployment and user acceptance are
+finished. Do not reopen performance tuning without a new request. Preserve the word
 timing, style, input bindings and disabled Whispering/PipPal. Do not repeat completed
 GPU probes without a changed candidate or unresolved failure.
