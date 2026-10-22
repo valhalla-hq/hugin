@@ -15,7 +15,7 @@ sys.path.insert(0,str(ROOT/'src'))
 from hugin.config import load_settings,verify_voice_assets
 from hugin.cues import ASSET_DIRECTORY,load_cue_signals
 from hugin.workers.assets import read_file_lock,verify_records
-from production_package import digest,inventory,write_search_path,verify_release
+from production_package import digest,inventory,write_search_path,verify_release,installer_file_list
 from runtime_packages import PROFILES,PYTHON,load_wheel_lock,validate_wheelhouse,write_requirements
 
 SOURCE_PATHS=('src','config','locks','assets','tools/launch.py','tools/desktop_setup.py',
@@ -127,10 +127,12 @@ def build(source,output,iscc):
         '--report',str(work/'portable-probe.json')],check=True)
     installer=output/'installer';installer.mkdir()
     print(json.dumps(dict(stage='compile_installer',payload_bytes=sum(r['size'] for r in records),files=len(records))),flush=True)
+    file_list=work/'PayloadFiles.iss'
+    file_list.write_text(installer_file_list(records),encoding='utf-8-sig')
     recipe=work/'Hugin.iss'
     recipe.write_text(git('show',head+':packaging/Hugin.iss'),encoding='utf-8-sig')
     with (work/'inno.txt').open('w',encoding='utf-8') as log:
-        subprocess.run([str(iscc),'/DPayload='+str(payload),'/DVersion='+version,'/DCommitShort='+head[:12],'/DManifestSHA='+digest(payload/'release-manifest.json'),'/DOutput='+str(installer),str(recipe)],check=True,stdout=log,stderr=subprocess.STDOUT)
+        subprocess.run([str(iscc),'/DPayload='+str(payload),'/DVersion='+version,'/DCommitShort='+head[:12],'/DFileList='+str(file_list),'/DManifestSHA='+digest(payload/'release-manifest.json'),'/DOutput='+str(installer),str(recipe)],check=True,stdout=log,stderr=subprocess.STDOUT)
     artifacts=inventory(installer)
     receipt=dict(schema_version=1,version=version,source_commit=head,source_tree=git('rev-parse',head+':src'),
         unsigned=True,installer_files=artifacts,payload_files=len(records),payload_bytes=sum(r['size'] for r in records),

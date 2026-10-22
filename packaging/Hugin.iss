@@ -10,6 +10,9 @@
 #ifndef ManifestSHA
   #error ManifestSHA is required
 #endif
+#ifndef FileList
+  #error FileList is required
+#endif
 #ifndef Output
   #error Output is required
 #endif
@@ -50,7 +53,7 @@ Name: "german"; MessagesFile: "compiler:Languages\German.isl"
 Name: "desktopicon"; Description: "Desktop-Verknüpfung erstellen"; Flags: unchecked
 
 [Files]
-Source: "{#Payload}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+#include FileList
 
 [Icons]
 Name: "{group}\Hugin"; Filename: "{app}\Hugin.exe"; WorkingDir: "{app}"

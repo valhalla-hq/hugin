@@ -8,6 +8,7 @@ using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using Microsoft.Win32.SafeHandles;
 
@@ -95,6 +96,11 @@ internal sealed class InstallationTarget : IDisposable
         if (Regex.IsMatch(relative,@"^\.installer/unins[0-9]+\.(exe|dat|msg)$",RegexOptions.IgnoreCase)) return true;
         if ((relative.StartsWith("src/") || Regex.IsMatch(relative,@"^\.runtime/(controller|stt|tts)/")) &&
             relative.Contains("/__pycache__/") && relative.EndsWith(".pyc")) return true;
+        // Librosa/Numba's typed compiled-function caches are runtime output,
+        // just like Python bytecode; they are never release input.
+        if (relative.StartsWith(".runtime/tts/Lib/site-packages/") &&
+            relative.Contains("/__pycache__/") &&
+            (relative.EndsWith(".nbc") || relative.EndsWith(".nbi"))) return true;
         return relative==".hugin-installation/identity.json" || relative==".hugin-installation/manifest.json";
     }
 
@@ -145,13 +151,14 @@ internal sealed class InstallationTarget : IDisposable
             Directory.CreateDirectory(parent);
             LockChain(parent);
         }
+        List<KeyValuePair<string,string>> checks=new List<KeyValuePair<string,string>>();
         foreach (string path in Files(root))
         {
             string relative=path.Substring(root.Length+1).Replace('\\','/');
             string expected;
             if (records.TryGetValue(relative,out expected))
             {
-                if (Hash(path)!=expected) throw new IOException("owned_file_changed");
+                checks.Add(new KeyValuePair<string,string>(path,expected));
             }
             else if (relative=="release-manifest.json")
             {
@@ -159,6 +166,8 @@ internal sealed class InstallationTarget : IDisposable
             }
             else if (!Retained(relative)) throw new IOException("unowned_target_file");
         }
+        Parallel.ForEach(checks,new ParallelOptions { MaxDegreeOfParallelism=8 },
+            check=> { if (Hash(check.Key)!=check.Value) throw new IOException("owned_file_changed"); });
     }
 
     public static InstallationTarget Open(string root,string manifestPath,string expectedHash)

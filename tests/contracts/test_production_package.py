@@ -44,3 +44,12 @@ class ProductionPackage(unittest.TestCase):
             with self.subTest(record=record),self.assertRaises(ValueError):package.parse_records([record])
         valid=dict(file='safe',size=1,sha256='a'*64)
         with self.assertRaises(ValueError):package.parse_records([valid,valid])
+
+    def test_installer_uses_manifest_records_instead_of_live_directory_wildcards(self):
+        records=[dict(file='src/app.py',size=1,sha256='a'*64)]
+        text=package.installer_file_list(records)
+        self.assertIn('src\\app.py',text)
+        self.assertIn('release-manifest.json',text)
+        self.assertNotIn('*',text)
+        self.assertNotIn('__pycache__',text)
+        self.assertEqual(len(text.splitlines()),2)

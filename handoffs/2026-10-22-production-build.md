@@ -74,3 +74,17 @@ now examines every entry's lstat/reparse facts once rather than resolving all
 ancestors for every file; hashing/full coverage remain mandatory. Attempt2 uses
 old checkpoint368a709 and is experimental; rebuild final candidate after review.
 Brian confirmed normal Quit; Hugin is now stopped. No startup migration yet.
+
+Real packaged probe: hidden native UIA2cases pass using actual package imports.
+First contended cold voice probe failed generically during simultaneous full
+build/hash IO; direct TTS initialization passed, then second real candidate read
+passed Freya34/34 and Tyr40/40 words, section gaps0.57/0.84/1.23ms, workers closed.
+That probe exposed Librosa/Numba .nbc/.nbi runtime caches. Native repeat-install
+now retains only those cache types under TTS site-packages/__pycache__, still
+rejecting foreign executables. Installer inputs now come from explicit manifest
+records, so post-inventory probe caches cannot enter via a wildcard. New native
+cache/refusal guard passes. SHA256 verification now uses at most8 workers and
+64pending files, with complete coverage retained; prior sequential artifact
+verification cost350s for about11.6GB/40332files. A fresh final rebuild and quiet
+installed cold-voice check are required; do not ship either experimental build.
+CI fixture short-path aliases corrected only in tests; e0941b6 hosted checks pass.

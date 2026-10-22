@@ -50,6 +50,11 @@ class InstallationOwnership(unittest.TestCase):
         (self.root/'app.py').write_bytes(b'b');self.probe(4);(self.root/'app.py').unlink()
         state=self.root/'.runtime/state';state.mkdir(parents=True);(state/'preferences.json').write_bytes(b'sentinel')
         self.probe(0);self.assertEqual((state/'preferences.json').read_bytes(),b'sentinel')
+        cache=self.root/'.runtime/tts/Lib/site-packages/librosa/util/__pycache__';cache.mkdir(parents=True)
+        (cache/'generated.py312.1.nbc').write_bytes(b'synthetic numba cache')
+        (cache/'generated.py312.nbi').write_bytes(b'synthetic numba index')
+        self.probe(0)
+        (cache/'foreign.dll').write_bytes(b'foreign executable');self.probe(4);(cache/'foreign.dll').unlink()
         self.manifest.write_text('{"files":[]}',encoding='utf-8');self.sha=hashlib.sha256(self.manifest.read_bytes()).hexdigest()
         self.probe(4)
 
