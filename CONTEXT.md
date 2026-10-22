@@ -7,7 +7,7 @@ remain main5140213 while the new build is prepared separately. Hugin is now
 normally stopped for real installer/native/voice checks. The first candidate
 was rejected for missing approval-document closure; original Startup and state
 are restored. Required tracked docs and production-consumer checks are fixed.
-A quiet cold reading attempt also reached the old60s initialization boundary;
+A quiet cold reading attempt also failed near the old60s initialization boundary;
 the bounded loading allowance is now120s, preserving separate cancel/exit bounds.
 No sign-out, public distribution or paid signing is authorized.
 

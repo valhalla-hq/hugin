@@ -116,8 +116,15 @@ Quiet cold candidate reading failed again after63s with worker_failed/engine.
 Instrumented synthetic retry shows no engine exception and succeeds; TTS init
 29.732s, complete first audio42.162s, all34/40word marks retained. A new empty
 Numba cache engine-only probe completes31.280s, closed32.207s. The initial
-60s watchdog boundary is too tight for variable cold loading; OS cache remains
-uncontrolled, so the exact extra cold-I/O cost is not established. Increase
+60s watchdog boundary may be too tight for variable cold loading; this remains
+a hypothesis until the triggering close is traced. OS cache remains uncontrolled,
+so the exact extra cold-I/O cost is not established. Increase
 ready_seconds to120, with a controller guard proving survival past60 and actual
 closure at120. Cancel2s/exit5s unchanged. Fresh installed cold read must still
 pass; these diagnostics do not accept the rejected artifact.
+
+3b6bc4304a87 is the new frozen artifact input; its build is running separately.
+Independent standards review corrected the new watchdog guard to consume actual
+loaded production limits rather than overwrite them. ready_seconds also bounds
+three worker IPC completion waits, so those bounds increase too; cancel/exit
+remain2/5. This test/handoff delta does not alter frozen artifact input paths.

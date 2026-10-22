@@ -578,8 +578,9 @@ class ApplicationContracts(unittest.TestCase):
         self.assertNotIn((op.engine,op.engine_instance),self.controller._deadlines)
 
     def test_cold_initialization_survives_old_deadline_but_remains_bounded(self):
-        self.controller.settings=replace(self.controller.settings,
-            limits={**self.controller.settings.limits,'ready_seconds':120})
+        self.assertEqual(self.controller.settings.limits['ready_seconds'],120)
+        self.assertEqual(self.controller.settings.limits['cancel_seconds'],2)
+        self.assertEqual(self.controller.settings.limits['exit_seconds'],5)
         closed=[]
         started=time.monotonic()
         with patch('hugin.application.time.monotonic',return_value=started):
