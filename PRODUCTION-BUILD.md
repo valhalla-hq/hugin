@@ -2,8 +2,20 @@
 
 Stand: 22. Oktober 2026. Privater Offline-Build für Brians bestehenden
 Windows-x64-/NVIDIA-Rechner. Öffentliche Verteilung ist nicht freigegeben.
-Installer und reguläre Benutzerinstallation sind geprüft. Die checked private
-Integration und der abschließende normale App-Start folgen diesem Nachweis.
+Installer und reguläre Benutzerinstallation sind geprüft. PR47 wurde mit
+unverändertem geprüftem Head3009998 nach bestandenen CI-/Review-Gates als
+c17b35818b0ac47a0dae6b20b78528ac9d0e74b9 nach Main übernommen. Die saubere
+Quellkopie wurde unter InstanceGuard aktualisiert; sämtliche eingefrorenen
+Artefaktinputs und ursprünglichen Source-Einstellungen blieben identisch.
+Hugin wurde normal aus dem Installationsordner gestartet. Computer Use zeigt
+das eigene Fenster „Bereit für dein Diktat“, Modus Lokal, Stimme Freya sowie
+die richtigen Maus-/Tastenhinweise. Die App bleibt für Brian geöffnet.
+
+Dieser Markdown-Abschluss ändert keine Programm- oder Installerinputs. Der
+saubere Remote-Checkpoint wird anschließend durch den zentralen Workspace-
+Release bestätigt; bis zu dessen Beleg bleibt das technische Eigentum aktiv.
+Nachweise und Original-Sicherungen liegen zusätzlich geprüft im Releaseordner
+unter `verification/`, damit sie beim Worktree-Abschluss erhalten bleiben.
 
 Installer: `C:/Users/brian/Hugin-Releases/1.0.0-3b6bc4304a87/`.
 Installiert: `%LOCALAPPDATA%/Programs/Hugin/releases/1.0.0-3b6bc4304a87/`.
