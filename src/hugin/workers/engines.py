@@ -184,7 +184,9 @@ class QwenEngine:
         self.torch.cuda.manual_seed_all(42)
         return self.model.generate_voice_clone_streaming(text=text, language=language,
             ref_audio=str(self.settings.voices[voice].reference), ref_text=self.references[voice],
-            xvec_only=False, chunk_size=8, max_new_tokens=640)
+            # Reading waits for an aligned section. Sixteen codec frames avoid
+            # redundant overlapping decode work while keeping cancel points short.
+            xvec_only=False, chunk_size=16, max_new_tokens=640)
 
     def synthesize(self, text, voice, language, cancelled):
         with self.torch.inference_mode():

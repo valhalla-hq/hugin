@@ -86,6 +86,22 @@ LONG_SENTENCE = ('Bei dieser Sprachprobe lesen Freya und Tyr einen längeren Sat
                  'und mehrere Gedanken miteinander verbindet. ')
 
 
+def comparison_cases(*, recheck=False):
+    if recheck:
+        opening = c.Coordinator._split_selection(PARAGRAPH)[0]
+        cases = [('cold', 'freya', 'baseline', opening)]
+        for repeat in range(3):
+            policies = ('baseline', 'candidate') if repeat % 2 == 0 else ('candidate', 'baseline')
+            cases.extend((f'opening_{repeat}', 'freya', policy, opening) for policy in policies)
+        return cases
+    cases = [('cold', 'freya', 'baseline', PARAGRAPH)]
+    for voice in ('freya', 'tyr'):
+        for name, text in (('paragraph', PARAGRAPH), ('long_sentence', LONG_SENTENCE)):
+            policies = ('baseline', 'candidate') if name == 'paragraph' else ('candidate', 'baseline')
+            cases.extend((name, voice, policy, text) for policy in policies)
+    return cases
+
+
 def baseline(text):
     chunks = deque()
     offset = 0
@@ -118,7 +134,7 @@ class Microphone:
     def cancel(self): pass
 
 
-def run(root):
+def run(root, *, codec_batches=False, recheck=False):
     if _HELD:
         raise RuntimeError('probe_cleanup_pending')
     guard = InstanceGuard()
@@ -136,10 +152,14 @@ def run(root):
 
     class Pool(EnginePool):
         def start(self, engine, **kwargs):
+            bootstrap = ('import sys;sys.path.insert(0,' + repr(str(SOURCE / 'src')) +
+                ');from hugin.workers.server import main;raise SystemExit(main())')
+            if codec_batches:
+                bootstrap = ('import sys;sys.path.insert(0,' + repr(str(SOURCE / 'tools')) +
+                    ');from probe_tts_batch import native_worker_main;raise SystemExit(native_worker_main(recheck=' +
+                    repr(recheck) + '))')
             worker = WorkerClient(root, engine, self.callback, command=[
-                str(root / '.runtime' / engine / 'Scripts/python.exe'), '-c',
-                'import sys;sys.path.insert(0,' + repr(str(SOURCE / 'src')) +
-                ');from hugin.workers.server import main;raise SystemExit(main())'])
+                str(root / '.runtime' / engine / 'Scripts/python.exe'), '-c', bootstrap])
             self.workers[engine] = worker
             instances.append(worker)
             return worker.start(**kwargs)
@@ -196,14 +216,9 @@ def run(root):
                         'selection_executor', 'delivery_executor'), executors)))
         owner.controller = controller
         candidate = c.Coordinator._split_selection
-        cases = [('cold', 'freya', 'baseline', PARAGRAPH)]
-        for voice in ('freya', 'tyr'):
-            for name, text in (('paragraph', PARAGRAPH), ('long_sentence', LONG_SENTENCE)):
-                policies = ('baseline', 'candidate') if name == 'paragraph' else ('candidate', 'baseline')
-                cases.extend((name, voice, policy, text) for policy in policies)
-        for name, voice, policy, text in cases:
+        for name, voice, policy, text in comparison_cases(recheck=recheck):
             current.update(text=text, voice=voice)
-            controller.core._split_selection = baseline if policy == 'baseline' else candidate
+            controller.core._split_selection = baseline if policy == 'baseline' and not codec_batches else candidate
             sections.clear(); alignment.clear(); marks.clear()
             before, begin = metrics(), time.perf_counter()
             print(json.dumps(dict(stage='begin', case=name, voice=voice, policy=policy)), flush=True)
@@ -239,6 +254,7 @@ def run(root):
         elapsed_seconds=round(time.perf_counter()-started, 3),
         controller_cpu_seconds=round(time.process_time()-cpu, 3),
         audible_speech=False, native_clock=True, content_persisted=False,
+        comparison='codec_batch_8_vs_production' if codec_batches else 'section_policy',
         note='Cold includes model initialization; warm cases share workers. OS cache uncontrolled. '
              'Peak commit is cumulative per worker family, not GPU VRAM or total process-family peak.')
 
@@ -247,12 +263,19 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--run', action='store_true')
+    parser.add_argument('--codec-batches', action='store_true',
+                        help='Compare codec batch 8 with production, using current sections for both.')
+    parser.add_argument('--codec-recheck', action='store_true',
+                        help='Repeat the Freya opening three times with both codec variants.')
     args = parser.parse_args()
     if not args.run:
         print('Plan: exclusive synthetic Freya/Tyr baseline/candidate, real alignment and silent native playback.')
         return 0
-    report = run(args.root.resolve())
-    target = SOURCE / '.runtime' / 'reading-start-measure.json'
+    report = run(args.root.resolve(), codec_batches=args.codec_batches or args.codec_recheck,
+                 recheck=args.codec_recheck)
+    name = ('codec-batch-recheck.json' if args.codec_recheck else
+            'codec-batch-native.json' if args.codec_batches else 'reading-start-measure.json')
+    target = SOURCE / '.runtime' / name
     target.parent.mkdir(exist_ok=True)
     target.write_text(json.dumps(report, indent=2), encoding='utf-8')
     print(json.dumps(dict(report=str(target), workers_closed=report['workers_closed'])))
