@@ -42,16 +42,29 @@ Evidence, cold/warm times, CPU/memory and limits: docs/natural-sections-2026-10-
 Whole-sentence preparation costs about0.91s extra startup in one fixture; clauses
 start0.20–0.28s earlier. Both probes closed all workers/resources; raw reports ignored.
 
-No deployment yet. Remaining: final evidence review, exact-head hosted CI,
-checked merge, guarded deployment and user hearing.
+Both independent review lenses cleared exact head6aa71f6530b9384eb60de1c25ae12072305f5123.
+All three hosted checks passed, with fresh PR identity,11-file scope, head and
+check readback immediately before squash merge. PR42 merged at07:17:24Z on22 October
+as b79073c0e85c66faaea9ae11b45e2042daecd01d. A fresh InstanceGuard protected the
+clean stable clone fast-forward from1c598db to that exact main. Reviewed source
+tree5e0930eee9589b91c4bddaeb73e056f306e529f0 matches the deployment.
+
+Normal pythonw/launch/root --show start at09:17:40 Europe/Berlin. The freshly
+selected own Hugin window was activated and observed showing Bereit für dein
+Diktat. No text, hotkey or clipboard was injected. Brian has been asked to hear
+both voices on multiple sentences and a long comma-separated sentence. Source
+and tests are complete; only perceptual feedback remains open. Ownership stays
+active with this exact continuation; no extra benchmark is due without a finding.
 No hearing acceptance is inferred from silent native playback. Return path is base
 main after normal Quit. Never kill by remembered PID. Whispering/PipPal remain off.
 Commit only reviewed code/tests/specs/curated evidence/context/handoff, no raw
 audio/model files, personal content or logs. Save and remotely prove both context
 and this exact handoff before lifecycle release.
 
-Starter: Continue Hugin natural sections from this exact handoff. Finish revised
-Freya/Tyr validation and preserve any negative evidence. Finalize review/checks,
-integrate the exact checked head, deploy under InstanceGuard, then obtain hearing
-feedback for sentence/clause transitions and word marking. Do not reopen unrelated
-performance, clipboard, shortcut or packaging work.
+Starter: Continue Hugin natural sections from this exact handoff. Implementation,
+real comparison,571 checks, independent review, PR42 integration and guarded
+deployment are complete. Obtain Brian's hearing feedback for sentence/clause
+transitions and word marking; then record acceptance or investigate the concrete
+finding. Do not repeat completed GPU tests or reopen unrelated performance,
+clipboard, shortcut or packaging work. Release only after the final checkpoint
+is clean and remotely proven through the control tool.
