@@ -1,5 +1,58 @@
 # Production build and installer
 
+## Current verified checkpoint — 22 October 2026
+
+Mode Save toward Close. Task hugin-production-build, Mjolnir, private
+valhalla-hq/hugin. Ownership ACTIVE until central clean pushed release proof.
+Branch codex/hugin-production-build-mjolnir, base5140213e6019f3b9f47025cd2f6ce08ba15cbce7;
+worktree C:/Users/brian/brian-projects/worktrees/hugin/hugin-production-build-mjolnir.
+Control05181f9a99374ff8b298c626f903304f36ac8926. PR47 remains Draft pending
+final metadata review, exact-head CI and checked private integration.
+
+Artifact pin3b6bc4304a871c05c98980160b257709db2e2fed, src4a2c67ae21141f8879de092fc929f6d51d56df34.
+Installer C:/Users/brian/Hugin-Releases/1.0.0-3b6bc4304a87/ has exe+4bins,
+all five destination SHA256 values verified. Normal installed root:
+C:/Users/brian/AppData/Local/Programs/Hugin/releases/1.0.0-3b6bc4304a87.
+App stopped for final integration. Curated evidence: PRODUCTION-BUILD.md.
+
+- Actual install exit0/482.367s and repair exit0/484.824s. Missing own icon
+  restored; changed voice, activation, Startup bytes, state sentinel and46DSP
+  caches preserved. Original voice exactly restored; own sentinel removed.
+- 607local checks30.439s+docs. Independent full spec/standards reviews corrected
+  findings, including actual production watchdog config guard120/2/5.
+- Actual installed native6cases3.563s, after repair6cases3.691s, no skips:
+  UIA2, input ownership3, actual-state two hidden normal starts1 per run.
+- Hugin.exe --check-inputs succeeds twice56.384/62.846s; Back/Alt+Y,
+  Forward/Ctrl+Alt+V/Escape registered and released, no pending owner.
+- Fresh installed reading BEFORE extra TTS import test uses production worker
+  command: Freya34/34, Tyr40/40 marks, CUDA, gaps<=.97ms, all workers closed.
+  Synthetic texts and silent equal-length PCM/native clock; no mic/clipboard.
+- Source preference/activation unchanged. Current Startup points exactly to
+  installed Hugin.exe --background. Whispering/PipPal remain disabled.
+
+Prior9c8 candidate rejected for missing approval-doc closure. New Git-archive
+and installed productive-loader guards fix this. Its separate synthetic install
+was truly uninstalled: exit0/32.927s, all40333 recorded program files removed,
+prefs/backups retained, original Source Startup exactly restored. Native
+installer/deinstaller code is unchanged; do not uninstall productive root again.
+Old near60s staging failure remains a watchdog hypothesis; current fresh chain
+passes. Readiness120s also covers3IPC waits; cancel2/exit5 unchanged. OS caches
+uncontrolled. Real next login, physical mouse clicks and broad devices/targets
+remain unverified. Unsigned local/private artifact; no reboot/sign-out/publication.
+
+Next: metadata review + exact-head CI, checked PR47 merge, stable Main FF under
+InstanceGuard while app stopped, verify frozen artifact input paths unchanged.
+Start installed Hugin normally and inspect its own Ready window. Write checked
+Markdown closure receipt; preserve needed ignored evidence/original backups
+outside task, central release, then technical worktree/branch cleanup.
+
+Starter: Continue this exact hugin-production-build handoff. Real installer,
+voice, native and repair acceptance is complete; do not rerun or rebuild without
+a new change/concern. Finish integration, normal startup, receipt and verified
+release. Never restart Whispering/PipPal or claim actual Windows login.
+
+## Historical investigation trail (superseded intermediate status)
+
 Brian requests the productive Windows build including installer, autostart and
 permanent Back/Alt+Y dictation and Forward/Ctrl+Alt+V reading verification.
 Private valhalla-hq/hugin, Mjolnir, base5140213e6019f3b9f47025cd2f6ce08ba15cbce7;

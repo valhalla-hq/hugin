@@ -1,15 +1,35 @@
 # Hugin Context
 
-Status: Brian requests the production build including installer and persistent
-autostart/mouse/keyboard verification. Active task hugin-production-build on
-Mjolnir. Spec/plan/tasks: specs/2026-10-22-production-build/. Accepted source
-remain main5140213 while the new build is prepared separately. Hugin is now
-normally stopped for real installer/native/voice checks. The first candidate
-was rejected for missing approval-document closure; original Startup and state
-are restored. Required tracked docs and production-consumer checks are fixed.
-A quiet cold reading attempt also failed near the old60s initialization boundary;
-the bounded loading allowance is now120s, preserving separate cancel/exit bounds.
-No sign-out, public distribution or paid signing is authorized.
+Status am22.10.2026: Hugin1.0.0 ist als privater Offline-Installer gebaut,
+im regulären Benutzerordner installiert und nach Reparaturinstallation geprüft.
+Aktiv: hugin-production-build, Mjolnir; Eigentum aktiv. Noch offen sind checked
+private Integration, normaler sichtbarer Start und Abschlussbeleg/Freigabe.
+Exakter Handoff: handoffs/2026-10-22-production-build.md. PR47 ist noch Draft.
+
+Installer: C:/Users/brian/Hugin-Releases/1.0.0-3b6bc4304a87/ (exe +4bins,
+alle fünf Ziel-SHA256-Werte geprüft). Installationsroot:
+C:/Users/brian/AppData/Local/Programs/Hugin/releases/1.0.0-3b6bc4304a87.
+Artefaktpin3b6bc4304a871c05c98980160b257709db2e2fed, src4a2c67ae21141f8879de092fc929f6d51d56df34.
+607 lokale Tests+docs,12 installierte native Fälle, vier normale versteckte
+Starts und zweimal echte Launcher-/Eingabeprüfung bestehen. Reparatur erhält
+Stimme, Aktivierung, Startup und46DSP-Caches; Originalstimme ist zurückgesetzt.
+Freya34/34 und Tyr40/40 Wörter, CUDA, Abschnittslücken<=.97ms, Worker geschlossen.
+Details/Kosten/Grenzen: PRODUCTION-BUILD.md; Bedienung: docs/production-installation.md.
+
+Autostart zeigt auf installierte Hugin.exe --background. Back/Alt+Y diktiert,
+Forward/Strg+Alt+V liest; Escape und Panel-Buttons bleiben. Source-Stimme und
+Aktivierung sind unverändert. Whispering/PipPal bleiben deaktiviert. Die alte
+Quellinstallation bleibt Rückweg; alle Original-Sicherungen behalten.
+
+Nächster echter Login, physische Mausprobe und breite Geräte-/Zielmatrix bleiben
+offen. Lokal unsigniert; kein öffentlicher Upload, neue Kosten, Abmelden/Neustart
+oder Sicherheits-/Treiberänderung. Alte60s-Abbruchursache bleibt Hypothese;
+frische installierte Kette mit begrenzter120s-Frist besteht, cancel2/exit5 bleiben.
+Nächster Schritt: Abschlussreview/CI und PR47 integrieren, sauberen Main unter
+InstanceGuard aktualisieren; installierte App normal starten und Ready ansehen.
+Dann Markdown-Abschlussbeleg, Nachweise/Sicherungen erhalten, zentral freigeben.
+
+## Frühere Nachweise und Verlauf
 
 Previous result: The five confirmed full-review findings are corrected, independently
 reviewed and deployed. All five fixes have red/green regression guards;

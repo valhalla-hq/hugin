@@ -2,7 +2,7 @@
 
 Lokale Windows-App für Diktieren und Vorlesen mit den bestätigten Stimmen **Freya** und **Tyr**. Hugin soll Whispering und PipPal vollständig ersetzen.
 
-Status am **22.10.2026**: Diktat, Vorlesen, Screenshot-Zwischenablage, Obsidian-Oberfläche, verschiebbare Mitleseleiste und Panel-Buttons sind integriert und im Pilotbetrieb bestätigt. Maussteuerung und stiller Windows-Autostart sind eingerichtet; fertiges Diktat bleibt für Strg+V verfügbar. Wortmarkierung folgt dem Audio, Abschnitte wechseln an Satzenden oder passenden Trennzeichen. Die fünf bestätigten Befunde des vollständigen Code-Reviews sind korrigiert und erneut geprüft. [Prüfnachweise und Grenzen](docs/review-fixes-2026-10-22.md), [aktueller Handoff](CONTEXT.md#active-handoff), [Einrichtung und Rückweg](docs/desktop-startup.md). Vollständige Geräte-/Zielmatrix, nächster echter Login und Produktionspaket bleiben gesonderte Nachweise.
+Status am **22.10.2026**: Hugin **1.0.0** ist als privater Offline-Installer gebaut und im regulären Benutzerordner installiert. Erneute Installation/Reparatur, dauerhafte Maus-/Tastenregistrierung, vier normale Hintergrundstarts und beide echten Stimmen sind geprüft. Diktat, Screenshot-Zwischenablage, Obsidian-Oberfläche, bewegliche Mitleseleiste, Panel-Buttons, Audiowortmarkierung und natürliche Abschnitte bleiben erhalten. [Produktionsnachweis und Grenzen](PRODUCTION-BUILD.md), [Installation und Rückweg](docs/production-installation.md), [aktueller Handoff](CONTEXT.md#active-handoff). Der nächste echte Windows-Login und die physische Bedienprobe der installierten Version bleiben separate Abnahmen.
 
 Der lokale Einstieg `C:\Users\brian\Hugin` zeigt auf den sauberen Main-Deploymentclone. Alle drei eigenen Umgebungen und echten Modell-/CUDA-Dateien sind dort aus geprüften lokalen Dateien wiederhergestellt. Die sechs ursprünglichen Planungsdateien bleiben mit identischen SHA256-Hashes unter `C:\Users\brian\Hugin-Planung-2026-10-14` erhalten. Die explizite Einrichtung aktiviert die dauerhaften Maus-/Tastenbindungen.
 
@@ -43,7 +43,9 @@ gemessene Wartezeit bei geladenen Modellen um 42–48 Prozent. Methode und Grenz
 6. [Aktuelle Implementierung und offene Abnahme](specs/2026-10-14-hugin-v1/implementation.md)
 7. [Darstellung und erster GPU-Pilot](docs/pilot-2026-10-14.md)
 
-Der Nutzer hat die schrittweise Implementierung beauftragt. Produktive Aktivierung folgt erst nach Prüfung. Der aktuelle Arbeitsstand ist ausdrücklich noch kein fertig abgenommener Ersatz.
+Der Produktionsbuild gilt für Brians geprüften Windows-x64-/NVIDIA-Rechner.
+Eine allgemeine Geräte-/Zielsoftwarefreigabe oder öffentliche Verteilung ist
+nicht enthalten. Der lokale Installer ist unsigniert.
 
 ## Entwicklung
 
