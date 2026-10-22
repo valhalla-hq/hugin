@@ -1,5 +1,4 @@
 """UI facts come from accepted capture/delivery; no native devices or UI."""
-from pathlib import Path
 import struct
 from types import SimpleNamespace as NS
 import unittest
@@ -8,14 +7,10 @@ from unittest.mock import patch
 from hugin import coordinator as c
 from hugin.application import Controller, _CueFailure
 from hugin.audio import Microphone
-from hugin.config import load_settings
 from hugin.errors import HuginError
-from test_application import Inputs, Output, Clipboard, Pool, Immediate
+from test_application import Inputs, Output, Clipboard, Pool, Immediate, controller_settings
 from test_capture_cues import Mic, Cues, Stream
 from test_completion_cue import Deferred
-
-
-ROOT=Path(__file__).resolve().parents[2]
 
 
 class MicrophoneMeterContracts(unittest.TestCase):
@@ -92,7 +87,7 @@ class MicrophoneMeterContracts(unittest.TestCase):
 class PresentationFactsContracts(unittest.TestCase):
     def setUp(self):
         self.calls=[];self.pool=Pool();self.clipboard=Clipboard();self.mic=Mic(self.calls)
-        self.controller=Controller(load_settings(ROOT),inputs=Inputs(),microphone=self.mic,
+        self.controller=Controller(controller_settings(self),inputs=Inputs(),microphone=self.mic,
             output=Output(self.calls),clipboard=self.clipboard,pool=self.pool,publish=lambda _:None,
             capture_executor=Immediate(),audio_executor=Immediate(),maintenance_executor=Immediate(),
             selection_executor=Immediate(),delivery_executor=Immediate(),cues=Cues(self.calls))

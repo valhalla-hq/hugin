@@ -29,15 +29,14 @@ class ReadingProbeOwnershipTests(unittest.TestCase):
         guard.close.assert_called_once()
 
     def test_real_controller_processes_quit_again_after_io_close_failure(self):
-        from test_application import Inputs, Microphone, Output, Clipboard, Pool, Immediate
+        from test_application import Inputs, Microphone, Output, Clipboard, Pool, Immediate, controller_settings
         from hugin.application import Controller
-        from hugin.config import load_settings
         from hugin.errors import HuginError
         root = Path(__file__).resolve().parents[2]
         calls = []
         output = Output(calls)
         output.close = Mock(side_effect=[HuginError('audio_failed', 'test_close'), None])
-        controller = Controller(load_settings(root), inputs=Inputs(), microphone=Microphone(calls),
+        controller = Controller(controller_settings(self,root), inputs=Inputs(), microphone=Microphone(calls),
             clipboard=Clipboard(), pool=Pool(), output=output, publish=lambda view: None,
             capture_executor=Immediate(), audio_executor=Immediate(), maintenance_executor=Immediate(),
             selection_executor=Immediate(), delivery_executor=Immediate())

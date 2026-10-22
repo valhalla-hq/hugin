@@ -1,6 +1,13 @@
 # Hugin Context
 
-Status: Brian requests reading sections at sentence ends or suitable clause
+Status: Brian authorizes fixing all five confirmed full-review findings and
+rechecking the corrected app before production packaging. Work is active in the
+exclusive review-fixes worktree. Fake Controller preferences are now isolated;
+two red/green regression guards and99 focused tests pass. Native focus consistency,
+short-sentence grouping, transient errors and partial process cleanup remain.
+The stable running source remains accepted main46f1578 until guarded deployment.
+
+Previous accepted result: Brian requests reading sections at sentence ends or suitable clause
 punctuation, preserving accurate words and smooth transitions. The pure producer
 and regression guards are implemented. Both real voices mark every word in the
 normal sentence/clause fixtures; additional scheduling gaps are <=1.73ms. An
@@ -16,22 +23,24 @@ Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
 
 ## Current intent and authorization
 
-Implement natural section boundaries against accepted main1c598db, including
-codec batch16. Preserve actual-audio alignment, native playback and one-section
-lookahead. The frozen comparison baseline is the current120-character policy.
+Fix the five reproduced review findings against main46f1578. Preserve the
+accepted input, clipboard, UI, actual-audio word timing and lookahead behavior.
+Specifications: specs/2026-10-22-review-fixes/. Production packaging is the next
+stage; this task supplies corrected source and an honest readiness statement.
 Routine checked private integration and normal deployment remain authorized.
 
 ## Active Handoff
 
-- `handoffs/2026-10-22-natural-sections.md`
-- Branch: codex/hugin-natural-sections-mjolnir.
-- Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-natural-sections-mjolnir.
-- Base: 1c598dbf90dd5aa1aebf9f47a358f9d87f83ac8f.
-- Spec/plan/tasks: specs/2026-10-22-natural-sections/.
+- `handoffs/2026-10-22-review-fixes.md`
+- Branch: codex/hugin-review-fixes-mjolnir.
+- Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-review-fixes-mjolnir.
+- Base: 46f157844917bbd601538b67413427f5129139e2.
+- Spec/plan/tasks: specs/2026-10-22-review-fixes/.
 - Evidence/limits: docs/natural-sections-2026-10-22.md.
-- PR: https://github.com/valhalla-hq/hugin/pull/42.
+- PR: pending first meaningful checkpoint.
 - Control: 05181f9a99374ff8b298c626f903304f36ac8926.
-- Release ownership through the control tool after the final remote checkpoint.
+- Ownership active through corrections, verification and deployment.
+- Prior accepted natural-sections result: handoffs/2026-10-22-natural-sections.md.
 - Prior accepted codec optimization: handoffs/2026-10-22-tts-throughput.md.
 
 ## Accepted deployment and preservation
