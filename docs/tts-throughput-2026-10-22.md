@@ -69,8 +69,8 @@ in alternating order, no concurrent tests:
 | 3 | 3.695s | 3.463s | 0.232s |
 
 All 18 opening words aligned/marked on every repeat. Median native start
-3.793â†’3.463s (8.7%); individual paired gains 6.3â€“9.2%. Other full-text cases
-saved 0.119â€“0.185s. These are synthetic warm results on this host, not a guarantee
+3.793→3.463s (8.7%); individual paired gains 6.3–9.2%. Other full-text cases
+saved 0.119–0.185s. These are synthetic warm results on this host, not a guarantee
 for every text or the first model load. No speculative timing or weaker alignment.
 
 Full native run: 217.536s elapsed, 6.562s controller CPU; cumulative family peak commit TTS 8,456,458,240 and STT 3,251,105,792 bytes. Isolated recheck: 96.903s elapsed, 1.938s controller CPU; peak commit TTS 8,454,156,288 and STT 3,250,847,744 bytes. Recheck median combined worker CPU fell from 3.703s to 3.140s. Cancellation run: 30.340s elapsed, 0.016s controller CPU. The same memory limitations above apply.

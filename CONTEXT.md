@@ -4,8 +4,8 @@ Status: Brian requests further reading-start speed after the integrated shorter
 section policy. Candidate doubles Qwen codec batches to16. Repeated real screen:
 9.5–13.5% faster warm preparation; isolated native Freya repeat saves0.23–0.35s.
 Both voices retain complete fixture alignment, full-pipeline scheduling gaps
-<=0.84ms and pre/post-PCM cancellation<=0.56s. All561 checks and docs check pass;
-final independent review and checked integration are pending.
+<=0.84ms and pre/post-PCM cancellation<=0.56s. All 561 checks and docs check pass;
+both independent reviews cleared source 5f123ee. PR39 awaits checked integration.
 Hugin was quit normally for measurements; stable main8f2c605 is unchanged.
 Prior and current hearing acceptance remain pending.
 Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.

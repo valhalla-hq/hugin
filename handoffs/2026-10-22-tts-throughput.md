@@ -31,9 +31,17 @@ Brian confirmed normal Hugin Quit. Stable C:/Users/brian/Hugin remains clean
 main8f2c605; no deployment yet. Never terminate by remembered PID. Whispering
 and PipPal remain off. Synthetic PCM stays in bounded RAM. Raw reports ignored.
 
-Final local suite: 561 checks pass in22.752s; docs check and diff whitespace clean.
+Final local suite: 561 checks pass in 22.752s; docs check and diff whitespace clean.
+Both independent review lenses cleared source 5f123ee7b578ef5fa23848d279f1dc8ab073953c.
+One evidence text-encoding issue was corrected without source changes. PR39:
+https://github.com/valhalla-hq/hugin/pull/39.
 
-Next: two final review lenses, remote checkpoint, unchanged-head
-hosted CI and merge. Deploy under fresh InstanceGuard and start normally. Then
+Next: unchanged-head hosted CI and merge. Deploy under fresh InstanceGuard and start normally. Then
 receive listening feedback for both voices; silent playback is not hearing
 acceptance. Return path base main after normal Quit. Ownership active.
+
+Starter: Continue Hugin's further TTS speed improvement from this exact handoff.
+The code and real measurements are finished; complete the checked merge and normal
+deployment if still pending, then receive hearing feedback. Preserve the word
+timing, style, input bindings and disabled Whispering/PipPal. Do not repeat completed
+GPU probes without a changed candidate or unresolved failure.

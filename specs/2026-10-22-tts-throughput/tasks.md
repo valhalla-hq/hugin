@@ -6,4 +6,5 @@
 - [x] Select16 using full alignment, pre/post-PCM cancellation and native gap evidence (AC-2, REQ-2).
 - [x] Repeat the anomalous Freya opening in isolation: all three pairs earlier, 0.23–0.35s saved.
 - [x] Fix review finding in the probe collector; 561 checks pass (22.752s), docs check clean.
-- [ ] Review, save exact handoff and report measured result and remaining limits.
+- [x] Both independent lenses clear source5f123ee; evidence encoding corrected.
+- [ ] Complete checked integration/deployment, save exact handoff and report limits.
