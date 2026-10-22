@@ -155,6 +155,12 @@ class ProductionSetup:
 
     def uninstall(self):
         setup=self.desktop()
+        if setup.backup.resolve()!=setup.backup:raise RuntimeError('backup_redirected')
+        if not setup.backup.exists():
+            # DesktopSetup publishes a complete backup before its first active
+            # write. Failed preparation grants no authority over Startup links;
+            # payload ownership is separately proved by the native installer.
+            return {'status':'uninstalled','preferences_retained':True,'activation_never_published':True}
         if not self.link.exists() and self.uninstalled.exists():
             self._absent_link_backup(setup)
             return {'status':'uninstalled','preferences_retained':True}

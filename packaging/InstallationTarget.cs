@@ -39,6 +39,7 @@ internal sealed class InstallationTarget : IDisposable
     private void LockChain(string path)
     {
         DirectoryInfo directory=new DirectoryInfo(path);
+        if (locked.Contains(directory.FullName)) return;
         if (directory.Parent!=null) LockChain(directory.Parent.FullName);
         if (!Directory.Exists(directory.FullName))
         {
@@ -69,7 +70,7 @@ internal sealed class InstallationTarget : IDisposable
         }
     }
 
-    private static IEnumerable<string> Files(string root)
+    private IEnumerable<string> Files(string root)
     {
         foreach (string path in Directory.GetFileSystemEntries(root))
         {
@@ -77,6 +78,7 @@ internal sealed class InstallationTarget : IDisposable
             if ((attributes&FileAttributes.ReparsePoint)!=0) throw new IOException("target_redirected");
             if ((attributes&FileAttributes.Directory)!=0)
             {
+                LockChain(path); // Keep each existing payload subtree stable too.
                 foreach (string child in Files(path)) yield return child;
             }
             else yield return path;
@@ -134,6 +136,14 @@ internal sealed class InstallationTarget : IDisposable
             // A registry string or marker name alone never grants ownership.
             if (!Directory.Exists(owner) || File.ReadAllText(Path.Combine(owner,"identity.json"),Encoding.UTF8)!=identityBytes ||
                 Hash(Path.Combine(owner,"manifest.json"))!=expectedHash) throw new IOException("target_not_owned");
+        }
+        // Create and hold every authenticated payload parent before publishing
+        // ready, including paths absent from a fresh/partially repaired target.
+        foreach (string parent in records.Keys.Select(name=>Path.GetDirectoryName(Path.Combine(root,name))).Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            LockChain(parent);
+            Directory.CreateDirectory(parent);
+            LockChain(parent);
         }
         foreach (string path in Files(root))
         {

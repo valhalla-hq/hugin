@@ -64,11 +64,18 @@ class InstallationOwnership(unittest.TestCase):
         finally:os.rmdir(redirected) # Remove only this known junction, never its contents.
 
     def test_root_and_ancestor_cannot_be_replaced_during_mutation(self):
+        manifest=json.loads(self.manifest.read_text(encoding='utf-8'))
+        manifest['files'].append(dict(file='nested/payload/module.py',size=1,sha256=hashlib.sha256(b'a').hexdigest()))
+        self.manifest.write_text(json.dumps(manifest),encoding='utf-8')
+        self.sha=hashlib.sha256(self.manifest.read_bytes()).hexdigest()
+        self.probe(0)
+        nested=self.root/'nested/payload';self.assertTrue(nested.is_dir())
         stop=self.fixture/'stop'
         child=subprocess.Popen([str(self.exe),str(self.root),str(self.manifest),self.sha,str(stop)],stdout=subprocess.PIPE,text=True)
         try:
             self.assertEqual(child.stdout.readline().strip(),'ready')
             with self.assertRaises(PermissionError):self.root.rename(self.fixture/'moved')
             with self.assertRaises(PermissionError):self.fixture.rename(self.work/'moved-fixture')
+            with self.assertRaises(PermissionError):nested.rename(nested.with_name('replaced'))
         finally:
             stop.write_bytes(b'stop');self.assertEqual(child.wait(5),0);child.stdout.close()

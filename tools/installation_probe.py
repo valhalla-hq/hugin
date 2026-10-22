@@ -26,6 +26,9 @@ report_stream=sys.stdout;sys.stdout=sys.stderr
 if profile=='controller':
     import tkinter,PIL,sounddevice,comtypes,pystray
     assert tkinter.Tcl().eval('info patchlevel')=='8.6.15'
+    from hugin.windows.selection_probe import _load_comtypes,_system_typelib
+    _,client=_load_comtypes();client.GetModule(_system_typelib())
+    assert client.gen_dir is None
 elif profile=='stt':
     import faster_whisper,ctranslate2,numpy,av
 else:

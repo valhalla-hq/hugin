@@ -53,6 +53,11 @@ def materialize_profile(payload,source,profile,lock,work):
         if generated.resolve()!=generated or not generated.is_relative_to(payload):
             raise ValueError('generated_script_path_invalid')
         shutil.rmtree(generated)
+    if profile=='controller':
+        # Provision the trusted static namespace before any COM client import.
+        # Dynamic UIA interfaces remain memory-only in the existing owner.
+        subprocess.run([str(scripts/'python.exe'),'-B','-c',
+            'from hugin.windows.selection_probe import _load_comtypes;_load_comtypes()'],check=True)
 
 
 def copy_assets(payload,source):
@@ -110,6 +115,7 @@ def build(source,output,iscc):
     print(json.dumps(dict(stage='locked_models_cuda_cues')),flush=True)
     copy_assets(payload,source)
     native=launcher(payload,version,work,head)
+    print(json.dumps(dict(stage='inventory_and_hash_payload')),flush=True)
     records=inventory(payload)
     manifest=dict(schema_version=1,app='Hugin',version=version,source_commit=head,
         python_version=PYTHON,package_profiles={p:{w.name:w.version for w in lock.profiles[p]} for p in PROFILES},files=records)

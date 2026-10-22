@@ -61,3 +61,16 @@ stdout, partial owner retention and mutable late recipe reads; candidate fixes
 use immutable per-build roots, authenticated manifest/root native lease, explicit
 success facts, bounded pipe reads and pinned Git sources. Repeated native/full
 review and actual offline artifact/install/voices/persistence remain pending.
+
+Follow-up review corrections: never-published desktop setup can uninstall its
+native-owned payload without touching unknown Startup links (new red/green guard,
+13setup cases pass). Native guard now precreates/holds every manifest parent,
+including initially absent nested paths; native3cases pass. Portable CPython
+sys.prefix=Scripts exposed a real UIA owner mismatch: selection_probe now maps
+only its own Scripts executable to the existing .runtime/controller package
+owner. Builder provisions static COM namespace and import probe generates UIA
+interfaces in memory. Native field/clipboard workflow remains to test. Inventory
+now examines every entry's lstat/reparse facts once rather than resolving all
+ancestors for every file; hashing/full coverage remain mandatory. Attempt2 uses
+old checkpoint368a709 and is experimental; rebuild final candidate after review.
+Brian confirmed normal Quit; Hugin is now stopped. No startup migration yet.

@@ -1,5 +1,7 @@
 """Own portable package paths, inventories and exact recorded-file verification."""
 import hashlib
+import os
+import stat
 from pathlib import Path, PurePosixPath
 import re
 
@@ -33,27 +35,45 @@ def parse_records(records):
     return result
 
 
+def _files(root):
+    """Examine each directory/entry once; never follow payload reparse points."""
+    pending=[root];count=0
+    while pending:
+        directory=pending.pop()
+        with os.scandir(directory) as entries:
+            for entry in entries:
+                facts=entry.stat(follow_symlinks=False)
+                if (stat.S_ISLNK(facts.st_mode) or
+                        getattr(facts,'st_file_attributes',0)&0x400):
+                    raise ValueError('payload_redirected')
+                path=Path(entry.path)
+                if stat.S_ISDIR(facts.st_mode):pending.append(path)
+                elif stat.S_ISREG(facts.st_mode):
+                    count+=1
+                    if count>100000:raise ValueError('payload_capacity')
+                    yield path,facts.st_size
+                else:raise ValueError('payload_file_type_invalid')
+
+
 def inventory(root):
     root=Path(root).resolve();records=[]
-    for path in sorted(root.rglob('*')):
+    for path,size in _files(root):
         name=path.relative_to(root).as_posix()
-        if path.is_symlink() or path.resolve()!=path:
-            raise ValueError('payload_redirected')
-        if not path.is_file():continue
         if name.startswith(('.runtime/state/','.runtime/desktop-','.runtime/production-')):
             raise ValueError('state_in_payload')
-        records.append(dict(file=name,size=path.stat().st_size,sha256=digest(path)))
-    return parse_records(records)
+        records.append(dict(file=name,size=size,sha256=digest(path)))
+    return parse_records(sorted(records,key=lambda record:record['file']))
 
 
 def verify_inventory(root,records,*,exact=True):
     root=Path(root).resolve();records=parse_records(records)
+    # The producing walk owns reparse/type interpretation for every entry.
+    present={path.relative_to(root).as_posix():(path,size) for path,size in _files(root)}
     for record in records:
-        path=root/record['file']
-        if (path.resolve()!=path or not path.is_file() or path.stat().st_size!=record['size']
-                or digest(path)!=record['sha256']):
+        found=present.get(record['file'])
+        if found is None or found[1]!=record['size'] or digest(found[0])!=record['sha256']:
             raise ValueError('payload_integrity_failed')
-    if exact and {p.relative_to(root).as_posix() for p in root.rglob('*') if p.is_file()}!={r['file'] for r in records}:
+    if exact and set(present)!={r['file'] for r in records}:
         raise ValueError('payload_files_changed')
 
 

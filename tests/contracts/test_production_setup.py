@@ -140,3 +140,12 @@ class ProductionSetupContracts(unittest.TestCase):
         self.setup.uninstall()
         self.assertEqual((self.startup/'Hugin.lnk').read_bytes(),self.original_link)
         self.assertFalse((self.startup/'PipPal.lnk').exists())
+
+    def test_failed_first_setup_without_published_backup_can_uninstall_without_touching_startup(self):
+        link=self.startup/'Hugin.lnk';link.write_bytes(b'unknown startup owner')
+        with self.assertRaises(RuntimeError):self.setup.apply()
+        self.assertFalse(self.setup.desktop().backup.exists())
+        result=self.setup.uninstall()
+        self.assertEqual(result['status'],'uninstalled')
+        self.assertEqual(link.read_bytes(),b'unknown startup owner')
+        self.assertFalse((self.new/'.runtime/state').exists())
