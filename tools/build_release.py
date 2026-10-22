@@ -14,11 +14,12 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'src'))
 from hugin.config import load_settings,verify_voice_assets
 from hugin.cues import ASSET_DIRECTORY,load_cue_signals
+from hugin.targets import load_target_approvals
 from hugin.workers.assets import read_file_lock,verify_records
 from production_package import digest,inventory,write_search_path,verify_release,installer_file_list
 from runtime_packages import PROFILES,PYTHON,load_wheel_lock,validate_wheelhouse,write_requirements
 
-SOURCE_PATHS=('src','config','locks','assets','tools/launch.py','tools/desktop_setup.py',
+SOURCE_PATHS=('src','config','locks','assets','docs','tools/launch.py','tools/desktop_setup.py',
               'tools/install_setup.py','tools/production_package.py','tools/installation_probe.py')
 
 
@@ -109,6 +110,7 @@ def build(source,output,iscc):
     lock=load_wheel_lock(payload)
     validate_wheelhouse(source/'.runtime/wheelhouse',lock,require_manifest=True)
     verify_voice_assets(load_settings(payload))
+    load_target_approvals(payload) # Validate runtime document closure before costly materialization.
     for profile in PROFILES:
         print(json.dumps(dict(stage='private_runtime',profile=profile)),flush=True)
         materialize_profile(payload,source,profile,lock,work)

@@ -11,6 +11,7 @@ import time
 sys.path[:0]=[str(Path(__file__).resolve().parents[1]/'src'),str(Path(__file__).resolve().parent)]
 from hugin.config import load_settings,verify_voice_assets
 from hugin.cues import load_cue_signals
+from hugin.targets import load_target_approvals
 from production_package import load_release,verify_release
 
 _HELD=[]  # Failed cleanup retains process/native ownership in this probe session.
@@ -128,6 +129,7 @@ def main():
     facts=dict(schema_version=1,app='Hugin',success=False,microphone=False,clipboard=False,audible_speech=False)
     try:
         manifest=verify_release(root);verify_voice_assets(load_settings(root));load_cue_signals(root)
+        load_target_approvals(root)
         facts.update(version=manifest['version'],source_commit=manifest['source_commit'],
             profiles=[private_profile(root,p,manifest['package_profiles'][p]) for p in ('controller','stt','tts')])
         if args.inputs:facts['inputs']=check_inputs(root)

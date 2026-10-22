@@ -88,3 +88,26 @@ cache/refusal guard passes. SHA256 verification now uses at most8 workers and
 verification cost350s for about11.6GB/40332files. A fresh final rebuild and quiet
 installed cold-voice check are required; do not ship either experimental build.
 CI fixture short-path aliases corrected only in tests; e0941b6 hosted checks pass.
+
+9c8ac49 full build completed (976.765s; payload40333files/11595840240bytes;
+installer7665981738bytes across exe+4bins). Real per-user install passed exit0
+in452s; source preference/activation untouched and exact migration passed. Native
+launcher --check-inputs passed with Back/Alt+Y and Forward/Ctrl+Alt+V. Native UIA2
+and input ownership3 pass. Full hidden start failed config_invalid because
+config/targets.json requires its referenced Markdown approval documents and
+SOURCE_PATHS excluded docs. Candidate is rejected, not production-ready; its
+copied folder was renamed _rejected-1.0.0-9c8ac49320fc with explicit marker.
+Source Startup was restored byte-identical under InstanceGuard before cleanup.
+Real rejected-package uninstall is in progress; preferences/backups must remain.
+Fix: include tracked docs in the pinned archive; validate load_target_approvals
+before materializing runtimes and in installed selftest; new public Git-archive
+closure guard. Need checkpoint/new rebuild, actual quiet cold app/voice/native
+checks, repeat/repair, clean uninstall and final checked integration/install.
+
+Rejected-package uninstall completed exit0 in32.927s. Prior Startup remains
+byte-identical; preferences/backups retained. The protected directory skeleton
+remains (native lease deliberately denies directory rename/delete). Source app
+is stopped and Source Startup restored. Staged rejected payload plus the exact
+missing tracked docs now passes2 normal hidden app starts (3.595s); this is an
+exploratory diagnosis only, not a released artifact. New Git-archive runtime
+closure guard passes. Include only curated tracked docs; all are Markdown.

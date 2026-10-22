@@ -53,3 +53,16 @@ class ProductionPackage(unittest.TestCase):
         self.assertNotIn('*',text)
         self.assertNotIn('__pycache__',text)
         self.assertEqual(len(text.splitlines()),2)
+
+    def test_exported_release_contains_runtime_approval_evidence(self):
+        import io,subprocess,tarfile
+        from build_release import SOURCE_PATHS,ROOT
+        from hugin.config import load_settings,verify_voice_assets
+        from hugin.targets import load_target_approvals
+        with tempfile.TemporaryDirectory() as folder:
+            exported=Path(folder).resolve()
+            archive=subprocess.check_output(['git','-C',str(ROOT),'archive','--format=tar','HEAD','--',*SOURCE_PATHS])
+            with tarfile.open(fileobj=io.BytesIO(archive)) as files:files.extractall(exported,filter='data')
+            verify_voice_assets(load_settings(exported))
+            approvals=load_target_approvals(exported)
+            self.assertIsNotNone(approvals.verified_edit)
