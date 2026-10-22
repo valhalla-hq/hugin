@@ -7,7 +7,9 @@ normal sentence/clause fixtures; additional scheduling gaps are <=1.73ms. An
 initial very-short-opening regression was corrected before deployment. The
 existing Freya mixed-abbreviation fallback shrinks from[0,81) to[0,74), with no
 previously marked range lost. Whole sentences can cost extra startup time
-(about0.91s for the longer opening fixture). No hearing acceptance yet.
+(about0.91s for the longer opening fixture). PR42 merged as b79073c and was
+deployed under InstanceGuard. Hugin restarted at09:17:40 local on22 October;
+its own window shows ready. Brian's both-voice hearing feedback is pending.
 Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
 
 ## Current intent and authorization
@@ -27,7 +29,7 @@ Routine checked private integration and normal deployment remain authorized.
 - Evidence/limits: docs/natural-sections-2026-10-22.md.
 - PR: https://github.com/valhalla-hq/hugin/pull/42.
 - Control: 05181f9a99374ff8b298c626f903304f36ac8926.
-- Ownership remains active through verification and deployment.
+- Ownership remains active for the pending hearing feedback.
 - Prior accepted codec optimization: handoffs/2026-10-22-tts-throughput.md.
 
 ## Accepted deployment and preservation
