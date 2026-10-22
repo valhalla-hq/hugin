@@ -1,15 +1,16 @@
 # Hugin Context
 
-Status: Brian authorizes fixing all five confirmed full-review findings and
-rechecking the corrected app before production packaging. Work is active in the
-exclusive review-fixes worktree. All five fixes have red/green regression guards;
+Status: The five confirmed full-review findings are corrected, independently
+reviewed and deployed. All five fixes have red/green regression guards;
 584 full checks, three isolated preference matrices, docs and51 relevant Windows
 checks pass. Independent review additionally corrected transient-error priority
 and stale cleanup-error ownership. Real Freya/Tyr comparison is complete; all
 word marks are preserved and measured candidate scheduling gaps are<=0.86ms.
 The panel checks passed after a normal click in an owned eligible test process.
-Brian normally quit Hugin; the app is stopped. Stable source remains accepted
-main46f1578 until exact-head checked integration and guarded deployment.
+PR45 merged as5fab470 after exact-head checks. The clean stable clone updated
+under InstanceGuard on22October at10:17:30 local; preferences/activation stayed
+byte-identical. Hugin restarted at10:17:41 and its own window shows ready.
+Only final documentation checkpoint and verified workspace release remain.
 
 Previous accepted result: Brian requests reading sections at sentence ends or suitable clause
 punctuation, preserving accurate words and smooth transitions. The pure producer
@@ -43,7 +44,7 @@ Routine checked private integration and normal deployment remain authorized.
 - Evidence/limits: docs/review-fixes-2026-10-22.md.
 - PR: https://github.com/valhalla-hq/hugin/pull/45.
 - Control: 05181f9a99374ff8b298c626f903304f36ac8926.
-- Ownership active through corrections, verification and deployment.
+- Ownership retained for the final clean checkpoint, then released through the workspace tool.
 - Prior accepted natural-sections result: handoffs/2026-10-22-natural-sections.md.
 - Prior accepted codec optimization: handoffs/2026-10-22-tts-throughput.md.
 
@@ -54,9 +55,11 @@ preferences. The51 relevant native cases pass across the final runs. Real
 Freya/Tyr short-sentence and clause reads mark34/34 and40/40 words, with no
 added preparation stalls (candidate gaps<=0.86ms). Independent spec and
 standards review clears that source. Curated evidence is linked above.
-Brian normally quit Hugin for these checks; stable source remains46f1578 and
-the app is currently stopped. Exact-head CI, integration, guarded deployment
-and final ownership release remain; Whispering/PipPal remain disabled.
+PR45 integrated97ebd03 as5fab470877f09510e23bd24c8e157f4f623f8bfb with the
+identical reviewed tree. The stable clone deployed under InstanceGuard and
+Hugin restarted ready. Final receipt changes are Markdown only; source remains
+398876de, so their checked FF requires no new app restart. Whispering/PipPal
+remain disabled. Release ownership only after this checkpoint is remotely proven.
 
 ## Accepted deployment and preservation
 

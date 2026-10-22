@@ -48,18 +48,32 @@ Details and limits: docs/review-fixes-2026-10-22.md.
 
 Implementation head4a5d46b618f2d2758d31fb00d6c08060b198f05e; src tree
 398876deda8bb06b4ee6b3ebbdf8fa3c484e61b9. Independent spec and standards
-review clear that source. Final documentation review and exact-head CI remain.
+review clear that source and final checked head97ebd0313ca630c8ca01b3c46ec4719667a64737.
+PR45 merged as5fab470877f09510e23bd24c8e157f4f623f8bfb on22October08:17:10UTC;
+the checked head and squash commit have identical complete trees.
 
-All probes synthetic. Brian normally quit Hugin; stable source remains accepted
-main46f1578 and the app is currently stopped. Source deployment requires a fresh
-InstanceGuard acquisition. Checked integration and guarded deployment remain.
+All probes synthetic. After Brian's normal Quit, the clean stable main clone
+updated from46f1578 to5fab470 under a freshly acquired InstanceGuard at
+10:17:30 local. Junction C:/Users/brian/Hugin resolves to the stable clone.
+Preference and activation bytes are unchanged. Normal non-pilot launch at
+10:17:41 local loaded that source; its own Hugin window shows ready, Freya,
+Alt+Y/mouse Back and the accepted panels. No app input was sent. The final
+receipt checkpoint changes only Markdown; src remains398876de and the app
+can keep running during its verified metadata-only FF.
 Never kill by remembered PID; Whispering/PipPal stay disabled. Return path is
 base46f1578 after normal Quit. Preserve runtime/model/voice assets and preferences.
 No raw audio, clipboard, customer content, credentials or reports in Git.
 
-Starter: Continue the five Hugin review fixes from this exact handoff. Production
-fixes, native checks and both-voice comparison are complete. Finish exact-head
-checked integration, guarded deployment, own ready-window observation and the
-final receipt. Production packaging, actual next login and the wider device/
-target matrix remain separate. Release ownership only after the clean final
-checkpoint containing CONTEXT and this handoff is remotely proven.
+This bounded correction is technically complete. Final documentation review,
+checked receipt integration and verified workspace release close the session.
+Ownership stays active until the tool proves a clean remote checkpoint with
+CONTEXT and this handoff; then release through project_workspace.py. Retain
+ignored synthetic reports in this worktree. Production packaging, actual next
+login and the wider device/target matrix remain separate.
+
+Starter: The five Hugin review fixes are complete and deployed from PR45. Read
+CONTEXT, this exact handoff and docs/review-fixes-2026-10-22.md. Verify final
+workspace release status before opening a new exclusive task for the next
+explicitly requested production-build stage. Preserve runtime assets and the
+accepted input, UI and audio word-timing behavior; do not restart review fixes
+without a new reproduced finding.

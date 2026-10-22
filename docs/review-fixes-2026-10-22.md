@@ -91,5 +91,10 @@ supports the next production-packaging stage, not universal bug freedom.
 Installer/build reproducibility, actual next-login acceptance, and the broader
 device/target matrix remain explicit work for that stage. No dependency,
 model, startup binding or accepted input profile changed in this correction.
+PR45 passed exact-head hosted checks and merged as `5fab470`. The clean stable
+main clone deployed under InstanceGuard on 22 October at 10:17:30 local;
+preference and activation bytes stayed identical. Hugin restarted at 10:17:41,
+and its own window was observed ready. The final receipt is Markdown only and
+requires no further app restart.
 Return path after normal Quit: accepted main `46f1578`, preserving runtime
 assets and preferences; source deployment requires InstanceGuard ownership.
