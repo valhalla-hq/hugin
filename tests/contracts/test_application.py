@@ -1,6 +1,8 @@
 """Controller wiring through fake I/O; these are not native pilot claims."""
 from concurrent.futures import Future, ThreadPoolExecutor
+from dataclasses import replace
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from types import SimpleNamespace as NS
 import json
 import threading
@@ -14,6 +16,14 @@ from hugin.application import Controller, _DeliveryCommit
 from hugin.windows.clipboard import ClipboardFailure
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def controller_settings(owner, root=ROOT):
+    """Each fake controller owns disposable preferences, never the installation's."""
+    settings=load_settings(root)
+    state=TemporaryDirectory(prefix='hugin-controller-test-')
+    owner.addCleanup(state.cleanup)
+    return replace(settings,paths={**settings.paths,'state':Path(state.name)})
 
 
 class Inputs:
@@ -118,7 +128,7 @@ class ApplicationContracts(unittest.TestCase):
         self.calls = []
         self.pool = Pool()
         self.clipboard = Clipboard()
-        self.controller = Controller(load_settings(ROOT), inputs=Inputs(),
+        self.controller = Controller(controller_settings(self), inputs=Inputs(),
             microphone=Microphone(self.calls), output=Output(self.calls),
             clipboard=self.clipboard, pool=self.pool, publish=lambda view: None,
             capture_executor=Immediate(), audio_executor=Immediate(), maintenance_executor=Immediate(),
@@ -578,6 +588,7 @@ class ApplicationContracts(unittest.TestCase):
         worker.close = lambda:None
         self.controller.command('quit'); self.pump()
         self.assertTrue(self.controller.shutdown_ready())
+        self.assertIsNone(json.loads(self.controller.diagnostic())['error_code'])
 
     def test_selecting_same_voice_does_not_silence_current_reading(self):
         self.controller.command('read'); self.pump()

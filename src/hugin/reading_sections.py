@@ -88,6 +88,10 @@ def split_reading_sections(text: str) -> deque[str]:
             # when its following speech can start the next section with it.
             eligible = [end for index, end in enumerate(nearby)
                         if end > floor and (not index or end - nearby[index - 1] >= 40)]
+            if not eligible:
+                # Several short sentences can supply enough speech together.
+                # Greeting preference must never erase every natural boundary.
+                eligible = [end for end in nearby if end > floor]
             complete = [end for end in eligible if end <= soft_end]
             if complete:
                 end = complete[0] if not chunks else complete[-1]

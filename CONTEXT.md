@@ -1,6 +1,17 @@
 # Hugin Context
 
-Status: Brian requests reading sections at sentence ends or suitable clause
+Status: Brian authorizes fixing all five confirmed full-review findings and
+rechecking the corrected app before production packaging. Work is active in the
+exclusive review-fixes worktree. All five fixes have red/green regression guards;
+584 full checks, three isolated preference matrices, docs and51 relevant Windows
+checks pass. Independent review additionally corrected transient-error priority
+and stale cleanup-error ownership. Real Freya/Tyr comparison is complete; all
+word marks are preserved and measured candidate scheduling gaps are<=0.86ms.
+The panel checks passed after a normal click in an owned eligible test process.
+Brian normally quit Hugin; the app is stopped. Stable source remains accepted
+main46f1578 until exact-head checked integration and guarded deployment.
+
+Previous accepted result: Brian requests reading sections at sentence ends or suitable clause
 punctuation, preserving accurate words and smooth transitions. The pure producer
 and regression guards are implemented. Both real voices mark every word in the
 normal sentence/clause fixtures; additional scheduling gaps are <=1.73ms. An
@@ -16,23 +27,36 @@ Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
 
 ## Current intent and authorization
 
-Implement natural section boundaries against accepted main1c598db, including
-codec batch16. Preserve actual-audio alignment, native playback and one-section
-lookahead. The frozen comparison baseline is the current120-character policy.
+Fix the five reproduced review findings against main46f1578. Preserve the
+accepted input, clipboard, UI, actual-audio word timing and lookahead behavior.
+Specifications: specs/2026-10-22-review-fixes/. Production packaging is the next
+stage; this task supplies corrected source and an honest readiness statement.
 Routine checked private integration and normal deployment remain authorized.
 
 ## Active Handoff
 
-- `handoffs/2026-10-22-natural-sections.md`
-- Branch: codex/hugin-natural-sections-mjolnir.
-- Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-natural-sections-mjolnir.
-- Base: 1c598dbf90dd5aa1aebf9f47a358f9d87f83ac8f.
-- Spec/plan/tasks: specs/2026-10-22-natural-sections/.
-- Evidence/limits: docs/natural-sections-2026-10-22.md.
-- PR: https://github.com/valhalla-hq/hugin/pull/42.
+- `handoffs/2026-10-22-review-fixes.md`
+- Branch: codex/hugin-review-fixes-mjolnir.
+- Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-review-fixes-mjolnir.
+- Base: 46f157844917bbd601538b67413427f5129139e2.
+- Spec/plan/tasks: specs/2026-10-22-review-fixes/.
+- Evidence/limits: docs/review-fixes-2026-10-22.md.
+- PR: https://github.com/valhalla-hq/hugin/pull/45.
 - Control: 05181f9a99374ff8b298c626f903304f36ac8926.
-- Release ownership through the control tool after the final remote checkpoint.
+- Ownership active through corrections, verification and deployment.
+- Prior accepted natural-sections result: handoffs/2026-10-22-natural-sections.md.
 - Prior accepted codec optimization: handoffs/2026-10-22-tts-throughput.md.
+
+All five corrections are implemented at head4a5d46b, source tree398876de.
+584 full checks pass; all584 also pass independently with absent/Freya/Tyr
+synthetic installed preferences, preserving their bytes and the actual stable
+preferences. The51 relevant native cases pass across the final runs. Real
+Freya/Tyr short-sentence and clause reads mark34/34 and40/40 words, with no
+added preparation stalls (candidate gaps<=0.86ms). Independent spec and
+standards review clears that source. Curated evidence is linked above.
+Brian normally quit Hugin for these checks; stable source remains46f1578 and
+the app is currently stopped. Exact-head CI, integration, guarded deployment
+and final ownership release remain; Whispering/PipPal remain disabled.
 
 ## Accepted deployment and preservation
 

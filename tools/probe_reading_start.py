@@ -24,6 +24,7 @@ from hugin.config import load_settings
 from hugin.windows.instance import InstanceGuard
 from hugin.workers.client import EnginePool, WorkerClient
 from probe_live_audio import _Executor
+from fixtures.reading_sections_46f1578 import split_reading_sections as review_baseline
 
 _HELD = []  # Failed sessions retain the guard and every owner for cleanup retry.
 
@@ -97,8 +98,20 @@ NATURAL_MIXED = ('Dr. Müller erklärt die Funktion und nennt z. B. den Preis vo
     'Danach folgt eine vollständige Aussage; sie bleibt beim Vorlesen gut verständlich. '
     'Zum Schluss prüfen wir die Wortmarkierung und beenden diese kurze Probe.')
 
+SHORT_SENTENCES = ('Wir lesen diesen Satz gemeinsam. Der nächste Gedanke bleibt ganz. '
+    'Auch kurze Sätze gehören dazu. Die Anzeige folgt unserer Stimme. '
+    'Jeder Abschnitt endet sinnvoll. Wir lesen jetzt ruhig weiter. '
+    'Zum Schluss endet diese Probe.')
 
-def comparison_cases(*, recheck=False, natural_sections=False):
+
+def comparison_cases(*, recheck=False, natural_sections=False, review_fixes=False):
+    if review_fixes:
+        cases=[('cold','freya','baseline',SHORT_SENTENCES)]
+        for voice in ('freya','tyr'):
+            for name,text in (('short_sentences',SHORT_SENTENCES),('clauses',NATURAL_CLAUSES)):
+                policies=('baseline','candidate') if voice=='freya' else ('candidate','baseline')
+                cases.extend((name,voice,policy,text) for policy in policies)
+        return cases
     if natural_sections:
         cases = [('cold', 'freya', 'baseline', NATURAL_SENTENCES)]
         for voice in ('freya', 'tyr'):
@@ -182,7 +195,7 @@ class Microphone:
     def cancel(self): pass
 
 
-def run(root, *, codec_batches=False, recheck=False, natural_sections=False):
+def run(root, *, codec_batches=False, recheck=False, natural_sections=False, review_fixes=False):
     if _HELD:
         raise RuntimeError('probe_cleanup_pending')
     guard = InstanceGuard()
@@ -264,8 +277,9 @@ def run(root, *, codec_batches=False, recheck=False, natural_sections=False):
                         'selection_executor', 'delivery_executor'), executors)))
         owner.controller = controller
         candidate = c.Coordinator._split_selection
-        reference = natural_baseline if natural_sections else baseline
-        for name, voice, policy, text in comparison_cases(recheck=recheck, natural_sections=natural_sections):
+        reference = review_baseline if review_fixes else natural_baseline if natural_sections else baseline
+        for name, voice, policy, text in comparison_cases(recheck=recheck,
+                natural_sections=natural_sections,review_fixes=review_fixes):
             current.update(text=text, voice=voice)
             controller.core._split_selection = reference if policy == 'baseline' and not codec_batches else candidate
             sections.clear(); alignment.clear(); marks.clear()
@@ -303,7 +317,8 @@ def run(root, *, codec_batches=False, recheck=False, natural_sections=False):
         elapsed_seconds=round(time.perf_counter()-started, 3),
         controller_cpu_seconds=round(time.process_time()-cpu, 3),
         audible_speech=False, native_clock=True, content_persisted=False,
-        comparison=('natural_sections_vs_1c598db' if natural_sections else
+        comparison=('review_fixes_vs_46f1578' if review_fixes else
+                    'natural_sections_vs_1c598db' if natural_sections else
                     'codec_batch_8_vs_production' if codec_batches else 'section_policy'),
         note='Cold includes model initialization; warm cases share workers. OS cache uncontrolled. '
              'Peak commit is cumulative per worker family, not GPU VRAM or total process-family peak.')
@@ -320,13 +335,17 @@ def main():
                         help='Repeat the Freya opening three times with both codec variants.')
     modes.add_argument('--natural-sections', action='store_true',
                        help='Compare natural sentence/clause sections with accepted main1c598db.')
+    modes.add_argument('--review-fixes', action='store_true',
+                       help='Compare short-sentence fixes with frozen accepted main46f1578.')
     args = parser.parse_args()
     if not args.run:
         print('Plan: exclusive synthetic Freya/Tyr baseline/candidate, real alignment and silent native playback.')
         return 0
     report = run(args.root.resolve(), codec_batches=args.codec_batches or args.codec_recheck,
-                 recheck=args.codec_recheck, natural_sections=args.natural_sections)
-    name = ('natural-sections-native.json' if args.natural_sections else
+                 recheck=args.codec_recheck, natural_sections=args.natural_sections,
+                 review_fixes=args.review_fixes)
+    name = ('review-fixes-native.json' if args.review_fixes else
+            'natural-sections-native.json' if args.natural_sections else
             'codec-batch-recheck.json' if args.codec_recheck else
             'codec-batch-native.json' if args.codec_batches else 'reading-start-measure.json')
     target = SOURCE / '.runtime' / name

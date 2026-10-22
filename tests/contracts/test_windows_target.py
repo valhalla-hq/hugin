@@ -665,6 +665,8 @@ class OwnerCommitContracts(unittest.TestCase):
             def close(self):events.append(('lease_close',threading.get_ident()))
         native._selection_probe=NS(begin_delivery=lambda basis,cancelled:Lease())
         native.capture_native_target=lambda:state['native']
+        native._native_focus=lambda:(state['native'].hwnd,state['native'].focus,
+            state['native'].pid,state['native'].thread,state['native'].caret)
         native.modifiers_down=lambda:False
         def chord(key):
             assert state['held'];events.append(('input',threading.get_ident()))

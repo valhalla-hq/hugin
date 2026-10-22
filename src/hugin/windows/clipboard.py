@@ -737,7 +737,8 @@ class NativeClipboard:
             raise ClipboardFailure('target_unverifiable')
         return style
 
-    def capture_native_target(self):
+    def _native_focus(self):
+        """Cheap focus facts only: no process metadata or waiting messages."""
         hwnd = self.user.GetForegroundWindow()
         pid = W.DWORD()
         thread = self.user.GetWindowThreadProcessId(hwnd, ctypes.byref(pid)) if hwnd else 0
@@ -748,7 +749,21 @@ class NativeClipboard:
         self.user.GetWindowThreadProcessId(info.hwndFocus, ctypes.byref(focus_pid))
         if focus_pid.value != pid.value:
             raise ClipboardFailure('target_unverifiable')
-        process = self.kernel.OpenProcess(0x1000, False, pid.value)
+        caret = None
+        if info.hwndCaret:
+            rect = info.rcCaret
+            caret = (int(info.hwndCaret), rect.left, rect.top, rect.right, rect.bottom)
+        if self.user.GetForegroundWindow() != hwnd:
+            raise ClipboardFailure('target_changed')
+        return int(hwnd),int(info.hwndFocus),pid.value,thread,caret
+
+    def _check_native_focus(self, target):
+        if self._native_focus() != (target.hwnd,target.focus,target.pid,target.thread,target.caret):
+            raise ClipboardFailure('target_changed')
+
+    def capture_native_target(self):
+        hwnd,focus,pid,thread,caret = self._native_focus()
+        process = self.kernel.OpenProcess(0x1000, False, pid)
         if not process:
             raise ClipboardFailure('target_unverifiable')
         try:
@@ -762,26 +777,24 @@ class NativeClipboard:
             if not self.kernel.CloseHandle(process):
                 raise ClipboardFailure('clipboard_failed')
         name = ctypes.create_unicode_buffer(256)
-        if not self.user.GetClassNameW(info.hwndFocus, name, len(name)):
+        if not self.user.GetClassNameW(focus, name, len(name)):
             raise ClipboardFailure('target_unverifiable')
-        caret = None
         selection = None
         native_editable = False
-        if info.hwndCaret:
-            rect = info.rcCaret
-            caret = (int(info.hwndCaret), rect.left, rect.top, rect.right, rect.bottom)
         if name.value.lower() in NATIVE_EDIT_CLASSES:
-            self._native_edit_style(info.hwndFocus)  # Never query password fields.
+            self._native_edit_style(focus)  # Never query password fields.
             start, end, result = W.DWORD(), W.DWORD(), ctypes.c_size_t()
-            ok = self.user.SendMessageTimeoutW(info.hwndFocus, 0xB0, ctypes.addressof(start),
+            ok = self.user.SendMessageTimeoutW(focus, 0xB0, ctypes.addressof(start),
                                                ctypes.addressof(end), 0x23, 50, ctypes.byref(result))
             if ok and start.value <= end.value:
                 selection = (start.value, end.value)
-                style=self._native_edit_style(info.hwndFocus)
-                native_editable = bool(self.user.IsWindowEnabled(info.hwndFocus)
-                    and not style & 0x800 and info.hwndCaret==info.hwndFocus)
-        return WindowTarget(int(hwnd), int(info.hwndFocus), pid.value, thread, creation,
-                            name.value, caret, selection, native_editable,package_family=package_family)
+                style=self._native_edit_style(focus)
+                native_editable = bool(self.user.IsWindowEnabled(focus)
+                    and not style & 0x800 and caret is not None and caret[0]==focus)
+        target=WindowTarget(hwnd,focus,pid,thread,creation,
+                            name.value,caret,selection,native_editable,package_family=package_family)
+        self._check_native_focus(target)  # Reject changes during waiting native reads.
+        return target
 
     def capture_target(self,*,expected=None,cancelled=lambda:False):
         """Complete delivery proof; call off the controller/audio owner.
@@ -957,6 +970,7 @@ class NativeClipboard:
                                     if confirmed.status!='target_captured':raise ClipboardFailure(confirmed.status)
                                     if confirmed.identity!=target.uia:raise ClipboardFailure('target_changed')
                                 if authorize is not None and not authorize(transaction):raise ClipboardFailure('commit_rejected')
+                                self._check_native_focus(target)  # After every waiting proof step.
                                 self._chord(0x56);submitted=True
                         if commit is None:fast_commit()
                         else:commit(transaction,fast_commit)

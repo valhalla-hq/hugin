@@ -1,6 +1,5 @@
 """Completion follows accepted delivery, never recognition alone or a new job."""
 from concurrent.futures import Future, ThreadPoolExecutor
-from pathlib import Path
 from types import SimpleNamespace as NS
 import json
 import threading
@@ -9,13 +8,9 @@ import unittest
 
 from hugin import coordinator as c
 from hugin.application import Controller
-from hugin.config import load_settings
 from hugin.errors import HuginError
-from test_application import Inputs, Output, Clipboard, Pool, Immediate
+from test_application import Inputs, Output, Clipboard, Pool, Immediate, controller_settings
 from test_capture_cues import Mic, Cues
-
-ROOT=Path(__file__).resolve().parents[2]
-
 
 class Deferred:
     def __init__(self):self.pending=[]
@@ -32,7 +27,7 @@ class Deferred:
 class CompletionCueContracts(unittest.TestCase):
     def setUp(self):
         self.calls=[];self.cues=Cues(self.calls);self.pool=Pool();self.clipboard=Clipboard()
-        self.controller=Controller(load_settings(ROOT),inputs=Inputs(),microphone=Mic(self.calls),
+        self.controller=Controller(controller_settings(self),inputs=Inputs(),microphone=Mic(self.calls),
             output=Output(self.calls),clipboard=self.clipboard,pool=self.pool,publish=lambda _:None,
             capture_executor=Immediate(),audio_executor=Immediate(),maintenance_executor=Immediate(),
             selection_executor=Immediate(),delivery_executor=Immediate(),cues=self.cues)

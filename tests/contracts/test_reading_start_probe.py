@@ -10,6 +10,15 @@ import probe_reading_start as probe
 
 
 class ReadingProbeOwnershipTests(unittest.TestCase):
+    def test_review_comparison_keeps_accepted_reference_and_both_voice_cases(self):
+        from hugin.reading_sections import split_reading_sections
+        text=probe.SHORT_SENTENCES
+        self.assertTrue(any(not part.rstrip().endswith('.') for part in probe.review_baseline(text)))
+        self.assertTrue(all(part.rstrip().endswith('.') for part in split_reading_sections(text)))
+        cases=probe.comparison_cases(review_fixes=True)
+        self.assertEqual({(voice,policy) for name,voice,policy,text in cases if name=='short_sentences'},
+            {(voice,policy) for voice in ('freya','tyr') for policy in ('baseline','candidate')})
+
     def test_failed_controller_keeps_guard_and_executors_for_retry(self):
         guard = Mock()
         owner = probe._ProbeSession(guard)
@@ -29,15 +38,14 @@ class ReadingProbeOwnershipTests(unittest.TestCase):
         guard.close.assert_called_once()
 
     def test_real_controller_processes_quit_again_after_io_close_failure(self):
-        from test_application import Inputs, Microphone, Output, Clipboard, Pool, Immediate
+        from test_application import Inputs, Microphone, Output, Clipboard, Pool, Immediate, controller_settings
         from hugin.application import Controller
-        from hugin.config import load_settings
         from hugin.errors import HuginError
         root = Path(__file__).resolve().parents[2]
         calls = []
         output = Output(calls)
         output.close = Mock(side_effect=[HuginError('audio_failed', 'test_close'), None])
-        controller = Controller(load_settings(root), inputs=Inputs(), microphone=Microphone(calls),
+        controller = Controller(controller_settings(self,root), inputs=Inputs(), microphone=Microphone(calls),
             clipboard=Clipboard(), pool=Pool(), output=output, publish=lambda view: None,
             capture_executor=Immediate(), audio_executor=Immediate(), maintenance_executor=Immediate(),
             selection_executor=Immediate(), delivery_executor=Immediate())

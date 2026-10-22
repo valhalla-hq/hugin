@@ -435,15 +435,18 @@ class WorkerClient:
             self._send('shutdown', identity)
         except (HuginError, OSError, ValueError):
             pass
-        try:
-            self.process.wait(timeout=self.settings.limits['cancel_seconds'])
-        except subprocess.TimeoutExpired:
-            self.process.kill()  # Held own-process Job Object, never a PID lookup.
+        # A failed creation may own handles without ever owning a process.
+        # Only its owner can prove that fact; unknown adapters still wait.
+        if getattr(self.process,'process_created',None) is not False:
             try:
-                self.process.wait(timeout=self.settings.limits['exit_seconds'])
+                self.process.wait(timeout=self.settings.limits['cancel_seconds'])
             except subprocess.TimeoutExpired:
-                self.failed = True
-                raise HuginError('worker_timeout','worker_exit') from None
+                self.process.kill()  # Held own-process Job Object, never a PID lookup.
+                try:
+                    self.process.wait(timeout=self.settings.limits['exit_seconds'])
+                except subprocess.TimeoutExpired:
+                    self.failed = True
+                    raise HuginError('worker_timeout','worker_exit') from None
         for stream in (self.process.stdin,self.process.stdout,self.process.stderr,self.data_in,self.data_out):
             try:
                 if stream is not None:

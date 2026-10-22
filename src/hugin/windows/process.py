@@ -44,6 +44,7 @@ class OwnedProcess:
         self.returncode = None
         self._process = self._thread = self._job = None
         self._assigned = False
+        self._process_created = False
         self._final_metrics = None
         child_descriptors = []
         try:
@@ -67,6 +68,7 @@ class OwnedProcess:
                 stdio.append(self.backend.stdio_handle(child))
             self._process, self._thread, self.pid = self.backend.create_suspended(
                 list(command), stdio, extra_handles, cwd, env, creationflags)
+            self._process_created = True
             self.backend.assign(self._job, self._process)
             self._assigned = True
             self.backend.resume(self._thread)
@@ -94,6 +96,11 @@ class OwnedProcess:
         finally:
             for descriptor in child_descriptors:
                 os.close(descriptor)
+
+    @property
+    def process_created(self):
+        """A creation fact, independent of held resources and observed exit."""
+        return self._process_created
 
     def poll(self):
         if self.returncode is not None:

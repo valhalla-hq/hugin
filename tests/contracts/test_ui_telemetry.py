@@ -1,6 +1,6 @@
 """UI facts come from accepted capture/delivery; no native devices or UI."""
-from pathlib import Path
 import struct
+import json
 from types import SimpleNamespace as NS
 import unittest
 from unittest.mock import patch
@@ -8,14 +8,10 @@ from unittest.mock import patch
 from hugin import coordinator as c
 from hugin.application import Controller, _CueFailure
 from hugin.audio import Microphone
-from hugin.config import load_settings
 from hugin.errors import HuginError
-from test_application import Inputs, Output, Clipboard, Pool, Immediate
+from test_application import Inputs, Output, Clipboard, Pool, Immediate, controller_settings
 from test_capture_cues import Mic, Cues, Stream
 from test_completion_cue import Deferred
-
-
-ROOT=Path(__file__).resolve().parents[2]
 
 
 class MicrophoneMeterContracts(unittest.TestCase):
@@ -92,13 +88,65 @@ class MicrophoneMeterContracts(unittest.TestCase):
 class PresentationFactsContracts(unittest.TestCase):
     def setUp(self):
         self.calls=[];self.pool=Pool();self.clipboard=Clipboard();self.mic=Mic(self.calls)
-        self.controller=Controller(load_settings(ROOT),inputs=Inputs(),microphone=self.mic,
+        self.controller=Controller(controller_settings(self),inputs=Inputs(),microphone=self.mic,
             output=Output(self.calls),clipboard=self.clipboard,pool=self.pool,publish=lambda _:None,
             capture_executor=Immediate(),audio_executor=Immediate(),maintenance_executor=Immediate(),
             selection_executor=Immediate(),delivery_executor=Immediate(),cues=Cues(self.calls))
 
     def pump(self):
         while self.controller.pump_once():pass
+
+    def test_transient_cue_failure_does_not_poison_successful_next_recording(self):
+        self.controller.handle(_CueFailure(HuginError('audio_failed','fixture')))
+        self.assertTrue(self.controller.view().error)
+        self.mic.audio_level=.4
+        self.controller.command('dictation');self.pump()
+        view=self.controller.view()
+        self.assertEqual(self.controller.core.snapshot().state,c.State.RECORDING)
+        self.assertEqual((view.activity,view.active_action,view.audio_level),('recording','dictation',.4))
+        self.assertFalse(view.error)
+        self.assertIsNone(json.loads(self.controller.diagnostic())['error_code'])
+
+    def test_failed_copy_recovers_on_success_or_new_reading(self):
+        self.finish(self.recognize())
+        original=self.clipboard.copy
+        self.clipboard.copy=lambda text:NS(status='clipboard_busy')
+        self.controller.command('copy');self.pump()
+        self.assertTrue(self.controller.view().error)
+        self.clipboard.copy=original
+        self.controller.command('copy');self.pump()
+        self.assertFalse(self.controller.view().error)
+        self.clipboard.copy=lambda text:NS(status='clipboard_busy')
+        self.controller.command('diagnose');self.pump()
+        self.assertTrue(self.controller.view().error)
+        self.controller.command('read');self.pump()
+        self.assertEqual(self.controller.view().active_action,'reading')
+        self.assertFalse(self.controller.view().error)
+
+    def test_real_cleanup_fault_is_not_hidden_by_a_new_action(self):
+        self.controller.cues.cleanup_pending=True
+        self.controller.handle(_CueFailure(HuginError('audio_failed','fixture_cleanup')))
+        self.controller.command('dictation');self.pump()
+        self.assertTrue(self.controller.view().error)
+        self.assertTrue(json.loads(self.controller.diagnostic())['pending_cleanup'])
+
+    def test_late_cue_error_cannot_replace_another_jobs_presentation(self):
+        self.controller.command('dictation');self.pump()
+        old=self.controller.core.snapshot().job
+        self.controller.command('cancel');self.pump()
+        self.controller.command('dictation');self.pump()
+        self.controller.handle(_CueFailure(HuginError('audio_failed','late_fixture'),old))
+        self.assertFalse(self.controller.view().error)
+        self.assertEqual(self.controller.view().active_action,'dictation')
+
+    def test_current_engine_failure_takes_priority_over_transient_action_error(self):
+        self.recognize()
+        self.controller.handle(_CueFailure(HuginError('audio_failed','fixture_cue'),self.operation.job))
+        self.controller.handle(c.EngineFault(self.operation,HuginError('worker_failed','fixture_engine')))
+        self.assertEqual(json.loads(self.controller.diagnostic())['error_code'],'worker_failed')
+        self.clipboard.copy=lambda text:NS(status='clipboard_busy')
+        self.controller.command('diagnose');self.pump()
+        self.assertEqual(json.loads(self.controller.diagnostic())['error_code'],'worker_failed')
 
     def recognize(self):
         self.controller.command('dictation');self.pump()

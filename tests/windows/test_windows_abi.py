@@ -390,6 +390,8 @@ class WindowsAbiContracts(unittest.TestCase):
         target=WindowTarget(100,200,3,4,500,'Edit',(200,1,2,3,4),(2,2))
         backend.capture_target = lambda **kwargs: events.append('target') or target
         backend.capture_native_target=lambda:events.append('native') or target
+        backend._native_focus=lambda:events.append('focus') or (
+            target.hwnd,target.focus,target.pid,target.thread,target.caret)
         backend.modifiers_down = lambda: events.append('modifiers') or False
         backend._chord = lambda _: events.append('send')
         sentinel = object()
@@ -398,7 +400,7 @@ class WindowsAbiContracts(unittest.TestCase):
             events.append('authorize')
             return True
         backend.commit_paste(10,target,lambda:events.append('current') or True,authorize,sentinel)
-        self.assertEqual(events,['lock','sequence','native','sequence','modifiers','current','authorize','send','unlock'])
+        self.assertEqual(events,['lock','sequence','native','sequence','modifiers','current','authorize','focus','send','unlock'])
 
     def test_failed_close_after_send_keeps_possible_submission_fact(self):
         backend = object.__new__(NativeClipboard)
@@ -422,6 +424,7 @@ class WindowsAbiContracts(unittest.TestCase):
         target=WindowTarget(100,200,3,4,500,'Edit',(200,1,2,3,4),(2,2))
         backend.capture_target,backend.modifiers_down=lambda **kwargs:target,lambda:False
         backend.capture_native_target=lambda:target
+        backend._native_focus=lambda:(target.hwnd,target.focus,target.pid,target.thread,target.caret)
         backend._chord = lambda _: None
         with self.assertRaises(ClipboardFailure) as failure:
             backend.commit_paste(10,target,lambda:True)

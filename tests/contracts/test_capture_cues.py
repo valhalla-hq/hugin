@@ -1,6 +1,5 @@
 """IA-003/005: synthetic device clocks and fake owned outputs; no native audio."""
 from concurrent.futures import Future, ThreadPoolExecutor
-from pathlib import Path
 import threading
 from types import SimpleNamespace as NS
 import unittest
@@ -9,12 +8,8 @@ from unittest.mock import patch
 from hugin import coordinator as c
 from hugin.audio import Microphone
 from hugin.application import Controller
-from hugin.config import load_settings
 from hugin.errors import HuginError
-from test_application import Inputs, Output, Clipboard, Pool, Immediate
-
-ROOT=Path(__file__).resolve().parents[2]
-
+from test_application import Inputs, Output, Clipboard, Pool, Immediate, controller_settings
 
 class Stream:
     time=100.0
@@ -142,7 +137,7 @@ class CaptureCueContracts(unittest.TestCase):
         self.calls=[];self.mic=Mic(self.calls);self.cues=Cues(self.calls);self.pool=Pool()
         self.clipboard=Clipboard()
         self.clipboard.capture_target=lambda **_:self.calls.append('uia') or NS(target='target',status='target_captured')
-        self.controller=Controller(load_settings(ROOT),inputs=Inputs(),microphone=self.mic,
+        self.controller=Controller(controller_settings(self),inputs=Inputs(),microphone=self.mic,
             output=Output(self.calls),clipboard=self.clipboard,pool=self.pool,publish=lambda _:None,
             capture_executor=Immediate(),audio_executor=Immediate(),maintenance_executor=Immediate(),
             selection_executor=Immediate(),delivery_executor=Immediate(),cues=self.cues)
