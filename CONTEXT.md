@@ -49,7 +49,7 @@ next-login evidence remains separate; no sign-out is implied.
 - Base: 5140213e6019f3b9f47025cd2f6ce08ba15cbce7.
 - Spec/plan/tasks: specs/2026-10-22-production-build/.
 - Evidence/limits: docs/review-fixes-2026-10-22.md.
-- PR: not created until the first meaningful checkpoint.
+- PR: https://github.com/valhalla-hq/hugin/pull/47 (Draft).
 - Control: 05181f9a99374ff8b298c626f903304f36ac8926.
 - Ownership active for production-build implementation and verification.
 - Prior completed review-fixes handoff: handoffs/2026-10-22-review-fixes.md.

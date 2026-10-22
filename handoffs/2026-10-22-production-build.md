@@ -23,8 +23,21 @@ compiler. No app installation/source change yet; accepted source Hugin remains
 running, Whispering/PipPal disabled. Source assets include roughly12GB runtime;
 stable .runtime also contains private test data and wheelhouse: never copy it whole.
 
-Next: implement and verify the allowlisted build, owned setup migration and held
-installer mutex. Save meaningful source checkpoint/Draft PR. Build and relocate
+PR47: https://github.com/valhalla-hq/hugin/pull/47 (Draft). Initial package/path
+guards and spec saved as4c772fe. Native .NET starter and Inno syntax compilation
+pass; guard returns busy while accepted Hugin runs, proving the shared mutex.
+Setup slice has12 synthetic migration/reinstall/rollback/unknown-owner guards,
+plus7 existing DesktopSetup cases. Four independently found edge cases were
+reproduced red/green: unowned Legacy links, refreshing replacement authority,
+preference reset after completed migration, recovery owner validation before
+link recreation. Pending voice migration is plan-bound and completion ends its
+active restoration role. Both reviewer lenses clear that slice. Initial full
+suite599 passes in26.636s; the later rollback guard is additional.
+
+Builder, private installation probe and launcher/installer are implemented for
+the first real build; version1.0.0. No final artifact or real installer run yet.
+Only src production change so far is the version; input/audio owners stay intact.
+Next: checkpoint current source, build and relocate
 payload, run synthetic isolated install/update/uninstall/input checks, independent
 review, exact-head CI/integration and final switch after normal Quit. Actual next
 login remains explicitly pending; do not claim it from manual background launch.
