@@ -7,5 +7,9 @@
 - [x] T005 Retry partial process-owner cleanup safely (REQ-004).
 - [x] T006 Full checks and real Freya/Tyr comparison (AC-006–007).
 - [x] T007 Independent spec/standards review and resolve related findings.
-- [ ] T008 Exact-head CI, checked integration, guarded deployment, remote proof.
-- [ ] T009 Record readiness, remaining production-build gates and ownership release.
+- [x] T008 Exact-head CI, checked integration, guarded deployment, remote proof (PR45 /5fab470).
+- [x] T009 Record readiness and remaining production-build gates; prepare the clean remote checkpoint for tool-verified ownership release.
+
+Final lifecycle operation after this receipt is remotely proven: release the
+exclusive worktree through project_workspace.py. The workspace tool result is
+the authority for actual release; no ownership state is edited manually.
