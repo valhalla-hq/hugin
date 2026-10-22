@@ -11,7 +11,7 @@ import production_package as package
 class ProductionPackage(unittest.TestCase):
     def test_runtime_search_path_is_relative_and_contains_own_source(self):
         with tempfile.TemporaryDirectory() as folder:
-            root=Path(folder);scripts=root/'.runtime/controller/Scripts'
+            root=Path(folder).resolve();scripts=root/'.runtime/controller/Scripts'
             scripts.mkdir(parents=True)
             package.write_search_path(scripts)
             lines=(scripts/'python312._pth').read_text().splitlines()
@@ -20,7 +20,7 @@ class ProductionPackage(unittest.TestCase):
 
     def test_inventory_excludes_state_and_rejects_redirected_payload(self):
         with tempfile.TemporaryDirectory() as folder:
-            root=Path(folder);(root/'src').mkdir();(root/'src/main.py').write_text('synthetic')
+            root=Path(folder).resolve();(root/'src').mkdir();(root/'src/main.py').write_text('synthetic')
             records=package.inventory(root)
             self.assertEqual([r['file'] for r in records],['src/main.py'])
             (root/'.runtime/state').mkdir(parents=True)
@@ -29,7 +29,7 @@ class ProductionPackage(unittest.TestCase):
 
     def test_exact_payload_verification_detects_changed_missing_and_extra_files(self):
         with tempfile.TemporaryDirectory() as folder:
-            root=Path(folder);file=root/'value';file.write_bytes(b'original')
+            root=Path(folder).resolve();file=root/'value';file.write_bytes(b'original')
             records=package.inventory(root);package.verify_inventory(root,records)
             file.write_bytes(b'modified')
             with self.assertRaises(ValueError):package.verify_inventory(root,records)
