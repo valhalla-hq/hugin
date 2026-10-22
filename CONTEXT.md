@@ -19,12 +19,12 @@ policy, actual-audio alignment, native playback and one-section lookahead. Compa
 against current main8f2c605, not the older240-character opening policy.
 Routine checked private integration and normal deployment remain authorized.
 
-## Active work and handoff
+## Active Handoff
 
+- `handoffs/2026-10-22-tts-throughput.md`
 - Branch: codex/hugin-tts-throughput-mjolnir.
 - Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-tts-throughput-mjolnir.
 - Feature main/deployment: e4a1b04fa6ddc9fcfc460a12e21fa5935ba98bdb (PR39).
-- Exact handoff: handoffs/2026-10-22-tts-throughput.md.
 - Spec/plan/tasks: specs/2026-10-22-tts-throughput/.
 - Evidence/limits: docs/word-highlighting-2026-10-21.md.
 - New measurements: docs/tts-throughput-2026-10-22.md.
