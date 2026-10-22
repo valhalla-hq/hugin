@@ -14,7 +14,7 @@ oder Nachricht für morgen erzeugen und heute nicht abmelden oder neu starten.
 - Branch: codex/input-login-acceptance-mjolnir; Basis e82e9a625f897a0eda33479637a3a802bd2d2636.
 - Worktree: C:/Users/brian/brian-projects/worktrees/hugin/input-login-acceptance-mjolnir.
 - Exakter aktiver Handoff: handoffs/2026-10-22-input-login-acceptance.md.
-- PR: nach erstem sinnvollen Checkpoint anlegen; genaue Branchidentität prüfen.
+- Draft PR: https://github.com/valhalla-hq/hugin/pull/49; gleicher Task-Branch.
 - Control: 46e362d1d3284d712757fc2f0e67a165dbf3a41c.
 - Autorisierung: Brian bittet um Sicherung; kein neuer Build oder heutiger
   Login-/Neustarttest. Save erhält Eigentum, keine Freigabe/Übertragung.

@@ -91,7 +91,7 @@ change today. Keep this Save checkpoint active for continuation.
 - Base: e82e9a625f897a0eda33479637a3a802bd2d2636.
 - Scope: Markdown acceptance receipt; no runtime/installer change.
 - Evidence/limits: PRODUCTION-BUILD.md, manual acceptance dated22October2026.
-- PR: created after this first meaningful checkpoint; match exact task branch.
+- Draft PR: https://github.com/valhalla-hq/hugin/pull/49 (same exact task branch).
 - Control: 46e362d1d3284d712757fc2f0e67a165dbf3a41c.
 - Ownership active for input-login-acceptance (Save, not release).
 - Prior completed production handoff: handoffs/2026-10-22-production-build.md.
