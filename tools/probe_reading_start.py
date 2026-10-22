@@ -3,7 +3,8 @@
 Uses real workers, alignment and Controller/native playback with equal-length
 silent PCM. No clipboard, microphone, hooks or preference writes. --run requires
 Hugin to have quit normally; InstanceGuard enforces exclusivity. No text/audio
-is included in the report. Baseline policy is frozen from main 9ec85225.
+is included in the report. Section baselines are frozen from main 9ec85225
+(original comparison) or 1c598db (--natural-sections).
 """
 from collections import deque
 from pathlib import Path
@@ -85,8 +86,27 @@ LONG_SENTENCE = ('Bei dieser Sprachprobe lesen Freya und Tyr einen längeren Sat
                  'Stimme hervorgehoben wird, auch wenn der Text etwas länger ist '
                  'und mehrere Gedanken miteinander verbindet. ')
 
+NATURAL_SENTENCES = ('Dieser kurze erste Satz soll vollständig zusammenbleiben. '
+    'Auch dieser zweite Satz sollte in der Mitleseleiste als zusammengehöriger Gedanke erscheinen. '
+    'Danach folgt ein weiterer Satz, der den Absatz für unsere Probe verlängert.')
+NATURAL_CLAUSES = ('Wenn Hugin den Anfang des Textes vorbereitet, kann es an einer passenden Sprechpause schneiden, '
+    'während es den nächsten Teil schon im Hintergrund vorbereitet, damit beim Vorlesen keine störenden Pausen entstehen. '
+    'Dieser zusätzliche Satz hält den Test über dem bisherigen Restlimit.')
+NATURAL_MIXED = ('Dr. Müller erklärt die Funktion und nennt z. B. den Preis von 12,50 Euro. '
+    'Am 12. Oktober beginnt die nächste Leseprobe, und Freya sowie Tyr lesen einen weiteren Absatz vor. '
+    'Danach folgt eine vollständige Aussage; sie bleibt beim Vorlesen gut verständlich. '
+    'Zum Schluss prüfen wir die Wortmarkierung und beenden diese kurze Probe.')
 
-def comparison_cases(*, recheck=False):
+
+def comparison_cases(*, recheck=False, natural_sections=False):
+    if natural_sections:
+        cases = [('cold', 'freya', 'baseline', NATURAL_SENTENCES)]
+        for voice in ('freya', 'tyr'):
+            for name, text in (('sentences', NATURAL_SENTENCES), ('clauses', NATURAL_CLAUSES),
+                               ('mixed', NATURAL_MIXED)):
+                policies = ('baseline', 'candidate') if name != 'clauses' else ('candidate', 'baseline')
+                cases.extend((name, voice, policy, text) for policy in policies)
+        return cases
     if recheck:
         opening = c.Coordinator._split_selection(PARAGRAPH)[0]
         cases = [('cold', 'freya', 'baseline', opening)]
@@ -121,6 +141,34 @@ def baseline(text):
     return chunks
 
 
+def natural_baseline(text):
+    """Frozen accepted 120-character policy from main1c598db, not the older240."""
+    chunks, offset, budget = deque(), 0, 120
+    while offset < len(text):
+        end = min(offset + budget, len(text))
+        window = text[offset:end]
+        if len(text) - offset <= min(240, budget + 40):
+            end = len(text)
+        elif end < len(text):
+            sentence = [m for m in re.finditer(r'[.!?]["\'”’\)\]]*\s+|\n+', window)
+                        if m.end() >= budget * 2 // 3]
+            whitespace = list(re.finditer(r'\s+', window)) if not sentence else []
+            if sentence:
+                end = offset + sentence[0].end()
+            elif whitespace:
+                end = offset + whitespace[-1].end()
+            else:
+                hard_end = min(offset + 240, len(text))
+                boundary = re.search(r'\s+', text[offset:hard_end])
+                end = offset + boundary.end() if boundary else hard_end
+        chunk = text[offset:end]
+        if chunk.strip():
+            chunks.append(chunk)
+            budget = min(240, max(120, len(chunk) * 3 // 2))
+        offset = end
+    return chunks
+
+
 class Inputs:
     running = True
     error = None
@@ -134,7 +182,7 @@ class Microphone:
     def cancel(self): pass
 
 
-def run(root, *, codec_batches=False, recheck=False):
+def run(root, *, codec_batches=False, recheck=False, natural_sections=False):
     if _HELD:
         raise RuntimeError('probe_cleanup_pending')
     guard = InstanceGuard()
@@ -216,9 +264,10 @@ def run(root, *, codec_batches=False, recheck=False):
                         'selection_executor', 'delivery_executor'), executors)))
         owner.controller = controller
         candidate = c.Coordinator._split_selection
-        for name, voice, policy, text in comparison_cases(recheck=recheck):
+        reference = natural_baseline if natural_sections else baseline
+        for name, voice, policy, text in comparison_cases(recheck=recheck, natural_sections=natural_sections):
             current.update(text=text, voice=voice)
-            controller.core._split_selection = baseline if policy == 'baseline' and not codec_batches else candidate
+            controller.core._split_selection = reference if policy == 'baseline' and not codec_batches else candidate
             sections.clear(); alignment.clear(); marks.clear()
             before, begin = metrics(), time.perf_counter()
             print(json.dumps(dict(stage='begin', case=name, voice=voice, policy=policy)), flush=True)
@@ -254,7 +303,8 @@ def run(root, *, codec_batches=False, recheck=False):
         elapsed_seconds=round(time.perf_counter()-started, 3),
         controller_cpu_seconds=round(time.process_time()-cpu, 3),
         audible_speech=False, native_clock=True, content_persisted=False,
-        comparison='codec_batch_8_vs_production' if codec_batches else 'section_policy',
+        comparison=('natural_sections_vs_1c598db' if natural_sections else
+                    'codec_batch_8_vs_production' if codec_batches else 'section_policy'),
         note='Cold includes model initialization; warm cases share workers. OS cache uncontrolled. '
              'Peak commit is cumulative per worker family, not GPU VRAM or total process-family peak.')
 
@@ -263,17 +313,21 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--run', action='store_true')
-    parser.add_argument('--codec-batches', action='store_true',
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument('--codec-batches', action='store_true',
                         help='Compare codec batch 8 with production, using current sections for both.')
-    parser.add_argument('--codec-recheck', action='store_true',
+    modes.add_argument('--codec-recheck', action='store_true',
                         help='Repeat the Freya opening three times with both codec variants.')
+    modes.add_argument('--natural-sections', action='store_true',
+                       help='Compare natural sentence/clause sections with accepted main1c598db.')
     args = parser.parse_args()
     if not args.run:
         print('Plan: exclusive synthetic Freya/Tyr baseline/candidate, real alignment and silent native playback.')
         return 0
     report = run(args.root.resolve(), codec_batches=args.codec_batches or args.codec_recheck,
-                 recheck=args.codec_recheck)
-    name = ('codec-batch-recheck.json' if args.codec_recheck else
+                 recheck=args.codec_recheck, natural_sections=args.natural_sections)
+    name = ('natural-sections-native.json' if args.natural_sections else
+            'codec-batch-recheck.json' if args.codec_recheck else
             'codec-batch-native.json' if args.codec_batches else 'reading-start-measure.json')
     target = SOURCE / '.runtime' / name
     target.parent.mkdir(exist_ok=True)

@@ -1,36 +1,34 @@
 # Hugin Context
 
-Status: Brian requests further reading-start speed after the integrated shorter
-section policy. Candidate doubles Qwen codec batches to16. Repeated real screen:
-9.5–13.5% faster warm preparation; isolated native Freya repeat saves0.23–0.35s.
-Both voices retain complete fixture alignment, full-pipeline scheduling gaps
-<=0.84ms and pre/post-PCM cancellation<=0.56s. All 561 checks and docs check pass;
-both independent reviews cleared the change. PR39 merged as e4a1b04 and deployed
-under InstanceGuard. Hugin restarted at 08:31:59 local on22 October; its own
-window was observed loading Qwen for reading. Brian confirms word marking still
-fits, barely notices the extra speed and explicitly accepts leaving this version.
-This bounded optimization is complete; no further performance work is pending.
+Status: Brian requests reading sections at sentence ends or suitable clause
+punctuation, preserving accurate words and smooth transitions. The pure producer
+and regression guards are implemented. Both real voices mark every word in the
+normal sentence/clause fixtures; additional scheduling gaps are <=1.73ms. An
+initial very-short-opening regression was corrected before deployment. The
+existing Freya mixed-abbreviation fallback shrinks from[0,81) to[0,74), with no
+previously marked range lost. Whole sentences can cost extra startup time
+(about0.91s for the longer opening fixture). No hearing acceptance yet.
 Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
 
 ## Current intent and authorization
 
-Reduce repeated overlapping codec decoding while preserving the current section
-policy, actual-audio alignment, native playback and one-section lookahead. Compare
-against current main8f2c605, not the older240-character opening policy.
+Implement natural section boundaries against accepted main1c598db, including
+codec batch16. Preserve actual-audio alignment, native playback and one-section
+lookahead. The frozen comparison baseline is the current120-character policy.
 Routine checked private integration and normal deployment remain authorized.
 
 ## Active Handoff
 
-- `handoffs/2026-10-22-tts-throughput.md`
-- Branch: codex/hugin-tts-throughput-mjolnir.
-- Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-tts-throughput-mjolnir.
-- Feature main/deployment: e4a1b04fa6ddc9fcfc460a12e21fa5935ba98bdb (PR39).
-- Spec/plan/tasks: specs/2026-10-22-tts-throughput/.
-- Evidence/limits: docs/word-highlighting-2026-10-21.md.
-- New measurements: docs/tts-throughput-2026-10-22.md.
+- `handoffs/2026-10-22-natural-sections.md`
+- Branch: codex/hugin-natural-sections-mjolnir.
+- Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-natural-sections-mjolnir.
+- Base: 1c598dbf90dd5aa1aebf9f47a358f9d87f83ac8f.
+- Spec/plan/tasks: specs/2026-10-22-natural-sections/.
+- Evidence/limits: docs/natural-sections-2026-10-22.md.
+- PR: https://github.com/valhalla-hq/hugin/pull/42.
 - Control: 05181f9a99374ff8b298c626f903304f36ac8926.
-- Ownership can be released after this accepted checkpoint is remotely proven. Previous feature history remains
-  in handoffs/2026-10-21-reading-start.md and handoffs/2026-10-21-word-highlighting.md.
+- Ownership remains active through verification and deployment.
+- Prior accepted codec optimization: handoffs/2026-10-22-tts-throughput.md.
 
 ## Accepted deployment and preservation
 

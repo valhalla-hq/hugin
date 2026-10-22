@@ -18,7 +18,9 @@ class ReadingStartContracts(unittest.TestCase):
         first, = [e for e in effects if isinstance(e, c.BeginEngine)]
         self.assertEqual(first.operation.action, c.Action.SYNTHESIZE)
         self.assertLessEqual(len(first.payload), 120)
-        self.assertGreaterEqual(len(first.payload), 80)
+        self.assertGreaterEqual(len(first.payload), 60)
+        self.assertTrue(first.payload.rstrip().endswith('.'))
+        self.assertNotEqual(first.payload.strip(), 'Guten Tag.')
         self.assertTrue(text.startswith(first.payload))
         self.assertFalse(any(isinstance(e, c.PlayAudio) for e in effects))
 
@@ -61,13 +63,17 @@ class ReadingStartContracts(unittest.TestCase):
                 'und mehrere Gedanken miteinander verbindet. ')
         chunks = list(c.Coordinator._split_selection(text))
         self.assertEqual(''.join(chunks), text)
-        self.assertEqual(len(chunks), 2)
+        self.assertTrue(all(len(part.split()) >= 6 for part in chunks))
+        self.assertTrue(all(part.rstrip().endswith((',', '.')) for part in chunks))
         self.assertTrue(chunks[-1].endswith('miteinander verbindet. '))
 
-    def test_next_greeting_is_not_appended_after_a_complete_sized_section(self):
+    def test_greetings_are_grouped_with_more_speech_not_left_at_a_section_tail(self):
         paragraph = ('Guten Tag. Hugin markiert beim Vorlesen jedes gesprochene Wort. '
                      'Wir machen eine kurze Pause, und lesen dann weiter. ')
-        self.assertEqual(list(c.Coordinator._split_selection(paragraph * 3)), [paragraph] * 3)
+        chunks = list(c.Coordinator._split_selection(paragraph * 3))
+        self.assertEqual(''.join(chunks), paragraph * 3)
+        self.assertTrue(all(part.rstrip().endswith('.') for part in chunks))
+        self.assertFalse(any(part.endswith('Guten Tag. ') for part in chunks))
 
     def test_short_selections_stay_whole_and_empty_selections_have_no_work(self):
         for text in ('Hallo Welt.', '  Grüße 🐦.\n', 'Wort ' * 24):
