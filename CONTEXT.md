@@ -1,30 +1,31 @@
 # Hugin Context
 
-Status: Brian accepts the stable-layout style A and audio-based word timing.
-He now requests faster first speech with equally accurate marking and no
-distracting section gaps. The refined section policy passes 557 checks and real
-Freya/Tyr comparison: warm start 42.5–47.6% earlier, all fixture words aligned,
-native scheduling gaps <=0.74ms. PR37 is integrated and Hugin restarted with the
-new source at 19:09:21 local. Its own window showed readiness. Listening feedback
-on the new phrasing is pending; the speed improvement is a measured fixture result.
+Status: Brian requests further reading-start speed after the integrated shorter
+section policy. Candidate doubles Qwen codec batches to16. Repeated real screen:
+9.5–13.5% faster warm preparation; isolated native Freya repeat saves0.23–0.35s.
+Both voices retain complete fixture alignment, full-pipeline scheduling gaps
+<=0.84ms and pre/post-PCM cancellation<=0.56s. All 561 checks and docs check pass;
+both independent reviews cleared source 5f123ee. PR39 awaits checked integration.
+Hugin was quit normally for measurements; stable main8f2c605 is unchanged.
+Prior and current hearing acceptance remain pending.
 Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
 
 ## Current intent and authorization
 
-Reduce the first prepared section and grow successors conservatively. Preserve
-actual-audio forced alignment, native playback position and one-section lookahead.
-Measure old/new in the same real workers before claiming a faster or gapless start.
+Reduce repeated overlapping codec decoding while preserving the current section
+policy, actual-audio alignment, native playback and one-section lookahead. Compare
+against current main8f2c605, not the older240-character opening policy.
 Routine checked private integration and normal deployment remain authorized.
 
 ## Active work and handoff
 
-- Branch: codex/hugin-reading-start-mjolnir.
-- Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-reading-start-mjolnir.
-- Feature main/deployment: 3c988de490796d6f5a31d29afe4960412a15fd0e (PR37).
-- Exact handoff: handoffs/2026-10-21-reading-start.md.
-- Spec/plan/tasks: specs/2026-10-21-reading-start/.
+- Branch: codex/hugin-tts-throughput-mjolnir.
+- Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-tts-throughput-mjolnir.
+- Base/main/deployment: 8f2c605d84bcaea79ea120e8f7486e97e0cc9ee7 (PR38).
+- Exact handoff: handoffs/2026-10-22-tts-throughput.md.
+- Spec/plan/tasks: specs/2026-10-22-tts-throughput/.
 - Evidence/limits: docs/word-highlighting-2026-10-21.md.
-- New measurements: docs/reading-start-2026-10-21.md.
+- New measurements: docs/tts-throughput-2026-10-22.md.
 - Control: 05181f9a99374ff8b298c626f903304f36ac8926.
 - Ownership remains active. Previous completed feature history remains in
   handoffs/2026-10-21-word-highlighting.md.
