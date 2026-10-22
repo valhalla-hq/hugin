@@ -2,18 +2,22 @@
 
 ## Current verified checkpoint — 22 October 2026
 
-Mode Save toward Close. Task hugin-production-build, Mjolnir, private
+Mode Close receipt. Task hugin-production-build, Mjolnir, private
 valhalla-hq/hugin. Ownership ACTIVE until central clean pushed release proof.
 Branch codex/hugin-production-build-mjolnir, base5140213e6019f3b9f47025cd2f6ce08ba15cbce7;
 worktree C:/Users/brian/brian-projects/worktrees/hugin/hugin-production-build-mjolnir.
-Control05181f9a99374ff8b298c626f903304f36ac8926. PR47 remains Draft pending
-final metadata review, exact-head CI and checked private integration.
+Control05181f9a99374ff8b298c626f903304f36ac8926. PR47 merged exact reviewed
+head3009998565cfa053b096da88656b368ef942b267 as
+c17b35818b0ac47a0dae6b20b78528ac9d0e74b9 after all hosted checks and both reviews.
+Only the checked Markdown closure receipt and central ownership release remain.
 
 Artifact pin3b6bc4304a871c05c98980160b257709db2e2fed, src4a2c67ae21141f8879de092fc929f6d51d56df34.
 Installer C:/Users/brian/Hugin-Releases/1.0.0-3b6bc4304a87/ has exe+4bins,
 all five destination SHA256 values verified. Normal installed root:
 C:/Users/brian/AppData/Local/Programs/Hugin/releases/1.0.0-3b6bc4304a87.
-App stopped for final integration. Curated evidence: PRODUCTION-BUILD.md.
+App started normally after verified Source Main FF under InstanceGuard; the
+returned exact installed window shows Ready, Lokal/Freya, correct input hints.
+App remains running for Brian. Curated evidence: PRODUCTION-BUILD.md.
 
 - Actual install exit0/482.367s and repair exit0/484.824s. Missing own icon
   restored; changed voice, activation, Startup bytes, state sentinel and46DSP
@@ -40,16 +44,17 @@ passes. Readiness120s also covers3IPC waits; cancel2/exit5 unchanged. OS caches
 uncontrolled. Real next login, physical mouse clicks and broad devices/targets
 remain unverified. Unsigned local/private artifact; no reboot/sign-out/publication.
 
-Next: metadata review + exact-head CI, checked PR47 merge, stable Main FF under
-InstanceGuard while app stopped, verify frozen artifact input paths unchanged.
-Start installed Hugin normally and inspect its own Ready window. Write checked
-Markdown closure receipt; preserve needed ignored evidence/original backups
-outside task, central release, then technical worktree/branch cleanup.
+Next: independent metadata review/CI and checked Markdown closure integration.
+All frozen artifact input paths equal integrated Main. Required ignored technical
+evidence and original backups are copied/hash-verified outside task at
+C:/Users/brian/Hugin-Releases/1.0.0-3b6bc4304a87/verification.
+After clean remote receipt, central release then technical worktree/local branch
+cleanup; keep delivered artifacts, source runtime, user settings and backups.
 
 Starter: Continue this exact hugin-production-build handoff. Real installer,
 voice, native and repair acceptance is complete; do not rerun or rebuild without
-a new change/concern. Finish integration, normal startup, receipt and verified
-release. Never restart Whispering/PipPal or claim actual Windows login.
+a new change/concern. Finish only metadata integration and verified release;
+normal startup is complete. Never restart Whispering/PipPal or claim actual login.
 
 ## Historical investigation trail (superseded intermediate status)
 

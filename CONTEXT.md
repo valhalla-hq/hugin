@@ -2,9 +2,14 @@
 
 Status am22.10.2026: Hugin1.0.0 ist als privater Offline-Installer gebaut,
 im regulären Benutzerordner installiert und nach Reparaturinstallation geprüft.
-Aktiv: hugin-production-build, Mjolnir; Eigentum aktiv. Noch offen sind checked
-private Integration, normaler sichtbarer Start und Abschlussbeleg/Freigabe.
-Exakter Handoff: handoffs/2026-10-22-production-build.md. PR47 ist noch Draft.
+Ergebnis abgeschlossen: hugin-production-build, Mjolnir. PR47 ist checked als
+c17b35818b0ac47a0dae6b20b78528ac9d0e74b9 nach Main übernommen; saubere Quellkopie
+unter InstanceGuard aktualisiert, alle Artefaktinputs und Source-Einstellungen
+unverändert. Installiertes Hugin läuft normal und zeigt im eigenen geprüften
+Fenster „Bereit für dein Diktat“, Lokal/Freya und die richtigen Tastenhinweise.
+Exakter Handoff: handoffs/2026-10-22-production-build.md. Nur Markdown-Schlussbeleg
+und zentrale technische Freigabe/Bereinigung dieses Checkpoints stehen noch aus;
+Eigentum bleibt bis zum CLI-Releasebeleg aktiv.
 
 Installer: C:/Users/brian/Hugin-Releases/1.0.0-3b6bc4304a87/ (exe +4bins,
 alle fünf Ziel-SHA256-Werte geprüft). Installationsroot:
@@ -25,9 +30,10 @@ Nächster echter Login, physische Mausprobe und breite Geräte-/Zielmatrix bleib
 offen. Lokal unsigniert; kein öffentlicher Upload, neue Kosten, Abmelden/Neustart
 oder Sicherheits-/Treiberänderung. Alte60s-Abbruchursache bleibt Hypothese;
 frische installierte Kette mit begrenzter120s-Frist besteht, cancel2/exit5 bleiben.
-Nächster Schritt: Abschlussreview/CI und PR47 integrieren, sauberen Main unter
-InstanceGuard aktualisieren; installierte App normal starten und Ready ansehen.
-Dann Markdown-Abschlussbeleg, Nachweise/Sicherungen erhalten, zentral freigeben.
+Nächster Schritt: reinen Markdown-Schlussbeleg checked integrieren. Geprüfte
+Nachweise und Original-Sicherungen liegen zusätzlich im Releaseordner/verification.
+Nach Remote-Beleg zentral freigeben und nur den Entwicklungsarbeitsbaum bereinigen.
+Keine weiteren Appänderungen, Wiederholungstests oder Neustarts erforderlich.
 
 ## Frühere Nachweise und Verlauf
 
