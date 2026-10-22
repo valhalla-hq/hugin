@@ -8,6 +8,7 @@ import json
 import threading
 import time
 import unittest
+from unittest.mock import patch
 from hugin.errors import HuginError
 
 from hugin import coordinator as c
@@ -575,6 +576,25 @@ class ApplicationContracts(unittest.TestCase):
     def test_start_watchdog_finishes_before_inference_uses_same_worker(self):
         op = self.dictation_ready()
         self.assertNotIn((op.engine,op.engine_instance),self.controller._deadlines)
+
+    def test_cold_initialization_survives_old_deadline_but_remains_bounded(self):
+        self.assertEqual(self.controller.settings.limits['ready_seconds'],120)
+        self.assertEqual(self.controller.settings.limits['cancel_seconds'],2)
+        self.assertEqual(self.controller.settings.limits['exit_seconds'],5)
+        closed=[]
+        started=time.monotonic()
+        with patch('hugin.application.time.monotonic',return_value=started):
+            self.controller.command('read');self.pump()
+        worker=self.pool.workers['tts']
+        worker.close=lambda:closed.append(True)
+        with patch('hugin.application.time.monotonic',return_value=started+61):
+            self.controller.tick();self.pump()
+        self.assertFalse(closed)
+        self.assertEqual(self.controller.core.snapshot().gpu_slot.action,c.Action.INITIALIZE)
+        with patch('hugin.application.time.monotonic',return_value=started+120):
+            self.controller.tick();self.pump()
+        self.assertEqual(closed,[True])
+        self.assertIsNone(self.controller.core.snapshot().gpu_slot)
 
     def test_failed_worker_cleanup_remains_shutdown_barrier(self):
         self.dictation_ready()

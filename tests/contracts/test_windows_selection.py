@@ -428,3 +428,20 @@ class ProbeProcessContracts(unittest.TestCase):
                 with self.assertRaises(selection_probe._SelectionFailure):
                     selection_probe._load_comtypes()
             self.assertEqual(client.gen_dir, 'unchanged')
+
+    def test_portable_scripts_prefix_keeps_same_controller_comtypes_owner(self):
+        from hugin.windows import selection_probe
+        import sys
+        with tempfile.TemporaryDirectory() as temp:
+            controller=Path(temp)/'.runtime/controller';scripts=controller/'Scripts'
+            package=controller/'Lib/site-packages/comtypes';generated=package/'gen'
+            scripts.mkdir(parents=True);generated.mkdir(parents=True)
+            namespace=generated/'__init__.py';namespace.write_text('# owned namespace',encoding='utf-8')
+            comtypes=types.ModuleType('comtypes');comtypes.__file__=str(package/'__init__.py')
+            gen=types.ModuleType('comtypes.gen');gen.__path__=[str(generated)]
+            client=types.ModuleType('comtypes.client');client.gen_dir='unexpected'
+            with patch.dict(sys.modules,{'comtypes':comtypes,'comtypes.gen':gen,'comtypes.client':client}), \
+                 patch.object(sys,'prefix',str(scripts)),patch.object(sys,'executable',str(scripts/'python.exe')):
+                self.assertEqual(selection_probe._load_comtypes(),(comtypes,client))
+            self.assertIsNone(client.gen_dir)
+            self.assertEqual(namespace.read_text(encoding='utf-8'),'# owned namespace')

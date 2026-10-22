@@ -70,7 +70,8 @@ def native_shortcut(path, spec):
 
 
 class DesktopSetup:
-    def __init__(self, root, state, startup, *, make_shortcut=native_shortcut):
+    def __init__(self, root, state, startup, *, make_shortcut=native_shortcut,
+                 entrypoint=None,replace_shortcut_hash=None):
         self.root = Path(root).resolve()
         self.state = Path(state).resolve()
         self.startup = Path(startup).resolve()
@@ -78,6 +79,7 @@ class DesktopSetup:
             raise RuntimeError('state_outside_installation')
         self.backup = self.root/'.runtime/desktop-setup-v1'
         self.make_shortcut = make_shortcut
+        self.replace_shortcut_hash=replace_shortcut_hash
         self.targets = (self.state/'activation.json',
                         *(self.startup/name for name in OLD_LINKS), self.startup/'Hugin.lnk')
         python = self.root/'.runtime/controller/Scripts/pythonw.exe'
@@ -87,6 +89,12 @@ class DesktopSetup:
         self.shortcut = {'target':str(python),
                          'arguments':subprocess.list2cmdline([str(launch), '--root', str(self.root)]),
                          'working_directory':str(self.root)}
+        if entrypoint is not None:
+            entrypoint=Path(entrypoint)
+            if entrypoint!=self.root/'Hugin.exe' or entrypoint.resolve()!=entrypoint or not entrypoint.is_file():
+                raise RuntimeError('installation_entrypoint_invalid')
+            self.shortcut={'target':str(entrypoint),'arguments':'--background',
+                           'working_directory':str(self.root)}
 
     def plan(self):
         # This method neither creates a shortcut nor materializes a backup.
@@ -100,7 +108,7 @@ class DesktopSetup:
         plan = self.plan()
         if plan['plan_sha256'] != expected:
             raise RuntimeError('plan_changed')
-        if self.targets[-1].exists():
+        if self.targets[-1].exists() and file_hash(self.targets[-1])!=self.replace_shortcut_hash:
             raise RuntimeError('existing_hugin_shortcut')
         if self.backup.resolve() != self.backup:
             raise RuntimeError('backup_redirected')
@@ -136,7 +144,7 @@ class DesktopSetup:
             raise RuntimeError('backup_changed')
         staging.rename(self.backup)
 
-    def _entries(self, backup=None):
+    def _entries(self, backup=None, *, absent_shortcut_after=None):
         backup = self.backup if backup is None else backup
         if backup.resolve() != backup:
             raise RuntimeError('backup_redirected')
@@ -154,7 +162,10 @@ class DesktopSetup:
                     if (not isinstance(value, str) or len(value) != 64
                             or file_hash(backup/f'{direction}-{index}.bin') != value):
                         raise RuntimeError('backup_changed')
-            if file_hash(path) not in (entry['before'], entry['after']):
+            current=file_hash(path)
+            allowed_absence=(path==self.targets[-1] and current is None
+                and isinstance(absent_shortcut_after,str) and absent_shortcut_after==entry['after'])
+            if current not in (entry['before'], entry['after']) and not allowed_absence:
                 raise RuntimeError('target_changed')
         # An older/foreign migration cannot silently activate a new profile.
         if (manifest['entries'][0]['after'] != digest(encoded(activation_record()))

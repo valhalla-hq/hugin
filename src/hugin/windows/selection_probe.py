@@ -456,6 +456,10 @@ def _load_comtypes():
     """
     import comtypes
     prefix = Path(sys.prefix).resolve()
+    # A full private CPython lives directly in Scripts; a development venv
+    # reports its controller parent. Both retain the same package owner.
+    if prefix.name == 'Scripts' and Path(sys.executable).resolve().parent == prefix:
+        prefix = prefix.parent
     package = Path(comtypes.__file__).resolve().parent
     if prefix.name != 'controller' or prefix.parent.name != '.runtime' or not package.is_relative_to(prefix):
         raise _SelectionFailure('dependency_unavailable')

@@ -18,7 +18,7 @@ audio_buffer_ms = 250
 result_ttl_seconds = 300
 cancel_seconds = 2
 exit_seconds = 5
-ready_seconds = 60
+ready_seconds = 120
 
 [stt]
 device = "cuda"

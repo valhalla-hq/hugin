@@ -1,6 +1,37 @@
 # Hugin Context
 
-Status: The five confirmed full-review findings are corrected, independently
+Status am22.10.2026: Hugin1.0.0 ist als privater Offline-Installer gebaut,
+im regulären Benutzerordner installiert und nach Reparaturinstallation geprüft.
+Aktiv: hugin-production-build, Mjolnir; Eigentum aktiv. Noch offen sind checked
+private Integration, normaler sichtbarer Start und Abschlussbeleg/Freigabe.
+Exakter Handoff: handoffs/2026-10-22-production-build.md. PR47 ist noch Draft.
+
+Installer: C:/Users/brian/Hugin-Releases/1.0.0-3b6bc4304a87/ (exe +4bins,
+alle fünf Ziel-SHA256-Werte geprüft). Installationsroot:
+C:/Users/brian/AppData/Local/Programs/Hugin/releases/1.0.0-3b6bc4304a87.
+Artefaktpin3b6bc4304a871c05c98980160b257709db2e2fed, src4a2c67ae21141f8879de092fc929f6d51d56df34.
+607 lokale Tests+docs,12 installierte native Fälle, vier normale versteckte
+Starts und zweimal echte Launcher-/Eingabeprüfung bestehen. Reparatur erhält
+Stimme, Aktivierung, Startup und46DSP-Caches; Originalstimme ist zurückgesetzt.
+Freya34/34 und Tyr40/40 Wörter, CUDA, Abschnittslücken<=.97ms, Worker geschlossen.
+Details/Kosten/Grenzen: PRODUCTION-BUILD.md; Bedienung: docs/production-installation.md.
+
+Autostart zeigt auf installierte Hugin.exe --background. Back/Alt+Y diktiert,
+Forward/Strg+Alt+V liest; Escape und Panel-Buttons bleiben. Source-Stimme und
+Aktivierung sind unverändert. Whispering/PipPal bleiben deaktiviert. Die alte
+Quellinstallation bleibt Rückweg; alle Original-Sicherungen behalten.
+
+Nächster echter Login, physische Mausprobe und breite Geräte-/Zielmatrix bleiben
+offen. Lokal unsigniert; kein öffentlicher Upload, neue Kosten, Abmelden/Neustart
+oder Sicherheits-/Treiberänderung. Alte60s-Abbruchursache bleibt Hypothese;
+frische installierte Kette mit begrenzter120s-Frist besteht, cancel2/exit5 bleiben.
+Nächster Schritt: Abschlussreview/CI und PR47 integrieren, sauberen Main unter
+InstanceGuard aktualisieren; installierte App normal starten und Ready ansehen.
+Dann Markdown-Abschlussbeleg, Nachweise/Sicherungen erhalten, zentral freigeben.
+
+## Frühere Nachweise und Verlauf
+
+Previous result: The five confirmed full-review findings are corrected, independently
 reviewed and deployed. All five fixes have red/green regression guards;
 584 full checks, three isolated preference matrices, docs and51 relevant Windows
 checks pass. Independent review additionally corrected transient-error priority
@@ -28,23 +59,25 @@ Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
 
 ## Current intent and authorization
 
-Fix the five reproduced review findings against main46f1578. Preserve the
-accepted input, clipboard, UI, actual-audio word timing and lookahead behavior.
-Specifications: specs/2026-10-22-review-fixes/. Production packaging is the next
-stage; this task supplies corrected source and an honest readiness statement.
-Routine checked private integration and normal deployment remain authorized.
+Build the productive Windows app and offline installer from main5140213.
+Verify per-user installation, startup readback, repeated starts/reinstallation
+and permanent input profile while preserving accepted clipboard/UI/audio timing.
+Specifications: specs/2026-10-22-production-build/. Routine checked private
+integration and the final local installation switch are authorized. Actual
+next-login evidence remains separate; no sign-out is implied.
 
 ## Active Handoff
 
-- `handoffs/2026-10-22-review-fixes.md`
-- Branch: codex/hugin-review-fixes-mjolnir.
-- Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-review-fixes-mjolnir.
-- Base: 46f157844917bbd601538b67413427f5129139e2.
-- Spec/plan/tasks: specs/2026-10-22-review-fixes/.
+- `handoffs/2026-10-22-production-build.md`
+- Branch: codex/hugin-production-build-mjolnir.
+- Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-production-build-mjolnir.
+- Base: 5140213e6019f3b9f47025cd2f6ce08ba15cbce7.
+- Spec/plan/tasks: specs/2026-10-22-production-build/.
 - Evidence/limits: docs/review-fixes-2026-10-22.md.
-- PR: https://github.com/valhalla-hq/hugin/pull/45.
+- PR: https://github.com/valhalla-hq/hugin/pull/47 (Draft).
 - Control: 05181f9a99374ff8b298c626f903304f36ac8926.
-- Ownership retained for the final clean checkpoint, then released through the workspace tool.
+- Ownership active for production-build implementation and verification.
+- Prior completed review-fixes handoff: handoffs/2026-10-22-review-fixes.md.
 - Prior accepted natural-sections result: handoffs/2026-10-22-natural-sections.md.
 - Prior accepted codec optimization: handoffs/2026-10-22-tts-throughput.md.
 
