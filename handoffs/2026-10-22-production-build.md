@@ -10,6 +10,7 @@ Control05181f9a99374ff8b298c626f903304f36ac8926. PR47 merged exact reviewed
 head3009998565cfa053b096da88656b368ef942b267 as
 c17b35818b0ac47a0dae6b20b78528ac9d0e74b9 after all hosted checks and both reviews.
 Only the checked Markdown closure receipt and central ownership release remain.
+Closure PR48: https://github.com/valhalla-hq/hugin/pull/48 (Markdown only).
 
 Artifact pin3b6bc4304a871c05c98980160b257709db2e2fed, src4a2c67ae21141f8879de092fc929f6d51d56df34.
 Installer C:/Users/brian/Hugin-Releases/1.0.0-3b6bc4304a87/ has exe+4bins,

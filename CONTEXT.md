@@ -10,6 +10,7 @@ Fenster „Bereit für dein Diktat“, Lokal/Freya und die richtigen Tastenhinwe
 Exakter Handoff: handoffs/2026-10-22-production-build.md. Nur Markdown-Schlussbeleg
 und zentrale technische Freigabe/Bereinigung dieses Checkpoints stehen noch aus;
 Eigentum bleibt bis zum CLI-Releasebeleg aktiv.
+Abschlussbeleg: https://github.com/valhalla-hq/hugin/pull/48 (nur Markdown).
 
 Installer: C:/Users/brian/Hugin-Releases/1.0.0-3b6bc4304a87/ (exe +4bins,
 alle fünf Ziel-SHA256-Werte geprüft). Installationsroot:
