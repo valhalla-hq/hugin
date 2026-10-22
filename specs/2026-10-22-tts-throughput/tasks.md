@@ -7,4 +7,6 @@
 - [x] Repeat the anomalous Freya opening in isolation: all three pairs earlier, 0.23–0.35s saved.
 - [x] Fix review finding in the probe collector; 561 checks pass (22.752s), docs check clean.
 - [x] Both independent lenses clear source5f123ee; evidence encoding corrected.
-- [ ] Complete checked integration/deployment, save exact handoff and report limits.
+- [x] Exact-head CI passed; PR39 merged and deployed under InstanceGuard; app restarted.
+- [x] Save the exact handoff with measurements, deployment and limits.
+- [ ] Receive Brian's listening feedback; no perceptual acceptance inferred from silent tests.
