@@ -27,8 +27,8 @@ median3.793→3.463s. Other complete cases save0.119–0.185s. Evidence preserve
 negative first result and measurement limits; do not equate screen time with
 acoustic onset. Workers closed and GPU guard released after every measurement.
 
-Brian confirmed normal Hugin Quit. Stable C:/Users/brian/Hugin remains clean
-main8f2c605; no deployment yet. Never terminate by remembered PID. Whispering
+Brian confirmed normal Hugin Quit before measurement and deployment. Never
+terminate by remembered PID. Whispering
 and PipPal remain off. Synthetic PCM stays in bounded RAM. Raw reports ignored.
 
 Final local suite: 561 checks pass in 22.752s; docs check and diff whitespace clean.
@@ -36,12 +36,25 @@ Both independent review lenses cleared source 5f123ee7b578ef5fa23848d279f1dc8ab0
 One evidence text-encoding issue was corrected without source changes. PR39:
 https://github.com/valhalla-hq/hugin/pull/39.
 
-Next: unchanged-head hosted CI and merge. Deploy under fresh InstanceGuard and start normally. Then
-receive listening feedback for both voices; silent playback is not hearing
-acceptance. Return path base main after normal Quit. Ownership active.
+Final doc-only delta reviewed at37096051ecec8ba220690d0ba01491bf286a4e52.
+All three hosted checks passed. PR identity, ten-file scope, exact head and checks
+were re-read immediately before merge. PR39 merged at06:31:45Z on22 October2026
+as e4a1b04fa6ddc9fcfc460a12e21fa5935ba98bdb. Fresh InstanceGuard protected the
+clean stable clone fast-forward from8f2c605 to that exact main. Reviewed source
+tree: d565c561a513f3fa5e8e10d0467b0af58869359b. Normal pythonw/launch/root --show
+start at08:31:59 Europe/Berlin. Its fresh own window was activated and observed
+showing Qwen wird geladen for reading; no input/hotkey or clipboard was sent.
+Brian was asked for both-voice hearing feedback. Stable source
+is verified; no old apps, preferences or startup settings changed.
+
+Brian then confirmed that word marking still fits and explicitly accepted leaving
+this version. The additional speed is barely perceptible to him. No further
+optimization is requested. The bounded feature is accepted and complete.
+Return path: base main after normal Quit. Release ownership only after this final
+checkpoint is clean and remotely proven; retained local reports need not be deleted.
 
 Starter: Continue Hugin's further TTS speed improvement from this exact handoff.
-The code and real measurements are finished; complete the checked merge and normal
-deployment if still pending, then receive hearing feedback. Preserve the word
+The code, real measurements, checked merge, deployment and user acceptance are
+finished. Do not reopen performance tuning without a new request. Preserve the word
 timing, style, input bindings and disabled Whispering/PipPal. Do not repeat completed
 GPU probes without a changed candidate or unresolved failure.

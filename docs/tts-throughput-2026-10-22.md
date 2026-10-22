@@ -79,4 +79,6 @@ Raw technical reports stay ignored under `.runtime/tts-batch-screen.json`,
 `tts-batch-cancel.json`, `codec-batch-native.json`, `codec-batch-recheck.json`.
 They contain no text/audio; only curated evidence is committed. No microphone,
 clipboard, personal dictation, startup or preference changes. Return path is
-main 8f2c605 after normal Quit. Hearing feedback on both voices remains pending.
+main 8f2c605 after normal Quit. Brian subsequently reported that word marking
+still fits and accepted leaving this version. He barely perceives the additional
+speed; the measured gain must not be described as a large everyday improvement.

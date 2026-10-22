@@ -5,9 +5,11 @@ section policy. Candidate doubles Qwen codec batches to16. Repeated real screen:
 9.5–13.5% faster warm preparation; isolated native Freya repeat saves0.23–0.35s.
 Both voices retain complete fixture alignment, full-pipeline scheduling gaps
 <=0.84ms and pre/post-PCM cancellation<=0.56s. All 561 checks and docs check pass;
-both independent reviews cleared source 5f123ee. PR39 awaits checked integration.
-Hugin was quit normally for measurements; stable main8f2c605 is unchanged.
-Prior and current hearing acceptance remain pending.
+both independent reviews cleared the change. PR39 merged as e4a1b04 and deployed
+under InstanceGuard. Hugin restarted at 08:31:59 local on22 October; its own
+window was observed loading Qwen for reading. Brian confirms word marking still
+fits, barely notices the extra speed and explicitly accepts leaving this version.
+This bounded optimization is complete; no further performance work is pending.
 Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
 
 ## Current intent and authorization
@@ -21,14 +23,14 @@ Routine checked private integration and normal deployment remain authorized.
 
 - Branch: codex/hugin-tts-throughput-mjolnir.
 - Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-tts-throughput-mjolnir.
-- Base/main/deployment: 8f2c605d84bcaea79ea120e8f7486e97e0cc9ee7 (PR38).
+- Feature main/deployment: e4a1b04fa6ddc9fcfc460a12e21fa5935ba98bdb (PR39).
 - Exact handoff: handoffs/2026-10-22-tts-throughput.md.
 - Spec/plan/tasks: specs/2026-10-22-tts-throughput/.
 - Evidence/limits: docs/word-highlighting-2026-10-21.md.
 - New measurements: docs/tts-throughput-2026-10-22.md.
 - Control: 05181f9a99374ff8b298c626f903304f36ac8926.
-- Ownership remains active. Previous completed feature history remains in
-  handoffs/2026-10-21-word-highlighting.md.
+- Ownership can be released after this accepted checkpoint is remotely proven. Previous feature history remains
+  in handoffs/2026-10-21-reading-start.md and handoffs/2026-10-21-word-highlighting.md.
 
 ## Accepted deployment and preservation
 
