@@ -2,12 +2,12 @@
 
 Status: Brian requests reading sections at sentence ends or suitable clause
 punctuation, preserving accurate words and smooth transitions. The pure producer
-and regression guards are implemented. An initial native comparison exposed a
-Tyr alignment regression for a very short opening; the minimum was raised to60
-characters and the whole next sentence included within the existing160 opening
-allowance. The revised real comparison is running. Reviews found and corrected
-lost word/paragraph boundaries after abbreviations, contiguous initials, and
-short greetings at section tails. No deployment or hearing acceptance yet.
+and regression guards are implemented. Both real voices mark every word in the
+normal sentence/clause fixtures; additional scheduling gaps are <=1.73ms. An
+initial very-short-opening regression was corrected before deployment. The
+existing Freya mixed-abbreviation fallback shrinks from[0,81) to[0,74), with no
+previously marked range lost. Whole sentences can cost extra startup time
+(about0.91s for the longer opening fixture). No hearing acceptance yet.
 Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
 
 ## Current intent and authorization
@@ -24,7 +24,8 @@ Routine checked private integration and normal deployment remain authorized.
 - Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-natural-sections-mjolnir.
 - Base: 1c598dbf90dd5aa1aebf9f47a358f9d87f83ac8f.
 - Spec/plan/tasks: specs/2026-10-22-natural-sections/.
-- Evidence/limits: docs/word-highlighting-2026-10-21.md; new measurement pending.
+- Evidence/limits: docs/natural-sections-2026-10-22.md.
+- PR: https://github.com/valhalla-hq/hugin/pull/42.
 - Control: 05181f9a99374ff8b298c626f903304f36ac8926.
 - Ownership remains active through verification and deployment.
 - Prior accepted codec optimization: handoffs/2026-10-22-tts-throughput.md.
