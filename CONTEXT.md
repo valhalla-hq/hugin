@@ -3,11 +3,13 @@
 Status: Brian authorizes fixing all five confirmed full-review findings and
 rechecking the corrected app before production packaging. Work is active in the
 exclusive review-fixes worktree. All five fixes have red/green regression guards;
-584 full checks, docs and29 Windows ABI checks pass. Independent review additionally
-corrected transient-error priority and stale cleanup-error ownership. Real Freya/Tyr
-comparison is running; three window-placement checks need an eligible foreground
-test process because Windows denied automatic activation during initial setup.
-The stable running source remains accepted main46f1578 until guarded deployment.
+584 full checks, three isolated preference matrices, docs and51 relevant Windows
+checks pass. Independent review additionally corrected transient-error priority
+and stale cleanup-error ownership. Real Freya/Tyr comparison is complete; all
+word marks are preserved and measured candidate scheduling gaps are<=0.86ms.
+The panel checks passed after a normal click in an owned eligible test process.
+Brian normally quit Hugin; the app is stopped. Stable source remains accepted
+main46f1578 until exact-head checked integration and guarded deployment.
 
 Previous accepted result: Brian requests reading sections at sentence ends or suitable clause
 punctuation, preserving accurate words and smooth transitions. The pure producer

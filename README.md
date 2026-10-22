@@ -18,7 +18,7 @@ Abschnittsanzeige, Pause/Fortsetzen und Stopp. Im Vorlesen-Panel laesst sie sich
 mit "Mitleseleiste einblenden/ausblenden" steuern. Ausblenden gilt auch fuer
 weitere Texte bis zum bewussten Einblenden; beim App-Neustart ist sie wieder
 aktiviert. Die abgerundete Leiste laesst sich am Kopfbereich verschieben und
-behaelt ihre Position waehrend der App-Sitzung. Details und verbleibende Hoerprobe:
+behaelt ihre Position waehrend der App-Sitzung. Details zur Bedienung und Pruefung:
 [Mitleseleiste](docs/reading-panel-2026-10-21.md). Die integrierte Wortmarkierung ordnet
 die Wörter dem erzeugten Audio zu und hebt sie anhand der tatsächlichen
 Wiedergabe hervor. Vorbereitung und Prüfgrenzen: [Wortmarkierung](docs/word-highlighting-2026-10-21.md).
