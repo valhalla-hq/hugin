@@ -21,7 +21,7 @@ def read_shortcut(path):return ast.literal_eval(path.read_text())
 class ProductionSetupContracts(unittest.TestCase):
     def setUp(self):
         temporary=tempfile.TemporaryDirectory();self.addCleanup(temporary.cleanup)
-        self.folder=Path(temporary.name);self.startup=self.folder/'Startup';self.startup.mkdir()
+        self.folder=Path(temporary.name).resolve();self.startup=self.folder/'Startup';self.startup.mkdir()
         self.old=self.fixture('Source');self.new=self.fixture('Installed')
         (self.startup/'Unrelated.lnk').write_bytes(b'untouched')
         self.previous=DesktopSetup(self.old,self.old/'.runtime/state',self.startup,make_shortcut=shortcut)
