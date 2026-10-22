@@ -16,11 +16,26 @@ waiting proof can permit paste in another field; all short sentences lose natura
 boundaries; transient cue/copy errors poison later UI; failed process creation plus
 handle cleanup cannot retry; Controller tests consume and overwrite real preferences.
 
-T001: two fixture guards fail before correction and pass after shared temporary
-Controller preference ownership. All five fake-controller fixture constructors
-now use disposable state.99 focused checks pass. Live source and preferences are
-not touched by these tests. Remaining four corrections and final verification
-are pending; no deployment or universal bug-free claim.
+All five fixes have red/green guards. Native focus facts are rechecked after
+waiting reads and at the last commit boundary; short sentences can form complete
+groups; transient error lifecycle and held cleanup-owner errors are distinct;
+the process owner exposes creation as an explicit fact; all five fake-controller
+fixtures use disposable preferences. The old Coordinator parser stays removed.
+Independent review also reproduced/fixed transient errors hiding current engine
+faults and held cleanup failures remaining after a proven successful retry.
+584 full checks pass in23.186s; docs and29 Windows ABI checks pass.
+
+PR45: https://github.com/valhalla-hq/hugin/pull/45. Initial native suite51 had
+three foreground-eligibility setup failures and two incomplete ABI fakes; the
+fakes now include final focus facts and all29 ABI checks pass. Worker/hotkey,
+word-highlighting and UI-motion cases passed. Window placement will repeat in
+an explicitly clicked owned test process. This is no permission-barrier bypass.
+
+Brian normally quit Hugin. Real Freya/Tyr comparison is running using
+probe_reading_start --review-fixes --run. Reference producer is frozen verbatim
+from accepted46f1578 in tools/fixtures/reading_sections_46f1578.py. Only synthetic
+short sentences and the unchanged clause fixture, silent native PCM, no input
+or preference writes. Final evidence/review, CI/integration and deployment remain.
 
 All probes synthetic. Hugin is still running accepted stable main; GPU/native
 exclusive measurement and source deployment require normal Quit plus InstanceGuard.

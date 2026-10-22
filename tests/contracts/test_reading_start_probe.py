@@ -10,6 +10,15 @@ import probe_reading_start as probe
 
 
 class ReadingProbeOwnershipTests(unittest.TestCase):
+    def test_review_comparison_keeps_accepted_reference_and_both_voice_cases(self):
+        from hugin.reading_sections import split_reading_sections
+        text=probe.SHORT_SENTENCES
+        self.assertTrue(any(not part.rstrip().endswith('.') for part in probe.review_baseline(text)))
+        self.assertTrue(all(part.rstrip().endswith('.') for part in split_reading_sections(text)))
+        cases=probe.comparison_cases(review_fixes=True)
+        self.assertEqual({(voice,policy) for name,voice,policy,text in cases if name=='short_sentences'},
+            {(voice,policy) for voice in ('freya','tyr') for policy in ('baseline','candidate')})
+
     def test_failed_controller_keeps_guard_and_executors_for_retry(self):
         guard = Mock()
         owner = probe._ProbeSession(guard)

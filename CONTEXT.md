@@ -2,9 +2,11 @@
 
 Status: Brian authorizes fixing all five confirmed full-review findings and
 rechecking the corrected app before production packaging. Work is active in the
-exclusive review-fixes worktree. Fake Controller preferences are now isolated;
-two red/green regression guards and99 focused tests pass. Native focus consistency,
-short-sentence grouping, transient errors and partial process cleanup remain.
+exclusive review-fixes worktree. All five fixes have red/green regression guards;
+584 full checks, docs and29 Windows ABI checks pass. Independent review additionally
+corrected transient-error priority and stale cleanup-error ownership. Real Freya/Tyr
+comparison is running; three window-placement checks need an eligible foreground
+test process because Windows denied automatic activation during initial setup.
 The stable running source remains accepted main46f1578 until guarded deployment.
 
 Previous accepted result: Brian requests reading sections at sentence ends or suitable clause
@@ -37,7 +39,7 @@ Routine checked private integration and normal deployment remain authorized.
 - Base: 46f157844917bbd601538b67413427f5129139e2.
 - Spec/plan/tasks: specs/2026-10-22-review-fixes/.
 - Evidence/limits: docs/natural-sections-2026-10-22.md.
-- PR: pending first meaningful checkpoint.
+- PR: https://github.com/valhalla-hq/hugin/pull/45.
 - Control: 05181f9a99374ff8b298c626f903304f36ac8926.
 - Ownership active through corrections, verification and deployment.
 - Prior accepted natural-sections result: handoffs/2026-10-22-natural-sections.md.

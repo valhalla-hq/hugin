@@ -48,6 +48,7 @@ class _Failure:
 @dataclass(frozen=True)
 class _CueFailure:
     error: HuginError
+    job: c.Job | None = None
 
 
 @dataclass(frozen=True)
@@ -151,7 +152,7 @@ class Controller:
         self._incarnations = {}
         self._deadlines = {}
         self._closing = set()
-        self._cleanup_failed = set()
+        self._cleanup_failed = {}
         self._capture_tasks = set()
         self._selection_tasks = set()
         self._delivery_tasks = set()
@@ -162,6 +163,7 @@ class Controller:
         self._audio_progress_epoch = 0
         self._snapshot = self.core.snapshot()
         self._runtime_error = None
+        self._action_error = None
         self._overflow = threading.Event()
         self._stop = False
         self._closed = False
@@ -226,7 +228,7 @@ class Controller:
             key=(type(event),event.job,event.acknowledgement)
         elif isinstance(event,(c.RecordingStarted,c.RecordingStopped,c.DeliveryFinished)):
             key = (type(event),event.job)
-        elif isinstance(event,_CueFailure):key=(type(event),'capture_cue')
+        elif isinstance(event,_CueFailure):key=(type(event),event.job)
         elif isinstance(event,_CompletionCueFinished):key=(type(event),event.owner.job)
         elif isinstance(event,_Command) and event.kind == 'quit':
             key = (type(event),'quit')
@@ -276,10 +278,10 @@ class Controller:
             except HuginError as error: self._post(_Failure(error),priority=0)
             if self.cues is not None:
                 try:self.cues.stop()
-                except HuginError as error:self._post(_CueFailure(error),priority=0)
+                except HuginError as error:self._post(_CueFailure(error,job),priority=0)
         elif cue is not None:
             try:self.cues.stop(cue.job)
-            except HuginError as error:self._post(_CueFailure(error),priority=0)
+            except HuginError as error:self._post(_CueFailure(error,cue.job),priority=0)
         self._post(queued_event,priority=-1 if kind == 'quit' else 0)
 
     @staticmethod
@@ -411,7 +413,7 @@ class Controller:
                 return
             elif event.kind == 'diagnose':
                 result = self.clipboard.copy(self.diagnostic())
-                if result.status != 'copied': self._runtime_error = HuginError('clipboard_failed','diagnostic')
+                self._action_error = None if result.status == 'copied' else HuginError('clipboard_failed','diagnostic')
                 self._publish(); return
             elif event.kind in mapping:
                 if event.kind == 'quit':
@@ -438,10 +440,9 @@ class Controller:
         if isinstance(event,_Closed):
             self._closing.discard((event.engine,event.incarnation))
             if event.error:
-                self._runtime_error = event.error
-                self._cleanup_failed.add((event.engine,event.incarnation))
+                self._cleanup_failed[event.engine,event.incarnation]=event.error
             else:
-                self._cleanup_failed.discard((event.engine,event.incarnation))
+                self._cleanup_failed.pop((event.engine,event.incarnation),None)
                 self._deadlines.pop((event.engine,event.incarnation),None)
                 current = self._incarnations.get(event.engine.value)
                 if current is None or current[0] == event.incarnation:
@@ -453,7 +454,8 @@ class Controller:
             self._runtime_error = event.error
             self.handle(c.Cancel()); return
         if isinstance(event,_CueFailure):
-            self._runtime_error=event.error
+            if event.job is not None and event.job.generation!=self._snapshot.generation:return
+            self._action_error=event.error
             self._clear_completion_visual()
             self._publish();return  # Cue failure preserves captured speech and delivered text.
         if isinstance(event,(c.DictationToggle,c.ReadToggle,c.Cancel,c.Shutdown,
@@ -465,13 +467,16 @@ class Controller:
             cue=self._invalidate_completion_cue('cancel')
             if cue is not None:
                 try:self.cues.stop(cue.job)
-                except HuginError as error:self._post(_CueFailure(error),priority=0)
+                except HuginError as error:self._post(_CueFailure(error,cue.job),priority=0)
         completed_job=(event.job if isinstance(event,c.DeliveryFinished) and event.error is None
             and self._snapshot.job==event.job and self._snapshot.state==c.State.DELIVERING else None)
         completion_token=self._token(completed_job) if completed_job is not None else None
         effects = self.core.dispatch(event)
         with self._lock:
+            previous_job=self._snapshot.job
             self._snapshot = self.core.snapshot()
+            if self._snapshot.job is not None and self._snapshot.job!=previous_job:
+                self._action_error=None
             if self._snapshot.job: self._token(self._snapshot.job)
         completed=completed_job is not None and self._snapshot.job!=completed_job
         if completed:self._accept_completion_visual(completed_job,completion_token)
@@ -505,7 +510,7 @@ class Controller:
         owner=_CompletionCue(job,token)
         with self._lock:
             if self._completion_cue is not None:
-                self._post(_CueFailure(HuginError('audio_failed','completion_cue_owner')))
+                self._post(_CueFailure(HuginError('audio_failed','completion_cue_owner'),job))
                 return
             self._completion_cue=owner
         return owner
@@ -533,7 +538,7 @@ class Controller:
                     if not self.cues.play('complete',job,token.is_set) and not token.is_set():
                         raise HuginError('audio_failed','completion_cue')
             except Exception:
-                self._post(_CueFailure(HuginError('audio_failed','completion_cue')))
+                self._post(_CueFailure(HuginError('audio_failed','completion_cue'),job))
             finally:
                 try:release()
                 finally:ticket.set_result(None)
@@ -543,8 +548,8 @@ class Controller:
             if ticket.cancel():release()
             else:
                 try:self.cues.stop(job)
-                except HuginError as error:self._post(_CueFailure(error))
-            self._post(_CueFailure(HuginError('audio_failed','completion_cue_start')))
+                except HuginError as error:self._post(_CueFailure(error,job))
+            self._post(_CueFailure(HuginError('audio_failed','completion_cue_start'),job))
 
     def _effect(self, effect, audio_ack=None):
         if isinstance(effect,c.StartRecording):
@@ -584,7 +589,7 @@ class Controller:
                 token.set()
                 if self.cues is not None:
                     try:self.cues.stop(effect.job)
-                    except HuginError as error:self._post(_CueFailure(error))
+                    except HuginError as error:self._post(_CueFailure(error,effect.job))
             def stop():
                 data,error = None,None
                 bound_target=_CapturedTarget(native_status,target)
@@ -596,7 +601,7 @@ class Controller:
                             try:
                                 if not self.cues.play('end',effect.job,token.is_set) and not token.is_set():
                                     raise HuginError('audio_failed','capture_end_cue')
-                            except Exception:self._post(_CueFailure(HuginError('audio_failed','capture_end_cue')))
+                            except Exception:self._post(_CueFailure(HuginError('audio_failed','capture_end_cue'),effect.job))
                         if target is None:
                             self._input_status(effect.job,'capture_field','not_attempted')
                 except Exception as cause:
@@ -762,8 +767,8 @@ class Controller:
                 elif not ticket.done():
                     self._post(_Failure(HuginError('worker_failed','delivery_start')))
         elif isinstance(effect,c.CopyText):
-            if self.clipboard.copy(effect.text).status != 'copied':
-                self._runtime_error = HuginError('clipboard_failed','copy')
+            self._action_error = (None if self.clipboard.copy(effect.text).status == 'copied'
+                else HuginError('clipboard_failed','copy'))
         elif isinstance(effect,c.PersistVoice):
             try:
                 path = self.settings.paths['state']/'preferences.json'
@@ -828,7 +833,6 @@ class Controller:
     def _close_engine(self, engine, incarnation, *, retry=False):
         key = (engine,incarnation)
         if key in self._closing or key in self._cleanup_failed and not retry: return
-        if retry: self._cleanup_failed.discard(key)
         current = self._incarnations.get(engine.value)
         if current is not None and current[0] != incarnation:
             return
@@ -873,6 +877,14 @@ class Controller:
             live.update(op.job for op in snapshot.retired_operations)
             self._tokens = {job:token for job,token in self._tokens.items() if job in live}
 
+    def _visible_error(self,snapshot):
+        """Transient presentation never replaces a still-owned native failure."""
+        if self._runtime_error is not None:return self._runtime_error
+        if self._cleanup_failed:return next(iter(self._cleanup_failed.values()))
+        if self.cues is not None and self.cues.cleanup_pending:
+            return HuginError('audio_failed','cue_cleanup')
+        return snapshot.error or self._action_error
+
     def diagnostic(self):
         snap = self.core.snapshot()
         retiring={(op.engine,op.engine_instance) for op in snap.retired_operations}
@@ -884,6 +896,7 @@ class Controller:
                 or self._selection_tasks and not selection_active
                 or self.cues is not None and self.cues.cleanup_pending)
             input_checks=dict(self._input_checks)
+        visible_error=self._visible_error(snap)
         data = {'schema_version':1,'app':'Hugin','version':__version__,
             'input_profile':'keyboard-pilot' if getattr(self.inputs,'pilot',False) else PROFILE,
             'state':snap.state.value,'voice':snap.voice,'input_ready':bool(self.inputs.running and not self.inputs.error),
@@ -892,10 +905,10 @@ class Controller:
             'engine_versions_source':'installed metadata at application startup',
             'last_input_utc':self._last_input_utc,
             'input_age_seconds':None if self._last_input is None else round(max(0,time.monotonic()-self._last_input),2),
-            'components':{item.engine.value:{'ready':item.ready and (item.engine,item.engine_instance) not in self._closing | self._cleanup_failed | retiring,
+            'components':{item.engine.value:{'ready':item.ready and (item.engine,item.engine_instance) not in self._closing | self._cleanup_failed.keys() | retiring,
                 'blocked':item.blocked or (item.engine,item.engine_instance) in self._cleanup_failed,
                 'device':self._devices.get(item.engine.value)} for item in snap.components},
-            'error_code':self._runtime_error.code if self._runtime_error else snap.error.code if snap.error else None,
+            'error_code':visible_error.code if visible_error else None,
             'input_checks':input_checks,
             'pending_cleanup':bool(self._closing or self._cleanup_failed or self._io_cleanup_failed
                 or snap.retired_operations or snap.cancelling_job or abandoned_io)}
@@ -909,7 +922,8 @@ class Controller:
             c.State.TRANSCRIBING:'Diktat wird verarbeitet',c.State.DELIVERING:'Text wird übergeben',
             c.State.TTS_PREPARING:'Vorlesen wird vorbereitet',c.State.TTS_PLAYING:'Vorlesen läuft',
             c.State.CANCELLING:'Wird gestoppt',c.State.ERROR:'Aktion beendet',c.State.STOPPING:'Hugin wird beendet'}
-        error = self._runtime_error.code if self._runtime_error else snap.error.code if snap.error else None
+        visible_error=self._visible_error(snap)
+        error = visible_error.code if visible_error else None
         components = ' · '.join(('Whisper' if item.engine == c.Engine.STT else 'Qwen')+': '+
             ('wird beendet' if (item.engine,item.engine_instance) in self._closing else
              'Bereinigung offen' if (item.engine,item.engine_instance) in self._cleanup_failed else
@@ -952,7 +966,7 @@ class Controller:
             copied=self._input_checks['clipboard']=='copied'
             clipboard_changed=self._input_checks['delivery']=='clipboard_changed'
         error_message=MESSAGES.get(error,'') if error else ''
-        if not self._runtime_error and snap.error and snap.error.phase=='delivery':
+        if visible_error is snap.error and snap.error and snap.error.phase=='delivery':
             if clipboard_changed:
                 error_message='Die Zwischenablage wurde inzwischen geändert. Das Diktat kann über „Kopieren“ übernommen werden.'
             elif copied:

@@ -28,6 +28,14 @@ class NaturalSectionContracts(unittest.TestCase):
         sentence_ends = [i + 2 for i in range(len(SENTENCES) - 1) if SENTENCES[i:i+2] == '. ']
         self.assertEqual(chunks[0], SENTENCES[:sentence_ends[1]])
 
+    def test_short_normal_sentences_form_complete_groups_before_word_fallback(self):
+        for sentence in ('Wir lesen diesen Satz gemeinsam. ', 'Alles passt. ', 'Ja! Weiter geht es. '):
+            text=sentence*30
+            with self.subTest(sentence=sentence):
+                chunks=self.assert_natural(text)
+                self.assertTrue(all(chunk.rstrip().endswith(('.', '!')) for chunk in chunks))
+                self.assertTrue(all(len(chunk)>=60 for chunk in chunks[:-1]))
+
     def test_long_sentence_uses_a_comma_before_an_arbitrary_space(self):
         chunks = list(Coordinator._split_selection(CLAUSES))
         self.assertEqual(chunks[0], CLAUSES[:CLAUSES.rfind(', ', 0, 120) + 2])

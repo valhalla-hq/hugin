@@ -588,6 +588,7 @@ class ApplicationContracts(unittest.TestCase):
         worker.close = lambda:None
         self.controller.command('quit'); self.pump()
         self.assertTrue(self.controller.shutdown_ready())
+        self.assertIsNone(json.loads(self.controller.diagnostic())['error_code'])
 
     def test_selecting_same_voice_does_not_silence_current_reading(self):
         self.controller.command('read'); self.pump()

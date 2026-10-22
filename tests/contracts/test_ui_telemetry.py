@@ -1,5 +1,6 @@
 """UI facts come from accepted capture/delivery; no native devices or UI."""
 import struct
+import json
 from types import SimpleNamespace as NS
 import unittest
 from unittest.mock import patch
@@ -94,6 +95,58 @@ class PresentationFactsContracts(unittest.TestCase):
 
     def pump(self):
         while self.controller.pump_once():pass
+
+    def test_transient_cue_failure_does_not_poison_successful_next_recording(self):
+        self.controller.handle(_CueFailure(HuginError('audio_failed','fixture')))
+        self.assertTrue(self.controller.view().error)
+        self.mic.audio_level=.4
+        self.controller.command('dictation');self.pump()
+        view=self.controller.view()
+        self.assertEqual(self.controller.core.snapshot().state,c.State.RECORDING)
+        self.assertEqual((view.activity,view.active_action,view.audio_level),('recording','dictation',.4))
+        self.assertFalse(view.error)
+        self.assertIsNone(json.loads(self.controller.diagnostic())['error_code'])
+
+    def test_failed_copy_recovers_on_success_or_new_reading(self):
+        self.finish(self.recognize())
+        original=self.clipboard.copy
+        self.clipboard.copy=lambda text:NS(status='clipboard_busy')
+        self.controller.command('copy');self.pump()
+        self.assertTrue(self.controller.view().error)
+        self.clipboard.copy=original
+        self.controller.command('copy');self.pump()
+        self.assertFalse(self.controller.view().error)
+        self.clipboard.copy=lambda text:NS(status='clipboard_busy')
+        self.controller.command('diagnose');self.pump()
+        self.assertTrue(self.controller.view().error)
+        self.controller.command('read');self.pump()
+        self.assertEqual(self.controller.view().active_action,'reading')
+        self.assertFalse(self.controller.view().error)
+
+    def test_real_cleanup_fault_is_not_hidden_by_a_new_action(self):
+        self.controller.cues.cleanup_pending=True
+        self.controller.handle(_CueFailure(HuginError('audio_failed','fixture_cleanup')))
+        self.controller.command('dictation');self.pump()
+        self.assertTrue(self.controller.view().error)
+        self.assertTrue(json.loads(self.controller.diagnostic())['pending_cleanup'])
+
+    def test_late_cue_error_cannot_replace_another_jobs_presentation(self):
+        self.controller.command('dictation');self.pump()
+        old=self.controller.core.snapshot().job
+        self.controller.command('cancel');self.pump()
+        self.controller.command('dictation');self.pump()
+        self.controller.handle(_CueFailure(HuginError('audio_failed','late_fixture'),old))
+        self.assertFalse(self.controller.view().error)
+        self.assertEqual(self.controller.view().active_action,'dictation')
+
+    def test_current_engine_failure_takes_priority_over_transient_action_error(self):
+        self.recognize()
+        self.controller.handle(_CueFailure(HuginError('audio_failed','fixture_cue'),self.operation.job))
+        self.controller.handle(c.EngineFault(self.operation,HuginError('worker_failed','fixture_engine')))
+        self.assertEqual(json.loads(self.controller.diagnostic())['error_code'],'worker_failed')
+        self.clipboard.copy=lambda text:NS(status='clipboard_busy')
+        self.controller.command('diagnose');self.pump()
+        self.assertEqual(json.loads(self.controller.diagnostic())['error_code'],'worker_failed')
 
     def recognize(self):
         self.controller.command('dictation');self.pump()
