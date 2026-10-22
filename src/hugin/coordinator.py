@@ -5,9 +5,9 @@ from dataclasses import dataclass, replace
 from enum import StrEnum
 from collections import deque
 import math
-import re
 
 from .errors import HuginError
+from .reading_sections import split_reading_sections
 from .word_timing import AlignmentResult, WordTiming, MAX_SECTION_PCM_BYTES
 
 
@@ -659,48 +659,8 @@ class Coordinator:
 
     @staticmethod
     def _split_selection(text: str) -> deque[str]:
-        """Start with less prepared speech, then grow the one-section lookahead.
-
-        A tiny opening sentence must not lead straight into a large successor:
-        prefer natural boundaries in the last third of each budget and
-        grow by half the preceding section (with a 120-character floor).
-        Absorb a final <=40-character remainder instead of isolating its words.
-        Earlier word boundaries and whole tokens take precedence over this soft
-        budget; only a token exceeding the existing hard limit may be split.
-        These bounds are a measured preparation policy, not estimated word times.
-        Whitespace-only spans need no engine call. No spoken content is truncated
-        and no section exceeds 240 characters.
-        """
-        chunks: deque[str] = deque()
-        offset = 0
-        budget = 120
-        while offset < len(text):
-            end = min(offset + budget, len(text))
-            window = text[offset:end]
-            if len(text) - offset <= min(240, budget + 40):
-                end = len(text)
-            elif end < len(text):
-                sentence = [match for match in re.finditer(r'[.!?]["\'”’\)\]]*\s+|\n+', window)
-                            if match.end() >= budget * 2 // 3]
-                whitespace = list(re.finditer(r'\s+', window)) if not sentence else []
-                if sentence:
-                    # Once a suitably sized sentence ends, leave the next
-                    # sentence with its own continuation (for example a greeting).
-                    end = offset + sentence[0].end()
-                elif whitespace:
-                    end = offset + whitespace[-1].end()
-                else:
-                    # Preserve a single long word even if it exceeds the faster
-                    # start budget. The previous 240-character hard bound remains.
-                    hard_end = min(offset + 240, len(text))
-                    boundary = re.search(r'\s+', text[offset:hard_end])
-                    end = offset + boundary.end() if boundary else hard_end
-            chunk = text[offset:end]
-            if chunk.strip():
-                chunks.append(chunk)
-                budget = min(240, max(120, len(chunk) * 3 // 2))
-            offset = end
-        return chunks
+        """Production/probe seam; the pure producer owns boundary interpretation."""
+        return split_reading_sections(text)
 
     def _reduce(self, event: Event, effects: list[Effect]) -> None:
         if isinstance(event, RetryCleanup):
