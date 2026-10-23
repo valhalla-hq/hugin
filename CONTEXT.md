@@ -1,5 +1,41 @@
 # Hugin Context
 
+Completed technical result23October2026: installer-1-0-2 on Mjolnir. Hugin1.0.2
+is built, installed in its separate release root and started with the exact
+installed startup command at10:47CEST. Accepted app/source is unchanged from
+Main772bf1e7fb95e5df2b53063655fef6de51ba73ab/source3fd3ca9988c2.
+The former compiler was lost with a deleted worktree. Provisioning attempts
+were denied before execution with blocked by policy; no agent provisioning
+executed or alternative route was used. Brian installed Inno7.1.0x64 at
+C:/Program Files/Inno Setup 7. Valid Pyrsys signature, identical trusted ISCC
+SHA256d06ebd38... and engine7.1.0 verified. Compiler is outside worktrees.
+Preparation is complete:40365 static records verified, explicit file list and
+recipe retained at Hugin-Releases/1.0.2-3fd3ca9988c2/installer-build-evidence.
+24 local package/setup/native tests and docs checks pass.
+Compilation completed exit0 on23October10:32CEST. Five installer files are
+hashed, all40365 payload records reverified; receipt installer-build-manifest.json
+at the release root. Wall703.061s/controller CPU32.25s; compiler-family costs
+and agent tokens unmeasured. Independent preparation reviews have no findings.
+After Brian's normal Quit, guarded install exit0. Fresh before/after hashes prove
+active voice/activation preserved;40 same-producer DSP caches retained. Owned
+Startup Hugin.lnk now targets installed1.0.2 Hugin.exe --background, with matching
+working directory; old link bytes backed up and StartupApproved unchanged.
+Start-menu and Windows uninstall metadata also select1.0.2. Old1.0.0 and original
+installer remain as rollback. Installed full40365-file verification, isolated
+controller7/STT21/TTS94 imports and actual mouse/hotkey registration/release pass
+(47.882s, no cleanup pending). Two normal hidden lifecycle starts pass1.425s.
+Installed wrapper/private child observed from the exact startup command. These
+are technical checks; no new physical-click/speech or Windows-login acceptance
+is claimed. Whispering/PipPal remain disabled. Final installed-verification.json
+is retained outside Git in release root/installer-build-evidence. Subsequent
+checked source-integration/release/cleanup receipts will be retained there
+after those actions succeed. Shared CI quota requires
+one bundled source checkpoint; preserve required hosted gates.
+Exact handoff: handoffs/2026-10-23-installer-1-0-2.md.
+
+Previous accepted cursor result (PR50 merged, ownership released and checkout
+removed; historical details follow):
+
 Current task23October2026: current-cursor-delivery on Mjolnir. Brian reports
 target_unverifiable again in installed1.0.0 after switching targets. Transcript
 is copied but the UIA field gate prevents paste. He requests Whispering-style
@@ -111,23 +147,25 @@ Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
 
 ## Current intent and authorization
 
-Correct dictation target selection to follow the current cursor even after
-window/field switches, compare pinned Whispering source, verify guards and
-prepare an additive update. Preserve voices/timing/input/startup/preferences
-and immutable1.0.0 rollback. Routine checked private completion is authorized;
-actual login acceptance remains separate. Spec: specs/2026-10-23-current-cursor/.
+Finish the1.0.2 installer, install it into a separate owned release root and
+migrate/verify startup to that installed version. Preserve active voice,
+activation, mouse/keyboard profile, cues and1.0.0 rollback. Compiler installation
+was explicitly authorized but the normal tool attempt was denied. Brian's
+manual compiler installation resolved that dependency; the guarded upgrade and
+installed checks are now complete. Routine checked private completion is authorized;
+actual login remains separate. Spec: specs/2026-10-23-installer-1-0-2/.
 
 ## Active Handoff
 
-- `handoffs/2026-10-23-current-cursor-delivery.md`
-- Branch: codex/current-cursor-delivery-mjolnir.
-- Worktree: C:/Users/brian/brian-projects/worktrees/hugin/current-cursor-delivery-mjolnir.
-- Base: e82e9a625f897a0eda33479637a3a802bd2d2636.
-- Spec/plan/tasks: specs/2026-10-23-current-cursor/.
-- Evidence/limits: docs/current-cursor-2026-10-23.md.
-- PR: https://github.com/valhalla-hq/hugin/pull/50 (Draft).
+- `handoffs/2026-10-23-installer-1-0-2.md`
+- Branch: codex/installer-1-0-2-mjolnir.
+- Worktree: C:/Users/brian/brian-projects/worktrees/hugin/installer-1-0-2-mjolnir.
+- Base: 772bf1e7fb95e5df2b53063655fef6de51ba73ab.
+- Spec/plan/tasks: specs/2026-10-23-installer-1-0-2/.
+- Evidence/limits: exact handoff and retained Hugin-Releases receipts.
+- PR: resolve by this exact branch and retained source-integration receipt.
 - Control:46e362d1d3284d712757fc2f0e67a165dbf3a41c.
-- Ownership active for current-cursor-delivery; PR49 checkpoint untouched.
+- Ownership active for installer-1-0-2; PR49 checkpoint untouched.
 - Prior completed review-fixes handoff: handoffs/2026-10-22-review-fixes.md.
 - Prior accepted natural-sections result: handoffs/2026-10-22-natural-sections.md.
 - Prior accepted codec optimization: handoffs/2026-10-22-tts-throughput.md.
