@@ -44,3 +44,20 @@ Verifikation und Auslieferungsstand werden im
 Der unveränderte1.0.0-Installer bleibt der Rückweg. Die echte Windows-Anmeldung
 ist weiterhin eine eigenständige offene Abnahme; die Bestätigung der vier
 physischen Maus-/Tastenabläufe vom22.10.2026 bleibt auf PR49 gespeichert.
+
+Nachtrag1.0.2: Brian bestätigt1.0.1 mit Codex und Google-Suche, meldet aber
+native Ablehnung in Teams. Die daraufhin freigegebene22-Sekunden-Leseprobe
+zeigt110/110-mal TeamsWebView mit fokussiertem Chrome_WidgetWin_1 als echtem
+Kindfenster (auch GA_ROOT passend). Prozess und Thread unterscheiden sich.
+Die bisherige PID-Gleichheit ist daher eine falsche Voraussetzung. Der native
+Produzent prüft jetzt die Zugehörigkeit zum aktuellen Vordergrundfenster mit
+IsChild, oder identischen Fokus-/Vordergrund-Handles, und weiterhin gültige
+PID/TID. Derselbe kurze Abschlussguard erkennt auch ein inzwischen abgelöstes
+Kindfenster. Es gibt keine Teams-Sonderregel oder erinnerte Zielfensterliste.
+Vorlesen behält seinen eigenen UIA-Auswahlweg; die unfreigegebene Clipboard-
+Auswahlfallback-Liste bleibt leer. Positive Fensterbeziehung ist keine allgemeine
+Textfeld-/Passworterkennung. Echte Teams-Einfügeabnahme ist noch offen.
+
+Zwei neue Reproduktionsfälle scheitern vor der Korrektur;46 gezielte Prüfungen
+und536 vollständige Vertrags-/Integrationstests bestehen danach. Reale Eingabe
+in Teams ist damit noch nicht bewiesen; der neue Kandidat wird separat geprüft.

@@ -42,6 +42,7 @@ class WindowsAbiContracts(unittest.TestCase):
             name='Edit';style=0;enabled=True;caret=200;selection=(7,10);reply=True
             after_selection=lambda self:None
             def GetForegroundWindow(self):return 100
+            def IsChild(self,parent,child):return (parent,child)==(100,200)
             def GetWindowThreadProcessId(self,hwnd,pointer):
                 ctypes.cast(pointer,ctypes.POINTER(W.DWORD))[0]=3;return 4
             def GetGUIThreadInfo(self,thread,pointer):

@@ -18,6 +18,9 @@ https://github.com/EpicenterHQ/epicenter/blob/a6b15c28db9076742d7ae7014f8ec9f97a
   One Ctrl+V goes to the actual current focus; never activate a remembered
   window or send Enter. Native focus must remain stable through that short
   commit. No retry after an uncertain or partial input submission.
+  Focus may belong to an embedded child from another process/thread (Teams
+  WebView). Validate its actual foreground-window relationship rather than
+  equating process IDs. Unrelated focus windows remain invalid.
 - REQ-003: Preserve one-shot generation/cancel/shutdown arbitration, clipboard
   ownership/token/sequence checks, modifier checks and partial-key cleanup.
   No usable native foreground/focus or detected native password remains an error.

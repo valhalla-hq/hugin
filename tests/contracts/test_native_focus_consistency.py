@@ -11,9 +11,13 @@ from hugin.windows.clipboard import NativeClipboard, WindowTarget, ClipboardFail
 
 class NativeFocusConsistency(unittest.TestCase):
     def backend(self):
-        state=dict(hwnd=100,focus=200,caret=1,after_selection=lambda:None)
+        state=dict(hwnd=100,focus=200,caret=1,after_selection=lambda:None,
+                   embedded=True,cross_process=False,focus_available=True)
         def out(pointer,kind,value):ct.cast(pointer,ct.POINTER(kind)).contents.value=value
         def thread(hwnd,pid):
+            if hwnd==state['focus'] and not state['focus_available']:return 0
+            if hwnd==state['focus'] and state['cross_process']:
+                out(pid,W.DWORD,9);return 10
             out(pid,W.DWORD,3 if hwnd in (100,200) else 5)
             return 4 if hwnd in (100,200) else 6
         def gui(thread_id,pointer):
@@ -34,6 +38,7 @@ class NativeFocusConsistency(unittest.TestCase):
         native.user=NS(GetForegroundWindow=lambda:state['hwnd'],GetWindowThreadProcessId=thread,
             GetGUIThreadInfo=gui,GetClassNameW=name,GetWindowLongPtrW=lambda *a:0,
             IsWindowEnabled=lambda *a:True,SendMessageTimeoutW=selection,
+            IsChild=lambda parent,child:state['embedded'] and (parent,child) in ((100,200),(300,400)),
             GetClipboardOwner=lambda:10,GetClipboardData=lambda *a:1)
         native.kernel=NS(OpenProcess=lambda *a:1,GetProcessTimes=times,
             CloseHandle=lambda *a:True,GlobalSize=lambda *a:5)
@@ -45,6 +50,33 @@ class NativeFocusConsistency(unittest.TestCase):
         sent=[];native._chord=lambda key:sent.append((key,state['hwnd'],state['focus']))
         target=WindowTarget(100,200,3,4,500,'Edit',(200,1,2,3,4),(2,2),True)
         return native,target,state,sent
+
+    def test_cross_process_embedded_focus_receives_one_paste(self):
+        native,_,state,sent=self.backend();state['cross_process']=True
+        actual=native.commit_paste(7,lambda:True,lambda tx:True,commit=lambda tx,send:send())
+        self.assertEqual((actual.hwnd,actual.focus),(100,200))
+        self.assertEqual(sent,[(0x56,100,200)])
+
+    def test_unrelated_focus_or_unavailable_focus_identity_rejects_paste(self):
+        for change in ({'embedded':False},{'embedded':False,'cross_process':True},
+                       {'cross_process':True,'focus_available':False}):
+            with self.subTest(change=change):
+                native,_,state,sent=self.backend();state.update(change)
+                with self.assertRaises(ClipboardFailure):
+                    native.commit_paste(7,lambda:True,lambda tx:True,commit=lambda tx,send:send())
+                self.assertEqual(sent,[])
+
+    def test_embedded_focus_detached_during_authorization_rejects_paste(self):
+        native,_,state,sent=self.backend();state['cross_process']=True
+        def authorize(transaction):state['embedded']=False;return True
+        with self.assertRaises(ClipboardFailure):
+            native.commit_paste(7,lambda:True,authorize,commit=lambda tx,send:send())
+        self.assertEqual(sent,[])
+
+    def test_foreground_itself_can_hold_focus_without_being_its_own_child(self):
+        native,_,state,sent=self.backend();state.update(focus=100,embedded=False)
+        native.commit_paste(7,lambda:True,lambda tx:True,commit=lambda tx,send:send())
+        self.assertEqual(sent,[(0x56,100,100)])
 
     def test_stable_native_capture_and_commit_remain_usable(self):
         native,target,state,sent=self.backend()

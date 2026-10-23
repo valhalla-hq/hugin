@@ -2,9 +2,10 @@
 
 Lokale Windows-App für Diktieren und Vorlesen mit den bestätigten Stimmen **Freya** und **Tyr**. Hugin soll Whispering und PipPal vollständig ersetzen.
 
-Aktuell23.10.2026: Korrektur1.0.1 in Prüfung. Diktat verwendet den aktuellen
+Aktuell23.10.2026: Korrektur1.0.2 in Prüfung. Diktat verwendet den aktuellen
 Cursor am Einfügepunkt, auch nach Zielwechseln; die verzögerte UIA-Felderkennung
-blockiert diesen Weg nicht mehr. [Verhalten und Prüfgrenzen](docs/current-cursor-2026-10-23.md).
+blockiert diesen Weg nicht mehr. Teams' prozessübergreifend eingebetteter Fokus
+wird anhand der Fensterbeziehung geprüft. [Verhalten und Prüfgrenzen](docs/current-cursor-2026-10-23.md).
 Installiert bleibt bis zur geprüften Aktualisierung1.0.0. Die vier physischen
 Maus-/Tastentests vom22.10. sind bestätigt; der echte Windows-Login bleibt offen.
 

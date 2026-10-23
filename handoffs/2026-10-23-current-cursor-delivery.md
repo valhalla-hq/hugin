@@ -74,6 +74,22 @@ GUI focus exists; IsChild and GA_ROOT both confirm embedding, while PID and
 thread differ. All110 samples reject at the same-PID gate. No chat/title/
 clipboard text was read. Observer: .runtime/native_focus_observe.py.
 
+Teams source fix1.0.2: native producer now requires valid focus identity and
+foreground==focus or IsChild(foreground,focus), not equal PIDs. The same guard
+runs after native waiting reads and after authorization before the one chord.
+No Teams-specific list, old-window activation, UIA delivery gate or retry.
+Foreground process metadata retain their meaning; UIA reading has its separate
+focus process identity; shipped clipboard-selection fallback remains empty.
+Two controller/native repros red before fix;46 focused cases pass0.035s and
+536 full contracts/integration cases pass40.866s. Docs19/17 no problems.
+Independent spec and standards followups clear this exact source diff against
+1207baf; standards reviewer independently ran8 native cases0.001s, no GUI/input.
+An additional inactive-Teams structural probe could not obtain focus and is
+not a pass; a later parallel22s sample was Codex only, also not Teams acceptance.
+No content or clipboard reads and no focus/input changes by these probes.
+New app-only candidate build and actual Teams paste remain pending. Normal
+Quit request sent before native candidate lifecycle checks/state preparation.
+
 Build-tool constraint: previous isolated Inno compiler was removed with the
 earlier worktree; automatic approval review rejected its re-provisioning
 command with only "blocked by policy". Do not retry that action through a
@@ -94,9 +110,8 @@ e9e59a66f52e7bc2c49b60967d1d1451e8c7e72c contains Brian's manual restart and
 four successful physical mouse/hotkey flows on22October. Keep its worktree and
 ownership untouched. That did not prove a new Windows login; login stays open.
 
-Next: use the captured Teams native facts to reproduce its
-specific rejecting condition in an owned Win32 fixture, fix and review that
-boundary, then prepare a new immutable candidate (never edit the running1.0.1).
+Next: prepare and verify the reviewed1.0.2 source as a new immutable candidate
+(never edit the running1.0.1), switch after normal Quit, then test actual Teams.
 Preserve existing installed1.0.0/startup/profile and its installer; new installer
 blocked as above. Source fix is not fully accepted while Teams remains broken.
 Routine checked private integration is within this fix request; no check bypass.

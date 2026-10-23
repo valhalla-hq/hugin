@@ -16,9 +16,10 @@ class CurrentCursorContracts(unittest.TestCase):
     pump=app.ApplicationContracts.pump
     dictation_ready=app.ApplicationContracts.dictation_ready
 
-    def run_switch(self,phase):
+    def run_switch(self,phase,*,cross_process=False):
         backend=FakeClipboard()
         native,_,state,sent=native_cases.NativeFocusConsistency().backend()
+        state['cross_process']=cross_process
         native.sequence=backend.sequence
         native._probe=lambda:self.fail('dictation must not depend on UIA')
         original_gui=native.user.GetGUIThreadInfo
@@ -56,6 +57,9 @@ class CurrentCursorContracts(unittest.TestCase):
 
     def test_switch_during_recording_uses_current_native_focus_without_uia(self):
         self.run_switch('recording')
+
+    def test_switch_to_cross_process_webview_after_stop_uses_current_focus(self):
+        self.run_switch('after_stop',cross_process=True)
 
 
 class NativeCommitGuards(unittest.TestCase):

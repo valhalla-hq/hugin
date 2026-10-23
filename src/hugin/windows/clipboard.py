@@ -390,6 +390,7 @@ class NativeClipboard:
             ('RegisterClipboardFormatW', [W.LPCWSTR], W.UINT),
             ('GetForegroundWindow', [], W.HWND), ('GetGUIThreadInfo', [W.DWORD, ctypes.POINTER(_GuiThreadInfo)], W.BOOL),
             ('GetWindowThreadProcessId', [W.HWND, ctypes.POINTER(W.DWORD)], W.DWORD),
+            ('IsChild', [W.HWND, W.HWND], W.BOOL),
             ('GetClassNameW', [W.HWND, W.LPWSTR, ctypes.c_int], ctypes.c_int),
             ('GetWindowLongPtrW', [W.HWND, ctypes.c_int], ctypes.c_ssize_t),
             ('IsWindowEnabled', [W.HWND], W.BOOL),
@@ -679,8 +680,11 @@ class NativeClipboard:
         if not thread or not self.user.GetGUIThreadInfo(thread, ctypes.byref(info)) or not info.hwndFocus:
             raise ClipboardFailure('target_unverifiable')
         focus_pid = W.DWORD()
-        self.user.GetWindowThreadProcessId(info.hwndFocus, ctypes.byref(focus_pid))
-        if focus_pid.value != pid.value:
+        focus_thread=self.user.GetWindowThreadProcessId(info.hwndFocus, ctypes.byref(focus_pid))
+        # Embedded WebViews can own focus in another process/thread. HWND
+        # ancestry, not PID equality, binds that focus to the foreground frame.
+        if (not pid.value or not focus_thread or not focus_pid.value
+                or (info.hwndFocus != hwnd and not self.user.IsChild(hwnd,info.hwndFocus))):
             raise ClipboardFailure('target_unverifiable')
         caret = None
         if info.hwndCaret:

@@ -9,8 +9,11 @@ checks, independent review, native clipboard/reading probes and43 candidate
 checks pass. App-only1.0.1 is built at Hugin-Releases/1.0.1-9b2b40c586ac/app;
 Brian confirms Codex and Google search, but Teams still rejects. A22-second
 native-only probe observes110/110 samples with a focused cross-process child
-of TeamsWebView (Chrome_WidgetWin_1); current same-PID gate rejects all. Fix
-this producer and re-review before preparing a new immutable candidate.
+of TeamsWebView (Chrome_WidgetWin_1);1.0.1's same-PID gate rejects all. Source
+candidate1.0.2 replaces it with the native HWND child relationship, preserving
+the final commit guard. Two new repros red before;46 focused and536 full tests
+pass, docs valid, both independent reviews clear. A new immutable app-only
+candidate and physical Teams acceptance remain pending.
 Installed1.0.0/startup remain unchanged.
 New installer preparation is blocked by automatic approval review of missing
 Inno compiler provisioning (only reason: blocked by policy); no retry through

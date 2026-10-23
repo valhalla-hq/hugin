@@ -14,3 +14,6 @@
   Correct/review this boundary and repeat on a new immutable candidate. Login stays
   separately open. A new1.0.1 installer is blocked by automatic approval review
   of compiler provisioning; do not retry via another launcher (OPS-001).
+- [x] T006 Reproduce Teams cross-process child focus, replace the PID gate at
+  the native producer, preserve final guard and review both lenses.46 focused,
+  536 full tests pass. Prepare new immutable1.0.2 and finish T005 separately.
