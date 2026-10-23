@@ -390,6 +390,7 @@ class WindowsAbiContracts(unittest.TestCase):
         target=WindowTarget(100,200,3,4,500,'Edit',(200,1,2,3,4),(2,2))
         backend.capture_target = lambda **kwargs: events.append('target') or target
         backend.capture_native_target=lambda:events.append('native') or target
+        backend.user.GetWindowLongPtrW=lambda *args:0
         backend._native_focus=lambda:events.append('focus') or (
             target.hwnd,target.focus,target.pid,target.thread,target.caret)
         backend.modifiers_down = lambda: events.append('modifiers') or False
@@ -424,6 +425,7 @@ class WindowsAbiContracts(unittest.TestCase):
         target=WindowTarget(100,200,3,4,500,'Edit',(200,1,2,3,4),(2,2))
         backend.capture_target,backend.modifiers_down=lambda **kwargs:target,lambda:False
         backend.capture_native_target=lambda:target
+        backend.user.GetWindowLongPtrW=lambda *args:0
         backend._native_focus=lambda:(target.hwnd,target.focus,target.pid,target.thread,target.caret)
         backend._chord = lambda _: None
         with self.assertRaises(ClipboardFailure) as failure:

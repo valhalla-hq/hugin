@@ -719,9 +719,9 @@ class NativeClipboard:
             start, end, result = W.DWORD(), W.DWORD(), ctypes.c_size_t()
             ok = self.user.SendMessageTimeoutW(focus, 0xB0, ctypes.addressof(start),
                                                ctypes.addressof(end), 0x23, 50, ctypes.byref(result))
+            style=self._native_edit_style(focus)  # Protection may change even on timeout.
             if ok and start.value <= end.value:
                 selection = (start.value, end.value)
-                style=self._native_edit_style(focus)
                 native_editable = bool(self.user.IsWindowEnabled(focus)
                     and not style & 0x800 and caret is not None and caret[0]==focus)
         target=WindowTarget(hwnd,focus,pid,thread,creation,
@@ -875,6 +875,8 @@ class NativeClipboard:
                             if self.modifiers_down():raise ClipboardFailure('modifiers_active')
                             if not still_current():raise ClipboardFailure('cancelled')
                             if authorize is not None and not authorize(transaction):raise ClipboardFailure('commit_rejected')
+                            if target.control_class.lower() in NATIVE_EDIT_CLASSES:
+                                self._native_edit_style(target.focus)
                             self._check_native_focus(target)  # After every waiting proof step.
                             self._chord(0x56);submitted=True
                     if commit is None:fast_commit()

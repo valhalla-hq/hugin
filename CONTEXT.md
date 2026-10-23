@@ -95,7 +95,7 @@ actual login acceptance remains separate. Spec: specs/2026-10-23-current-cursor/
 - Base: e82e9a625f897a0eda33479637a3a802bd2d2636.
 - Spec/plan/tasks: specs/2026-10-23-current-cursor/.
 - Evidence/limits: docs/current-cursor-2026-10-23.md.
-- PR: Draft to create after first meaningful checkpoint.
+- PR: https://github.com/valhalla-hq/hugin/pull/50 (Draft).
 - Control:46e362d1d3284d712757fc2f0e67a165dbf3a41c.
 - Ownership active for current-cursor-delivery; PR49 checkpoint untouched.
 - Prior completed review-fixes handoff: handoffs/2026-10-22-review-fixes.md.

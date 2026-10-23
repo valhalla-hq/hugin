@@ -6,7 +6,7 @@
 - Worktree: C:/Users/brian/brian-projects/worktrees/hugin/current-cursor-delivery-mjolnir.
 - Base: e82e9a625f897a0eda33479637a3a802bd2d2636.
 - Control/preflight:46e362d1d3284d712757fc2f0e67a165dbf3a41c, current.
-- PR: create Draft after this meaningful checkpoint; exact branch only.
+- PR: https://github.com/valhalla-hq/hugin/pull/50 (Draft; exact branch).
 - Spec/plan/tasks: specs/2026-10-23-current-cursor/.
 - Evidence/limits: docs/current-cursor-2026-10-23.md.
 
@@ -28,9 +28,22 @@ Regression was red before production changes (no chord after window switch)
 and green afterwards. Focused128 tests and33 selection/policy tests passed;
 29 mocked Win32 ABI tests passed. Current-cursor/native focused12 pass.
 First full run524 cases found stale fake signatures, a remaining removed
-target-mode decoder and HEAD-export/config mismatch; corrections are being
-verified, not a green full claim yet. Full/native checks and independent review
-still pending. No1.0.1 runtime/build has been installed or started.
+target-mode decoder and HEAD-export/config mismatch; corrected. Full531 cases
+passed36.569s on16d0036. Independent spec/standards reviews found a native
+password change/timeout race and two stale opt-in native fixtures. Corrected
+with red/green password guards;41 focused current/native/ABI cases pass.
+The real hidden RichEdit selection reader passes0.502s without clipboard/focus
+changes. Coverage reinstates during-recording switches, owner/size/token
+conflicts and callback weakref release; independent follow-up clears all eight
+current-cursor cases. Final-source full check is pending. No1.0.1 runtime has
+been installed or started.
+
+Build-tool constraint: previous isolated Inno compiler was removed with the
+earlier worktree; automatic approval review rejected its re-provisioning
+command with only "blocked by policy". Do not retry that action through a
+different tool/launcher. App-only payload preparation uses already-present
+Windows csc, pinned offline wheels and existing production materialization
+functions. New1.0.1 installer is not claimed;1.0.0 installer remains retained.
 
 Earlier installed1.0.0 remains unchanged at
 C:/Users/brian/AppData/Local/Programs/Hugin/releases/1.0.0-3b6bc4304a87.
@@ -45,8 +58,8 @@ e9e59a66f52e7bc2c49b60967d1d1451e8c7e72c contains Brian's manual restart and
 four successful physical mouse/hotkey flows on22October. Keep its worktree and
 ownership untouched. That did not prove a new Windows login; login stays open.
 
-Next: finish full/native current-cursor guards, independently review, build
-additive1.0.1 from clean pinned source, preserve1.0.0/preferences/startup/profile,
+Next: finish final full check, prepare additive1.0.1 app-only from clean pinned
+source, preserve1.0.0/preferences/startup/profile,
 then switch only after normal Quit and request physical Codex switching check.
 Routine checked private integration is within this fix request; no check bypass.
 Paste still relies on target consumption of Ctrl+V and does not claim all apps.

@@ -1,13 +1,14 @@
 """Current focus is selected by the native commit, not a past recording event."""
-from dataclasses import replace
 import ctypes as ct
 import json
+import gc
+import weakref
 import unittest
 
 import test_application as app
 from hugin.windows.clipboard import ClipboardService,ClipboardFailure,_GuiThreadInfo
 from test_windows_clipboard import FakeClipboard
-from test_native_focus_consistency import NativeFocusConsistency
+import test_native_focus_consistency as native_cases
 
 
 class CurrentCursorContracts(unittest.TestCase):
@@ -15,9 +16,9 @@ class CurrentCursorContracts(unittest.TestCase):
     pump=app.ApplicationContracts.pump
     dictation_ready=app.ApplicationContracts.dictation_ready
 
-    def test_switch_after_stop_uses_current_native_focus_without_uia(self):
+    def run_switch(self,phase):
         backend=FakeClipboard()
-        native,_,state,sent=NativeFocusConsistency().backend()
+        native,_,state,sent=native_cases.NativeFocusConsistency().backend()
         native.sequence=backend.sequence
         native._probe=lambda:self.fail('dictation must not depend on UIA')
         original_gui=native.user.GetGUIThreadInfo
@@ -29,15 +30,16 @@ class CurrentCursorContracts(unittest.TestCase):
         def name(hwnd,buffer,capacity):
             buffer.value='Chrome_WidgetWin_1';return len(buffer.value)
         native.user.GetClassNameW=name
-        initial=backend.target
-        last=replace(initial,hwnd=300,focus=400,pid=5,thread=6,control_class='Chrome_WidgetWin_1',
-                     native_editable=False,caret=None,selection=None)
         backend.commit_paste=native.commit_paste
         service=ClipboardService(backend=backend)
         service.approve_current_focus(.02)
         self.controller.clipboard=service
-        self.dictation_ready()
-        state.update(hwnd=300,focus=400)
+        self.controller.command('dictation');self.pump()
+        if phase=='recording':state.update(hwnd=300,focus=400)
+        self.controller.command('dictation');self.pump()
+        self.assertEqual(sent,[])
+        self.pool.future.set_result({'engine_instance':'actual-stt','device':'cpu'});self.pump()
+        if phase=='after_stop':state.update(hwnd=300,focus=400)
         request,generation=self.pool.inference[-1]
         self.controller.worker_event(dict(type='result',engine='stt',engine_instance='actual-stt',
             request_id=request,generation=generation,text='current native destination'))
@@ -49,9 +51,67 @@ class CurrentCursorContracts(unittest.TestCase):
         self.assertEqual((checks['capture_native'],checks['capture_field'],checks['delivery']),
                          ('native_target_captured','not_required','submitted'))
 
+    def test_switch_after_stop_uses_current_native_focus_without_uia(self):
+        self.run_switch('after_stop')
+
+    def test_switch_during_recording_uses_current_native_focus_without_uia(self):
+        self.run_switch('recording')
+
 
 class NativeCommitGuards(unittest.TestCase):
-    def backend(self):return NativeFocusConsistency().backend()
+    def backend(self):return native_cases.NativeFocusConsistency().backend()
+
+    def test_clipboard_owner_size_and_token_rechecked_after_native_capture(self):
+        for kind in ('owner','size','token'):
+            with self.subTest(kind=kind):
+                native,_,state,sent=self.backend();capture=native.capture_native_target
+                owner=[10];size=[5];token=[b'owned'];authorized=[]
+                native.user.GetClipboardOwner=lambda:owner[0]
+                native.kernel.GlobalSize=lambda handle:size[0]
+                native._read_handle=lambda *args:token[0]
+                def changed_capture():
+                    target=capture()
+                    if kind=='owner':owner[0]=11
+                    elif kind=='size':size[0]=6
+                    else:token[0]=b'other'
+                    return target
+                native.capture_native_target=changed_capture
+                with self.assertRaises(ClipboardFailure) as failure:
+                    native.commit_paste(7,lambda:True,lambda tx:authorized.append(tx) or True)
+                self.assertEqual(failure.exception.status,'clipboard_changed')
+                self.assertEqual(authorized,[])
+                self.assertEqual(sent,[])
+
+    def test_saved_rejected_callback_does_not_retain_transaction_or_application_callbacks(self):
+        native,_,state,sent=self.backend();saved=[]
+        class Callback:
+            def __call__(self,*args):return True
+        current=Callback();authorize=Callback();transaction=Callback()
+        references=[weakref.ref(item) for item in (current,authorize,transaction)]
+        with self.assertRaises(ClipboardFailure):
+            native.commit_paste(7,current,authorize,transaction,commit=lambda tx,send:saved.append(send))
+        del current,authorize,transaction
+        gc.collect()
+        self.assertTrue(all(reference() is None for reference in references))
+        with self.assertRaises(ClipboardFailure):saved[0]()
+        self.assertEqual(sent,[])
+
+    def test_native_password_change_during_timed_out_range_or_authorization_rejects(self):
+        for phase in ('timeout','authorize'):
+            with self.subTest(phase=phase):
+                native,_,state,sent=self.backend();style=[0]
+                native.user.GetWindowLongPtrW=lambda *args:style[0]
+                if phase=='timeout':
+                    def timeout(*args):style[0]=0x20;return False
+                    native.user.SendMessageTimeoutW=timeout
+                def authorize(transaction):
+                    if phase=='authorize':style[0]=0x20
+                    return True
+                with self.assertRaises(ClipboardFailure) as failure:
+                    native.commit_paste(7,lambda:True,authorize)
+                self.assertEqual(failure.exception.status,'target_unverifiable')
+                self.assertFalse(failure.exception.submitted)
+                self.assertEqual(sent,[])
 
     def test_missing_focus_keeps_published_text_and_reports_native_failure(self):
         backend=FakeClipboard();native,_,state,sent=self.backend()

@@ -44,7 +44,9 @@ class DictationClipboardNative(unittest.TestCase):
             # Exercise the real service and producer without an eligible target.
             # There is no SendInput or foreground manipulation in this fixture.
             text='Hugin Zwischenablage Ä 😀'
-            result=ClipboardService(backend=writer).deliver(text,None,lambda:True)
+            service=ClipboardService(backend=writer);service.approve_current_focus(.02)
+            with patch.object(writer,'capture_native_target',side_effect=ClipboardFailure('target_unverifiable')):
+                result=service.deliver(text,lambda:True)
             self.assertEqual((result.status,result.copied,result.submitted),('target_unverifiable',True,False))
             published=snapshot_at(latest)
             self.assertEqual(published.sequence,latest)

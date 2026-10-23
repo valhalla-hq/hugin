@@ -15,6 +15,10 @@ current-focus paste. No user preference or activation migration.
 First regressions through Controller/ClipboardService/NativeClipboard; then
 scoped/full CPU checks, native owned-target check and independent spec/standards
 review. Build an additive1.0.1 candidate only after source checks; preserve all
-1.0.0 binaries and installer. Switch after normal Hugin Quit, preserving
+1.0.0 binaries and installer. Automatic approval review rejected preparation of
+the missing Inno compiler with only "blocked by policy". Do not retry that
+action through another launcher. Prepare the app payload using existing native
+compiler/offline wheels and the production builder's existing materialization,
+asset and launcher functions; no new installer is claimed. Switch after normal Hugin Quit, preserving
 preferences, cache, input profile and startup; never mutate an active release.
 Real Codex acceptance and actual login are distinct pending observations.
