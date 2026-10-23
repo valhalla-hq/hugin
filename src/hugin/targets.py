@@ -15,7 +15,7 @@ class DeliveryApproval:
 
 
 @dataclass(frozen=True)
-class VerifiedEditApproval:
+class CurrentFocusApproval:
     restore_delay_seconds: float
 
 
@@ -23,7 +23,7 @@ class VerifiedEditApproval:
 class TargetApprovals:
     delivery: tuple[DeliveryApproval,...]
     capture_fallback: tuple[str,...]
-    verified_edit: VerifiedEditApproval | None
+    current_focus: CurrentFocusApproval | None
 
 
 def _proof(root, evidence):
@@ -41,14 +41,14 @@ def load_target_approvals(root: Path) -> TargetApprovals:
     try:
         path=root/'config/targets.json'
         data=read_json_object(path)
-        if not isinstance(data,dict) or set(data)!={'schema_version','delivery','capture_fallback','verified_edit'}:
+        if not isinstance(data,dict) or set(data)!={'schema_version','delivery','capture_fallback','current_focus'}:
             raise ValueError
-        if type(data['schema_version']) is not int or data['schema_version']!=2: raise ValueError
-        generic=data['verified_edit']
+        if type(data['schema_version']) is not int or data['schema_version']!=3: raise ValueError
+        generic=data['current_focus']
         if generic is not None:
             if not isinstance(generic,dict) or set(generic)!={'restore_delay_seconds','evidence'}:raise ValueError
             _proof(root,generic['evidence'])
-            generic=VerifiedEditApproval(_delay(generic['restore_delay_seconds']))
+            generic=CurrentFocusApproval(_delay(generic['restore_delay_seconds']))
         groups={}
         for kind in ('delivery','capture_fallback'):
             records=data[kind]

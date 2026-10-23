@@ -136,7 +136,10 @@ class CaptureCueContracts(unittest.TestCase):
     def setUp(self):
         self.calls=[];self.mic=Mic(self.calls);self.cues=Cues(self.calls);self.pool=Pool()
         self.clipboard=Clipboard()
-        self.clipboard.capture_target=lambda **_:self.calls.append('uia') or NS(target='target',status='target_captured')
+        deliver=self.clipboard.deliver
+        def observed_delivery(*args,**kwargs):
+            self.calls.append('paste');return deliver(*args,**kwargs)
+        self.clipboard.deliver=observed_delivery
         self.controller=Controller(controller_settings(self),inputs=Inputs(),microphone=self.mic,
             output=Output(self.calls),clipboard=self.clipboard,pool=self.pool,publish=lambda _:None,
             capture_executor=Immediate(),audio_executor=Immediate(),maintenance_executor=Immediate(),
@@ -151,14 +154,14 @@ class CaptureCueContracts(unittest.TestCase):
         self.assertEqual(self.controller.core.snapshot().state,c.State.RECORDING)
         self.controller.command('dictation');self.pump()
         self.assertEqual(self.calls[-2:],['mic_close','end_cue'])
-        self.assertNotIn('uia',self.calls)
+        self.assertNotIn('paste',self.calls)
         self.assertEqual(self.pool.starts,['stt'])
         self.pool.future.set_result({'engine_instance':'actual-stt','device':'cpu'});self.pump()
         request,generation=self.pool.inference[-1]
         self.controller.worker_event(dict(type='result',engine='stt',engine_instance='actual-stt',
             request_id=request,generation=generation,text='cue ordering test'));self.pump()
-        self.assertEqual(self.calls.count('uia'),1)
-        self.assertGreater(self.calls.index('uia'),self.calls.index('end_cue'))
+        self.assertEqual(self.calls.count('paste'),1)
+        self.assertGreater(self.calls.index('paste'),self.calls.index('end_cue'))
         self.assertEqual(self.clipboard.submissions,['cue ordering test'])
 
     def test_start_failure_and_start_cue_failure_never_arm_or_emit_end_cue(self):

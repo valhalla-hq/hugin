@@ -2,6 +2,12 @@
 
 Lokale Windows-App für Diktieren und Vorlesen mit den bestätigten Stimmen **Freya** und **Tyr**. Hugin soll Whispering und PipPal vollständig ersetzen.
 
+Aktuell23.10.2026: Korrektur1.0.1 in Prüfung. Diktat verwendet den aktuellen
+Cursor am Einfügepunkt, auch nach Zielwechseln; die verzögerte UIA-Felderkennung
+blockiert diesen Weg nicht mehr. [Verhalten und Prüfgrenzen](docs/current-cursor-2026-10-23.md).
+Installiert bleibt bis zur geprüften Aktualisierung1.0.0. Die vier physischen
+Maus-/Tastentests vom22.10. sind bestätigt; der echte Windows-Login bleibt offen.
+
 Status am **22.10.2026**: Hugin **1.0.0** ist als privater Offline-Installer gebaut und im regulären Benutzerordner installiert. Erneute Installation/Reparatur, dauerhafte Maus-/Tastenregistrierung, vier normale Hintergrundstarts und beide echten Stimmen sind geprüft. Diktat, Screenshot-Zwischenablage, Obsidian-Oberfläche, bewegliche Mitleseleiste, Panel-Buttons, Audiowortmarkierung und natürliche Abschnitte bleiben erhalten. [Produktionsnachweis und Grenzen](PRODUCTION-BUILD.md), [Installation und Rückweg](docs/production-installation.md), [aktueller Handoff](CONTEXT.md#active-handoff). Der nächste echte Windows-Login und die physische Bedienprobe der installierten Version bleiben separate Abnahmen.
 
 Der lokale Einstieg `C:\Users\brian\Hugin` zeigt auf den sauberen Main-Deploymentclone. Alle drei eigenen Umgebungen und echten Modell-/CUDA-Dateien sind dort aus geprüften lokalen Dateien wiederhergestellt. Die sechs ursprünglichen Planungsdateien bleiben mit identischen SHA256-Hashes unter `C:\Users\brian\Hugin-Planung-2026-10-14` erhalten. Die explizite Einrichtung aktiviert die dauerhaften Maus-/Tastenbindungen.

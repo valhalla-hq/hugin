@@ -3,7 +3,7 @@ from pathlib import Path
 import unittest
 
 from hugin.targets import load_target_approvals
-from hugin.windows.clipboard import (ClipboardService, WindowTarget, UiaTargetIdentity, ClipboardSnapshot,
+from hugin.windows.clipboard import (ClipboardService, WindowTarget, ClipboardSnapshot,
                                      ClipboardFailure, MAX_SNAPSHOT_BYTES)
 
 
@@ -27,12 +27,6 @@ class FakeClipboard:
         self.after_direct = lambda: None
 
     def capture_native_target(self):
-        return self.target.without_uia
-
-    def capture_target(self,*,expected=None,cancelled=lambda:False):
-        if cancelled():raise ClipboardFailure('cancelled')
-        if expected is not None and self.target.without_uia!=expected.without_uia:
-            raise ClipboardFailure('target_changed')
         return self.target
 
     def modifiers_down(self):
@@ -82,14 +76,13 @@ class FakeClipboard:
             raise ClipboardFailure('clipboard_changed')
         return self.data[13].decode('utf-16-le').rstrip('\0')
 
-    def commit_paste(self, expected, target, still_current, authorize=None, transaction=None,commit=None):
+    def commit_paste(self, expected, still_current, authorize=None, transaction=None,commit=None):
         self.before_commit()
         submitted=False
         def fast_commit():
             nonlocal submitted
             if submitted:raise ClipboardFailure('commit_rejected',submitted=True)
             if self.seq != expected:raise ClipboardFailure('clipboard_changed')
-            if self.target != target:raise ClipboardFailure('target_changed')
             if not still_current():raise ClipboardFailure('cancelled')
             if self.modifiers:raise ClipboardFailure('modifiers_active')
             if authorize is not None and not authorize(transaction):raise ClipboardFailure('commit_rejected')
@@ -97,6 +90,7 @@ class FakeClipboard:
         if commit is None:fast_commit()
         else:commit(transaction,fast_commit)
         if not submitted:raise ClipboardFailure('commit_rejected')
+        return self.target
 
     def sleep(self, seconds):
         pass
@@ -107,27 +101,20 @@ class ClipboardContracts(unittest.TestCase):
         backend = FakeClipboard()
         backend.snapshot_failure = 'format_unsupported'
         service = ClipboardService(backend=backend)
-        service.approve_verified_edits(.02)
-        result = service.deliver('completed dictation', backend.target, lambda:True)
+        service.approve_current_focus(.02)
+        result = service.deliver('completed dictation', lambda:True)
         self.assertEqual(result.status, 'submitted')
         self.assertTrue(result.copied)
         self.assertEqual(backend.pastes, 1)
         self.assertEqual(backend.data[13].decode('utf-16-le'), 'completed dictation\0')
 
-    def test_missing_target_still_publishes_manual_paste_text(self):
-        backend = FakeClipboard()
-        result = ClipboardService(backend=backend).deliver('manual fallback', None, lambda:True)
-        self.assertEqual(result.status, 'target_unverifiable')
-        self.assertTrue(result.copied)
-        self.assertEqual(backend.pastes, 0)
-        self.assertEqual(backend.data[13].decode('utf-16-le'), 'manual fallback\0')
 
     def test_cancel_before_publication_keeps_original_and_stale_result_does_not_paste(self):
         for cancel_after_stage in (False,True):
             backend=FakeClipboard();saved=backend.data.copy();current=[cancel_after_stage]
             backend.after_stage=lambda:current.__setitem__(0,False)
-            service=ClipboardService(backend=backend);service.approve_verified_edits(.02)
-            result=service.deliver('completed',backend.target,lambda:current[0])
+            service=ClipboardService(backend=backend);service.approve_current_focus(.02)
+            result=service.deliver('completed',lambda:current[0])
             self.assertEqual(result.status,'cancelled')
             self.assertEqual(result.copied,cancel_after_stage)
             self.assertEqual(backend.pastes,0)
@@ -139,16 +126,16 @@ class ClipboardContracts(unittest.TestCase):
             backend=FakeClipboard()
             def fail(*args,**kwargs):raise ClipboardFailure(status,owned_sequence=2)
             backend.stage=fail
-            result=ClipboardService(backend=backend).deliver('completed',backend.target,lambda:True)
+            result=ClipboardService(backend=backend).deliver('completed',lambda:True)
             self.assertEqual(result.status,status)
             self.assertFalse(result.copied);self.assertFalse(result.submitted)
             self.assertEqual(backend.pastes,0)
 
     def test_later_user_copy_after_submission_is_not_replaced(self):
         backend=FakeClipboard();service=ClipboardService(backend=backend)
-        service.approve_verified_edits(.02)
+        service.approve_current_focus(.02)
         backend.sleep=lambda delay:backend.replace(((13,b'user copy'),))
-        result=service.deliver('completed',backend.target,lambda:True)
+        result=service.deliver('completed',lambda:True)
         self.assertTrue(result.copied);self.assertTrue(result.submitted)
         self.assertEqual(backend.pastes,1)
         self.assertEqual(backend.data,{13:b'user copy'})
@@ -161,7 +148,7 @@ class ClipboardContracts(unittest.TestCase):
                 with self.subTest(control=control,package=package):
                     backend=FakeClipboard()
                     backend.target=replace(backend.target,control_class=control,package_family=package,
-                        native_editable=False,uia=UiaTargetIdentity((1,),(2,),(3,),(3,),3,(2,2),-1,-1))
+                        native_editable=False)
                     saved=backend.data.copy();snapshots=[];snapshot=backend.snapshot
                     backend.snapshot=lambda budget:snapshots.append(budget) or snapshot(budget)
                     delays=[];backend.sleep=delays.append
@@ -169,8 +156,8 @@ class ClipboardContracts(unittest.TestCase):
                     for approval in profile.delivery:
                         service.approve_target_class(approval.control_class,approval.restore_delay_seconds,
                             package_family=approval.package_family)
-                    service.approve_verified_edits(profile.verified_edit.restore_delay_seconds)
-                    result=service.deliver('synthetic',backend.target,lambda:True)
+                    service.approve_current_focus(profile.current_focus.restore_delay_seconds)
+                    result=service.deliver('synthetic',lambda:True)
                     override=control!='Chrome_WidgetWin_2' and package==family
                     self.assertEqual((result.status,result.submitted,result.copied),
                         ('submitted',True,True))
@@ -178,13 +165,6 @@ class ClipboardContracts(unittest.TestCase):
                     self.assertEqual((backend.pastes,len(snapshots),backend.mutations),(1,0,1))
                     self.assertEqual(backend.data[13].decode('utf-16-le'),'synthetic\0')
 
-    def test_shipped_generic_policy_does_not_approve_missing_field_proof(self):
-        profile=load_target_approvals(Path(__file__).resolve().parents[2])
-        backend=FakeClipboard();backend.target=replace(backend.target,native_editable=False)
-        service=ClipboardService(backend=backend)
-        service.approve_verified_edits(profile.verified_edit.restore_delay_seconds)
-        result=service.deliver('synthetic',backend.target,lambda:True)
-        self.assertEqual((result.status,backend.pastes,backend.mutations),('target_unverifiable',0,1))
 
     def service(self):
         backend = FakeClipboard()
@@ -264,56 +244,46 @@ class ClipboardContracts(unittest.TestCase):
         self.assertIn('selected', backend.data[13].decode('utf-16-le'))
         self.assertEqual(backend.mutations, 1)
 
-    def test_changed_caret_control_or_window_keeps_text_without_pasting(self):
-        for change in ({'hwnd': 101}, {'focus': 201}, {'caret': (200, 2, 2, 3, 4)},
-                       {'selection': (3, 3)}, {'process_created': 501}):
-            backend, service = self.service()
-            target = backend.target
-            backend.target = replace(target, **change)
-            result = service.deliver('dictation', target, lambda: True)
-            self.assertEqual(result.status, 'target_changed')
-            self.assertEqual(backend.mutations, 1)
-            self.assertEqual(backend.pastes, 0)
 
     def test_paste_is_gated_until_target_policy_is_proven(self):
         backend, service = self.service()
-        result = service.deliver('dictation', backend.target, lambda: True)
+        result = service.deliver('dictation', lambda: True)
         self.assertEqual(result.status, 'target_unverified')
         self.assertEqual(backend.mutations, 1)
 
     def test_user_copy_between_stage_and_commit_prevents_paste_and_restore(self):
         backend, service = self.service()
-        service.approve_target_class('Edit', 0.02)
+        service.approve_current_focus(0.02)
         def user_copy():
             backend.replace({13: b'user copy'})
         backend.after_stage = user_copy
-        result = service.deliver('dictation', backend.target, lambda: True)
+        result = service.deliver('dictation', lambda: True)
         self.assertEqual(result.status, 'clipboard_changed')
         self.assertEqual(backend.pastes, 0)
         self.assertEqual(backend.data[13], b'user copy')
 
     def test_cancel_at_serialized_commit_prevents_paste(self):
         backend, service = self.service()
-        service.approve_target_class('Edit', 0.02)
+        service.approve_current_focus(0.02)
         state = {'current': True}
         backend.before_commit = lambda: state.update(current=False)
-        result = service.deliver('dictation', backend.target, lambda: state['current'])
+        result = service.deliver('dictation', lambda: state['current'])
         self.assertEqual(result.status, 'cancelled')
         self.assertEqual(backend.pastes, 0)
 
     def test_authorization_sees_staged_transaction_after_checks_and_can_reject(self):
         backend, service = self.service()
-        service.approve_target_class('Edit', 0.02)
+        service.approve_current_focus(0.02)
         transactions = []
         def reject(transaction):
             self.assertEqual(backend.seq, transaction.sequence)
-            self.assertEqual(backend.target, transaction.target)
+            self.assertFalse(hasattr(transaction,'target'))
             self.assertEqual(backend.pastes, 0)
             self.assertIn('dictation', backend.data[13].decode('utf-16-le'))
             self.assertNotIn('dictation', repr(transaction))
             transactions.append(transaction)
             return False
-        result = service.deliver('dictation', backend.target, lambda: True, authorize=reject)
+        result = service.deliver('dictation', lambda: True, authorize=reject)
         self.assertEqual(result.status, 'commit_rejected')
         self.assertEqual(len(transactions), 1)
         self.assertEqual(backend.pastes, 0)
@@ -322,18 +292,18 @@ class ClipboardContracts(unittest.TestCase):
 
     def test_conflict_never_calls_authorization(self):
         backend, service = self.service()
-        service.approve_target_class('Edit', 0.02)
+        service.approve_current_focus(0.02)
         backend.after_stage = lambda: backend.replace({13: b'user'})
         calls = []
-        result = service.deliver('dictation', backend.target, lambda: True,
+        result = service.deliver('dictation', lambda: True,
                                  authorize=lambda transaction: calls.append(transaction) or True)
         self.assertEqual(result.status, 'clipboard_changed')
         self.assertEqual(calls, [])
 
     def test_success_submits_once_and_retains_text(self):
         backend, service = self.service()
-        service.approve_target_class('Edit', 0.02)
-        result = service.deliver('dictation', backend.target, lambda: True)
+        service.approve_current_focus(0.02)
+        result = service.deliver('dictation', lambda: True)
         self.assertEqual(result.status, 'submitted')
         self.assertTrue(result.submitted)
         self.assertEqual(backend.pastes, 1)

@@ -176,7 +176,6 @@ class RecordingStarted(Event):
 class RecordingStopped(Event):
     job: Job
     capture: bytes | None = None
-    target: object = None
     error: HuginError | None = None
 
 
@@ -349,7 +348,6 @@ class PauseAudio(Effect):
 class StageDelivery(Effect):
     job: Job
     text: str
-    target: object
 
 
 @dataclass(frozen=True)
@@ -431,7 +429,6 @@ class Coordinator:
         self._slot_result = False
         self._components = {engine: Component(engine, None, False, False) for engine in Engine}
         self._payload: bytes | str | AlignmentInput | None = None
-        self._target: object = None
         self._recording_open: Job | None = None
         self._stopping_capture = False
         self._closing_capture: Job | None = None
@@ -496,7 +493,6 @@ class Coordinator:
         self._job = job
         self._error = None
         self._payload = None
-        self._target = None
         self._stopping_capture = False
         self._delivery_attempted = False
         self._tts_chunks.clear()
@@ -514,7 +510,6 @@ class Coordinator:
     def _finish_job(self) -> None:
         self._job = None
         self._payload = None
-        self._target = None
         self._job_voice = None
         self._selection_pending = None
         self._tts_chunks.clear()
@@ -552,7 +547,6 @@ class Coordinator:
         self._cancelling = job
         self._job = None
         self._payload = None
-        self._target = None
         self._job_voice = None
         self._selection_pending = None
         self._tts_chunks.clear()
@@ -786,7 +780,6 @@ class Coordinator:
                     self._fail(HuginError('capture_limit'), 'capture', effects)
                 else:
                     self._payload = event.capture
-                    self._target = event.target
                     self._schedule(effects)
             return
         if isinstance(event, SelectionReady):
@@ -950,8 +943,7 @@ class Coordinator:
             self._result = ResultSlot(operation.job, event.text, self._now + self.limits.result_ttl_seconds)
             self._state = State.DELIVERING
             self._closing_delivery = operation.job
-            effects.append(StageDelivery(operation.job, event.text, self._target))
-            self._target = None
+            effects.append(StageDelivery(operation.job, event.text))
         elif isinstance(event, EngineAudio):
             if operation.action != Action.SYNTHESIZE or self._state not in (State.TTS_PREPARING, State.TTS_PLAYING):
                 self._fail(HuginError('protocol_invalid'), 'engine', effects)

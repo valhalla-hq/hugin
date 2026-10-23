@@ -4,7 +4,7 @@ import tempfile
 import unittest
 
 from hugin.errors import HuginError
-from hugin.targets import load_target_approvals, DeliveryApproval, VerifiedEditApproval
+from hugin.targets import load_target_approvals, DeliveryApproval, CurrentFocusApproval
 
 ROOT=Path(__file__).resolve().parents[2]
 
@@ -16,7 +16,7 @@ class TargetApprovalContracts(unittest.TestCase):
             DeliveryApproval('Chrome_RenderWidgetHostHWND',.15,'OpenAI.Codex_2p2nqsd0c76g0'),
             DeliveryApproval('Chrome_WidgetWin_1',.15,'OpenAI.Codex_2p2nqsd0c76g0')))
         self.assertEqual(profile.capture_fallback,())
-        self.assertEqual(profile.verified_edit,VerifiedEditApproval(.25))
+        self.assertEqual(profile.current_focus,CurrentFocusApproval(.25))
 
     def test_invalid_approval_is_not_silently_used_or_ignored(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -25,14 +25,14 @@ class TargetApprovalContracts(unittest.TestCase):
             for entry in ({'control_class':'*','restore_delay_seconds':.1,'evidence':'proof.md'},
                           {'control_class':'Edit','restore_delay_seconds':True,'evidence':'proof.md'},
                           {'control_class':'Edit','restore_delay_seconds':.1,'evidence':'missing.md'}):
-                (root/'config/targets.json').write_text(json.dumps({'schema_version':2,'verified_edit':None,'delivery':[entry],'capture_fallback':[]}),encoding='utf-8')
+                (root/'config/targets.json').write_text(json.dumps({'schema_version':3,'current_focus':None,'delivery':[entry],'capture_fallback':[]}),encoding='utf-8')
                 with self.assertRaises(HuginError): load_target_approvals(root)
 
     def test_explicit_class_and_evidence_bind_one_measured_delay(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory);(root/'config').mkdir()
             (root/'proof.md').write_text('Synthetic test evidence',encoding='utf-8')
-            (root/'config/targets.json').write_text(json.dumps({'schema_version':2,'verified_edit':None,'delivery':[
+            (root/'config/targets.json').write_text(json.dumps({'schema_version':3,'current_focus':None,'delivery':[
                 {'control_class':'Edit','restore_delay_seconds':.1,'evidence':'proof.md'}],'capture_fallback':[]}),encoding='utf-8')
             self.assertEqual(load_target_approvals(root).delivery,(DeliveryApproval('Edit',.1),))
 
@@ -44,7 +44,7 @@ class TargetApprovalContracts(unittest.TestCase):
                 'package_family':'OpenAI.Codex_2p2nqsd0c76g0','evidence':'proof.md'}
             def write():
                 (root/'config/targets.json').write_text(json.dumps(
-                    {'schema_version':2,'verified_edit':None,'delivery':[entry],'capture_fallback':[]}),encoding='utf-8')
+                    {'schema_version':3,'current_focus':None,'delivery':[entry],'capture_fallback':[]}),encoding='utf-8')
             write()
             self.assertEqual(load_target_approvals(root).delivery,(
                 DeliveryApproval('Chrome_WidgetWin_1',.15,'OpenAI.Codex_2p2nqsd0c76g0'),))
@@ -55,18 +55,18 @@ class TargetApprovalContracts(unittest.TestCase):
     def test_duplicate_configuration_keys_are_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory);(root/'config').mkdir()
-            (root/'config/targets.json').write_text('{"schema_version":0,"schema_version":2,"verified_edit":null,"delivery":[],"capture_fallback":[]}',encoding='utf-8')
+            (root/'config/targets.json').write_text('{"schema_version":0,"schema_version":3,"current_focus":null,"delivery":[],"capture_fallback":[]}',encoding='utf-8')
             with self.assertRaises(HuginError): load_target_approvals(root)
 
     def test_null_generic_policy_is_explicitly_disabled_and_old_shape_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory);(root/'config').mkdir()
-            profile={'schema_version':2,'verified_edit':None,'delivery':[],'capture_fallback':[]}
+            profile={'schema_version':3,'current_focus':None,'delivery':[],'capture_fallback':[]}
             path=root/'config/targets.json'
             path.write_text(json.dumps(profile),encoding='utf-8')
-            self.assertIsNone(load_target_approvals(root).verified_edit)
+            self.assertIsNone(load_target_approvals(root).current_focus)
             for old in ({'schema_version':1,'delivery':[],'capture_fallback':[]},
-                    {key:value for key,value in profile.items() if key!='verified_edit'},
+                    {key:value for key,value in profile.items() if key!='current_focus'},
                     dict(profile,schema_version=True)):
                 path.write_text(json.dumps(old),encoding='utf-8')
                 with self.assertRaises(HuginError):load_target_approvals(root)

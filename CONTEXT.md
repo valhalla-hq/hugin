@@ -1,5 +1,20 @@
 # Hugin Context
 
+Current task23October2026: current-cursor-delivery on Mjolnir. Brian reports
+target_unverifiable again in installed1.0.0 after switching targets. Transcript
+is copied but the UIA field gate prevents paste. He requests Whispering-style
+insertion at the current cursor. Source candidate1.0.1 selects native focus at
+serialized commit; no earlier target/UIA delivery proof is retained. Full
+verification, independent review, additive build and physical acceptance are
+pending. Installed1.0.0 has not been changed. Details and exact current handoff:
+handoffs/2026-10-23-current-cursor-delivery.md.
+
+Separate checkpoint PR49 preserves Brian's successful manual restart and four
+physical mouse/hotkey tests on22October. Actual Windows-login startup remains
+unproven and separately open; no logout/reboot is requested by this bug fix.
+
+## Previous production result (22October2026)
+
 Status am22.10.2026: Hugin1.0.0 ist als privater Offline-Installer gebaut,
 im regulären Benutzerordner installiert und nach Reparaturinstallation geprüft.
 Ergebnis abgeschlossen: hugin-production-build, Mjolnir. PR47 ist checked als
@@ -66,24 +81,23 @@ Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
 
 ## Current intent and authorization
 
-Build the productive Windows app and offline installer from main5140213.
-Verify per-user installation, startup readback, repeated starts/reinstallation
-and permanent input profile while preserving accepted clipboard/UI/audio timing.
-Specifications: specs/2026-10-22-production-build/. Routine checked private
-integration and the final local installation switch are authorized. Actual
-next-login evidence remains separate; no sign-out is implied.
+Correct dictation target selection to follow the current cursor even after
+window/field switches, compare pinned Whispering source, verify guards and
+prepare an additive1.0.1 update. Preserve voices/timing/input/startup/preferences
+and immutable1.0.0 rollback. Routine checked private completion is authorized;
+actual login acceptance remains separate. Spec: specs/2026-10-23-current-cursor/.
 
 ## Active Handoff
 
-- `handoffs/2026-10-22-production-build.md`
-- Branch: codex/hugin-production-build-mjolnir.
-- Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-production-build-mjolnir.
-- Base: 5140213e6019f3b9f47025cd2f6ce08ba15cbce7.
-- Spec/plan/tasks: specs/2026-10-22-production-build/.
-- Evidence/limits: docs/review-fixes-2026-10-22.md.
-- PR: https://github.com/valhalla-hq/hugin/pull/47 (Draft).
-- Control: 05181f9a99374ff8b298c626f903304f36ac8926.
-- Ownership active for production-build implementation and verification.
+- `handoffs/2026-10-23-current-cursor-delivery.md`
+- Branch: codex/current-cursor-delivery-mjolnir.
+- Worktree: C:/Users/brian/brian-projects/worktrees/hugin/current-cursor-delivery-mjolnir.
+- Base: e82e9a625f897a0eda33479637a3a802bd2d2636.
+- Spec/plan/tasks: specs/2026-10-23-current-cursor/.
+- Evidence/limits: docs/current-cursor-2026-10-23.md.
+- PR: Draft to create after first meaningful checkpoint.
+- Control:46e362d1d3284d712757fc2f0e67a165dbf3a41c.
+- Ownership active for current-cursor-delivery; PR49 checkpoint untouched.
 - Prior completed review-fixes handoff: handoffs/2026-10-22-review-fixes.md.
 - Prior accepted natural-sections result: handoffs/2026-10-22-natural-sections.md.
 - Prior accepted codec optimization: handoffs/2026-10-22-tts-throughput.md.

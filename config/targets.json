@@ -1,8 +1,8 @@
 {
-  "schema_version": 2,
-  "verified_edit": {
+  "schema_version": 3,
+  "current_focus": {
     "restore_delay_seconds": 0.25,
-    "evidence": "docs/input-audio-2026-10-15.md"
+    "evidence": "docs/current-cursor-2026-10-23.md"
   },
   "delivery": [
     {

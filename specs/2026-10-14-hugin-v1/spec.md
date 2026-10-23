@@ -17,7 +17,7 @@ Arbeitsordner: C:/Users/brian/Hugin. Referenzhardware: Windows x64, RTX 4070 Lap
 | Freya | Anzeigename des unveränderten Profils deutsch-3; anfänglicher Standard. |
 | Tyr | Anzeigename des unveränderten Profils deutsch-a; manuell wählbare Alternative. |
 | Letztes Diktat | Genau ein fertig transkribierter Text im RAM; weder Verlauf noch Audiospeicher. |
-| Einfügeziel | Vordergrundfenster und fokussiertes Eingabeelement beim Stoppen der Aufnahme. |
+| Einfügeziel | Aktueller Windows-Vordergrund und nativer Fokus am serialisierten Einfügepunkt; keine Bindung beim Aufnahmeende. |
 | Einfügeübergabe | Punkt, an dem Hugin die Einfügeeingabe an Windows sendet. Danach kann Hugin die Änderung nicht zuverlässig zurücknehmen. |
 | Bereit | Die für eine Funktion erforderlichen Komponenten sind geprüft; keine Garantie für unbekannte Zielprogramme oder physische Tastenzustellung. |
 
@@ -29,7 +29,7 @@ Die Steuerung besitzt Auftragszustand, Eingaben, Mikrofon, Audioausgabe, Zwische
 | --- | --- |
 | REQ-001 | XBUTTON1/hintere Taste und Alt+Y rufen denselben Diktat-Toggle auf. Ein physischer Druck erzeugt eine Aktion; Halten/Wiederholung erzeugt keine zusätzlichen Toggles. Beide Seitentasten werden während Hugin-Betrieb für Hugin reserviert. |
 | REQ-002 | Erster Toggle startet Aufnahme, zweiter beendet sie und transkribiert lokal. Aufnahme wartet nicht auf das Laden des Whisper-Modells. Sprache Auto und bisherige Decode-Parameter bleiben Standard. |
-| REQ-003 | Ein fertiges Diktat wird höchstens einmal ins geprüfte Einfügeziel übergeben. Unmittelbar vor Übergabe müssen Ziel und die eigene Clipboard-Transaktion noch gültig sein. Hugin drückt kein Enter. Jedes aktuelle fertige Diktat ersetzt zuerst den bisherigen Zwischenablageinhalt und bleibt für Strg+V verfügbar. Bei Änderung oder Unsicherheit erfolgt keine automatische Übergabe. Fehler beim Schreiben werden ausdrücklich gemeldet. |
+| REQ-003 | Ein fertiges Diktat wird höchstens einmal per Strg+V an den aktuellen nativen Fokus übergeben. Zielwechsel bis zum serialisierten Einfügepunkt wählen das neue Ziel; ein früheres Feld wird nicht festgehalten und UIA-Feldmerkmale sind keine Voraussetzung. Der native Fokus muss während des kurzen Commit stabil sein und die eigene Clipboard-Transaktion gültig bleiben. Hugin drückt kein Enter. Jedes aktuelle fertige Diktat ersetzt zuerst den bisherigen Zwischenablageinhalt und bleibt für Strg+V verfügbar. Fehler beim Schreiben oder fehlender nativer Fokus werden ausdrücklich gemeldet. Details: [aktueller Cursor](../2026-10-23-current-cursor/spec.md). |
 | REQ-004 | XBUTTON2/vordere Taste oder Strg+Alt+V liest die aktuelle kopierbare Textauswahl lokal vor. Ein weiterer Druck stoppt auch Erfassung, Vorbereitung und Erzeugung. Ohne aktuelle Auswahl keine Vorlesung von altem Zwischenablagetext. |
 | REQ-005 | Diktat hat Vorrang: ausstehende TTS-Daten entwerten, Ausgabe stoppen, Stille der eigenen Audioausgabe bestätigen, dann Mikrofon öffnen. Während Aufnahme, Transkription oder Textübergabe startet kein Vorlesen. Kein automatisches Fortsetzen. |
 | REQ-006 | Freya und Tyr verwenden die bisherigen Referenz-WAVs, Referenztexte, Modellrevision und Inferenzparameter unverändert. Anzeigename und Profilidentität bleiben getrennt. Kein automatischer Stimmwechsel bei Fehlern. |
@@ -84,7 +84,7 @@ V1 enthält keine KI-Textkorrektur, Übersetzung, Sprachbefehle, dauerhafte Hist
 | --- | --- | --- |
 | AC-001 | Physisches XBUTTON1 und Alt+Y starten/stoppen jeweils genau einmal; Halten erzeugt keine Doppelaktion; XBUTTON1/2 navigieren nicht im Browser. Flags der gemessenen Logitech-Eingaben sind enthalten. | REQ-001 |
 | AC-002 | Deutsches Referenzdiktat wird nach Stop lokal erkannt; Aufnahmebeginn wartet weder auf Whisper-Laden noch Qwen-GPU-Abbruch. | REQ-002, NFR-001 |
-| AC-003 | Ergebnis erscheint genau einmal im unveränderten Ziel ohne Enter. Fenster-/Control-Wechsel, geänderte Auswahl und unprüfbare Ziele verhindern automatisches Einfügen; RAM-Ergebnis und erfolgreich veröffentlichter Zwischenablagetext bleiben verfügbar. | REQ-003 |
+| AC-003 | Einmalige Übergabe ohne Enter an den am Commit aktuellen Fokus, auch nach Fenster-/Control-/Cursorwechseln während Aufnahme, Transkription oder Warteschlange. Eine fehlende UIA-Feldmeldung blockiert nicht. Fehlender oder während des kurzen Commit wechselnder nativer Fokus verhindert Paste; RAM-Ergebnis und erfolgreich veröffentlichter Zwischenablagetext bleiben verfügbar. Die Annahme durch das Zielprogramm bleibt dessen Verhalten. | REQ-003 |
 | AC-004 | Auswahl aus Word, Browser und kopierbarem PDF wird gelesen; leere/fehlende Auswahl verwendet keinen alten Clipboard-Text. Vordere Taste stoppt auch vor dem ersten Ton. | REQ-004 |
 | AC-005 | Diktat während Auswahl-Erfassung, Modellvorbereitung, Generierung und Wiedergabe stoppt hörbare Ausgabe vor Mikrofonaufnahme. Auch nach einem vorherigen Vorlese-Stopp beginnt Aufnahme ohne Warten auf Qwen-GPU-Abbruch. Ein terminales altes TTS-Ereignis darf nur dessen Ressourcen freigeben; alte Audioblöcke starten keinen Ton. TTS startet während Diktat nicht. | REQ-005, NFR-003 |
 | AC-006 | Freya/Tyr-WAVs, Referenztexte und Modellhashes stimmen; beide Stimmen bestehen den Hörvergleich auf demselben synthetischen Text. Wechsel stoppt TTS und beeinflusst Diktat nicht; Auswahl überlebt Neustart. | REQ-006, REQ-008 |

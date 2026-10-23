@@ -7,8 +7,6 @@ from types import SimpleNamespace as NS
 import unittest
 
 from hugin.windows.clipboard import NativeClipboard, WindowTarget, ClipboardFailure, _GuiThreadInfo
-from hugin.windows.selection import TargetResult
-from test_delivery_attestation import IDENTITY
 
 
 class NativeFocusConsistency(unittest.TestCase):
@@ -51,7 +49,7 @@ class NativeFocusConsistency(unittest.TestCase):
     def test_stable_native_capture_and_commit_remain_usable(self):
         native,target,state,sent=self.backend()
         self.assertEqual(native.capture_native_target(),target)
-        native.commit_paste(7,target,lambda:True,lambda tx:True,commit=lambda tx,send:send())
+        native.commit_paste(7,lambda:True,lambda tx:True,commit=lambda tx,send:send())
         self.assertEqual(sent,[(0x56,100,200)])
 
     def test_focus_caret_or_foreground_change_during_waiting_capture_rejects_paste(self):
@@ -60,21 +58,24 @@ class NativeFocusConsistency(unittest.TestCase):
                 native,target,state,sent=self.backend()
                 state['after_selection']=lambda:state.update(change)
                 with self.assertRaises(ClipboardFailure):
-                    native.commit_paste(7,target,lambda:True,lambda tx:True,
+                    native.commit_paste(7,lambda:True,lambda tx:True,
                         commit=lambda tx,send:send())
                 self.assertEqual(sent,[])
 
-    def test_focus_change_during_last_uia_confirmation_rejects_paste(self):
-        native,target,state,sent=self.backend();target=replace(target,uia=IDENTITY)
-        class Lease:
-            result=TargetResult('target_captured',IDENTITY)
-            def prepare(self):return self.result
-            def confirm(self):
-                state.update(hwnd=300,focus=400)
-                return self.result
-            def close(self):pass
-        native._selection_probe=NS(begin_delivery=lambda *a:Lease())
+    def test_focus_change_during_authorization_rejects_paste(self):
+        native,target,state,sent=self.backend()
+        def authorize(transaction):
+            state.update(hwnd=300,focus=400);return True
         with self.assertRaises(ClipboardFailure):
-            native.commit_paste(7,target,lambda:True,lambda tx:True,
+            native.commit_paste(7,lambda:True,authorize,
                 commit=lambda tx,send:send())
         self.assertEqual(sent,[])
+
+    def test_switch_while_waiting_for_owner_chooses_new_window(self):
+        native,target,state,sent=self.backend()
+        def commit(transaction,send):
+            state.update(hwnd=300,focus=400)
+            send()
+        actual=native.commit_paste(7,lambda:True,lambda tx:True,commit=commit)
+        self.assertEqual(sent,[(0x56,300,400)])
+        self.assertEqual((actual.hwnd,actual.focus),(300,400))

@@ -1,0 +1,46 @@
+# Diktat am aktuellen Cursor
+
+Brian meldet erneut target_unverifiable in Hugin1.0.0 nach Zielwechseln.
+Die Diagnose belegt: Text kopiert, native Erfassung erfolgreich, UIA-Feld
+abgewiesen, keine automatische Übergabe. Die genaue interne UIA-Eigenschaft
+dieses Fehlversuchs ist unbekannt. Eine parallele45-Sekunden-Leseprobe ergab
+110 technische Stichproben:23 nicht textfähige Codex-Fokusmeldungen,
+29 gültige Edit-Meldungen sowie58 andere Fokusmeldungen beim Wechseln.
+Es wurden keine Sprach-, Feld-, Zwischenablageinhalte oder Fenstertitel gespeichert.
+
+Whispering7.11.0s fixierter [Textservice](https://github.com/EpicenterHQ/epicenter/blob/a6b15c28db9076742d7ae7014f8ec9f97aa615d1/apps/whispering/src/lib/services/isomorphic/text/desktop.ts)
+ruft [write_text](https://github.com/EpicenterHQ/epicenter/blob/a6b15c28db9076742d7ae7014f8ec9f97aa615d1/apps/whispering/src-tauri/src/lib.rs#L195-L240)
+auf: Text publizieren,50ms warten, Strg+V an den aktuellen Fokus,100ms warten,
+vorherigen Zwischenablagetext gegebenenfalls wiederherstellen. Es hält dort
+keine frühere UIA-Feldidentität fest. Das ist ein Quellvergleich dieses Pins,
+keine neue Laufzeitprobe von Whispering oder Aussage über alle Versionen.
+
+Hugin1.0.1 übernimmt die Wahl des aktuellen Fokus am serialisierten
+Einfügepunkt. Aufnahmeende und Transkription transportieren kein altes Ziel
+mehr. Auch ein Wechsel nach Aufnahmeende oder während der Übergabe-Warteschlange
+darf das neue Ziel wählen. Die UIA-Feldprüfung entfällt für Diktat; Vorlesen
+behält seine eigene unveränderte Auswahl-Erfassung. Die frühere UIA-Delivery-
+Attestierung einschließlich Integer-Offsets und separatem Prozessprotokoll wird
+zusammen mit ihren abgelösten Tests entfernt.
+
+Die native Erfassung erfolgt unmittelbar vor Strg+V. Ändert sich der native Fokus
+während dieses kurzen Commit, erfolgt keine Eingabe. Abbruch/Auftragsgeneration,
+einmaliger Commit, Transaktions-Token, Zwischenablagesequenz und Modifikatoren
+bleiben geprüft; erkannte native Passwortfelder bleiben gesperrt. Eine fehlende
+UIA-Feldmeldung ist kein Ablehnungsgrund mehr. Wie bei manuellem Einfügen bestimmt
+das Zielprogramm die Annahme; submitted beweist die Windows-Übergabe, nicht den
+Textverbrauch. Eine allgemeine Erkennung geschützter Browserfelder wird nicht
+behauptet. Es gibt weder Enter noch Fokusaktivierung noch wiederholtes Paste.
+
+Der Diktattext bleibt weiterhin für Strg+V erhalten. Späteres Kopieren hat
+Vorrang. capture_native beschreibt nun die Erfassung beim Commit;
+capture_field=not_required beschreibt den bewusst entfallenen UIA-Schritt.
+config/targets.json v3 benennt die generische Paste-Freigabe current_focus.
+Die bestehenden gemessenen Nachlaufzeiten werden weiterverwendet, ohne eine
+weitere Veröffentlichung oder Wiederherstellung der Diktat-Zwischenablage.
+
+Verifikation und Auslieferungsstand werden im
+[exakten Handoff](../handoffs/2026-10-23-current-cursor-delivery.md) fortgeführt.
+Der unveränderte1.0.0-Installer bleibt der Rückweg. Die echte Windows-Anmeldung
+ist weiterhin eine eigenständige offene Abnahme; die Bestätigung der vier
+physischen Maus-/Tastenabläufe vom22.10.2026 bleibt auf PR49 gespeichert.

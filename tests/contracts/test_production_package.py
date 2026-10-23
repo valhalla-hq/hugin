@@ -65,4 +65,4 @@ class ProductionPackage(unittest.TestCase):
             with tarfile.open(fileobj=io.BytesIO(archive)) as files:files.extractall(exported,filter='data')
             verify_voice_assets(load_settings(exported))
             approvals=load_target_approvals(exported)
-            self.assertIsNotNone(approvals.verified_edit)
+            self.assertIsNotNone(approvals.current_focus)

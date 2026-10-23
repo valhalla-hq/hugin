@@ -93,7 +93,7 @@ class WordReadingContracts(unittest.TestCase):
         self.assertEqual(new.kind,c.JobKind.DICTATION)
         self.assertEqual(core.snapshot().gpu_slot,alignment)
         core.dispatch(c.RecordingStarted(new));core.dispatch(c.DictationToggle())
-        core.dispatch(c.RecordingStopped(new,b'\0\0'*160,'field'))
+        core.dispatch(c.RecordingStopped(new,b'\0\0'*160))
         self.assertEqual(core.snapshot().gpu_slot,alignment)
         core.dispatch(c.EngineAlignment(alignment,AlignmentResult('rejected_path',())))
         effects=core.dispatch(c.EngineTerminal(alignment))

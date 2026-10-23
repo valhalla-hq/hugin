@@ -40,12 +40,16 @@ class Capture:
 
 class Clipboard:
     def __init__(self): self.count=0;self.text=None;self.delivered=threading.Event()
-    def capture_target(self): return NS(target='synthetic-memory-target')
-    def deliver(self,text,target,still_current,*,authorize):
-        accepted=still_current() and authorize('synthetic-memory-transaction')
-        if accepted:
-            self.count+=1;self.text=text;self.delivered.set()
-        return NS(submitted=accepted,restored=True)
+    def deliver(self,text,still_current,*,authorize,commit):
+        accepted=False
+        def send():
+            nonlocal accepted
+            accepted=still_current() and authorize('synthetic-memory-transaction')
+            if accepted:
+                self.count+=1;self.text=text;self.delivered.set()
+        commit('synthetic-memory-transaction',send)
+        return NS(status='submitted' if accepted else 'cancelled',submitted=accepted,
+                  copied=accepted,capture_status='native_target_captured' if accepted else 'not_attempted')
     def close(self): self.text=None
 
 

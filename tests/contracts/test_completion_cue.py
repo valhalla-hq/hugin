@@ -69,9 +69,9 @@ class CompletionCueContracts(unittest.TestCase):
             with self.subTest(failure=failure):
                 self.setUp()
                 if failure=='capture':
-                    self.clipboard.capture_target=lambda **_:NS(status='target_unverifiable',target=None)
+                    self.clipboard.deliver=lambda *a,**k:NS(capture_status='target_unverifiable',status='target_unverifiable',copied=True,submitted=False)
                 else:
-                    self.clipboard.deliver=lambda *a,**k:NS(status='clipboard_failed',
+                    self.clipboard.deliver=lambda *a,**k:NS(capture_status='native_target_captured',status='clipboard_failed',
                         submitted=failure=='partial',copied=failure=='partial')
                 self.finish(self.recognize())
                 self.assertNotIn('complete_cue',self.calls)
