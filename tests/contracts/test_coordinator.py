@@ -30,7 +30,7 @@ class CoordinatorContracts(unittest.TestCase):
 
     def stop(self, job):
         self.core.dispatch(DictationToggle())
-        return self.effects(RecordingStopped(job, b'\x00\x00' * 4, 'synthetic-target'), BeginEngine)
+        return self.effects(RecordingStopped(job, b'\x00\x00' * 4), BeginEngine)
 
     def initialized(self, operation):
         self.core.dispatch(EngineReady(operation))
@@ -186,7 +186,7 @@ class CoordinatorContracts(unittest.TestCase):
         stop, = self.effects(Cancel(), StopRecording)
         self.assertTrue(stop.discard)
         self.assertEqual(len(self.effects(DictationToggle(), Busy)), 1)
-        self.assertEqual(self.effects(RecordingStopped(job, b'late', 'target'), BeginEngine), [])
+        self.assertEqual(self.effects(RecordingStopped(job, b'late'), BeginEngine), [])
         self.assertEqual(self.core.snapshot().state, State.IDLE)
         self.assertEqual(self.core.dispatch(RecordingStarted(job)), ())
 

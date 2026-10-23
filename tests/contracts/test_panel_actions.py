@@ -24,16 +24,6 @@ class PanelActions(unittest.TestCase):
         self.controller.command('panel_dictation',old);self.pump()
         self.assertEqual(self.controller.core.snapshot().state,c.State.RECORDING)
 
-    def test_target_is_bound_at_finish_and_shortcut_can_finish_button_recording(self):
-        captured=[]
-        self.clipboard.capture_native_target=lambda:captured.append('field-at-finish') or NS(
-            status='native_target_captured',target='field-at-finish')
-        self.clipboard.capture_target=lambda **kw:NS(status='target_captured',target=kw['expected'])
-        self.controller.command('panel_dictation',self.controller.view().panel_token);self.pump()
-        self.assertEqual(captured,[])
-        self.controller.command('dictation');self.pump()
-        self.assertEqual(captured,['field-at-finish'])
-        self.assertEqual(self.controller.view().dictation_control,'')
 
     def test_read_button_can_stop_during_selection_before_any_section(self):
         from test_completion_cue import Deferred
@@ -49,20 +39,6 @@ class PanelActions(unittest.TestCase):
         self.assertIsNone(self.controller.core.snapshot().job)
         self.assertFalse(self.pool.starts)
 
-    def test_button_finish_without_target_stops_and_keeps_transcript_without_delivery(self):
-        self.clipboard.capture_native_target=lambda:NS(target=None,status='target_unverifiable')
-        self.clipboard.capture_target=lambda **kw:self.fail('no target must not reach probe')
-        self.controller.command('panel_dictation',self.controller.view().panel_token);self.pump()
-        self.assertTrue(self.controller.microphone.owned)
-        self.controller.command('panel_dictation',self.controller.view().panel_token);self.pump()
-        self.assertFalse(self.controller.microphone.owned)
-        self.pool.future.set_result({'engine_instance':'actual-stt','device':'cpu'});self.pump()
-        request,generation=self.pool.inference[-1]
-        self.controller.worker_event(dict(type='result',engine='stt',engine_instance='actual-stt',
-            request_id=request,generation=generation,text='Synthetic retained text'))
-        self.pump()
-        self.assertEqual(self.controller.view().text,'Synthetic retained text')
-        self.assertEqual(self.controller.core.snapshot().error.code,'target_unverifiable')
 
     def test_read_is_disabled_during_dictation_and_button_start_interrupts_reading(self):
         self.controller.command('panel_read',self.controller.view().panel_token);self.pump()

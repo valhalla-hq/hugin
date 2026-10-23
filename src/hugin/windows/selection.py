@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 import json
-import math
 import os
 from pathlib import Path
 import struct
@@ -16,7 +15,7 @@ import sys
 import threading
 import time
 
-from hugin.windows.clipboard import MAX_TEXT_BYTES, ClipboardFailure, WindowTarget,UiaTargetIdentity
+from hugin.windows.clipboard import MAX_TEXT_BYTES, ClipboardFailure, WindowTarget
 
 REQUEST_LIMIT = 4092
 PROBE_MEMORY = 256 * 1024 * 1024
@@ -33,17 +32,6 @@ CODE_STATUSES = {code: status for status, code in STATUS_CODES.items()}
 class SelectionResult:
     status: str
     text: str | None = field(default=None, repr=False)
-
-
-@dataclass(frozen=True)
-class TargetResult:
-    status: str
-    identity: UiaTargetIdentity | None = None
-    verified_at: float | None = None
-
-
-TARGET_CODES={'target_captured':0,'target_unverifiable':1,'target_changed':3,
-              'target_probe_failed':5,'dependency_unavailable':6,'cancelled':7}
 
 
 def read_exact(stream, length):
@@ -64,7 +52,7 @@ def write_all(stream,data):
         view=view[written:]
 
 
-def decode_operation(data: bytes):
+def decode_request(data: bytes)->WindowTarget:
     if len(data) > REQUEST_LIMIT:
         raise ValueError('selection request limit')
     def unique(pairs):
@@ -78,9 +66,8 @@ def decode_operation(data: bytes):
     if not isinstance(value,dict) or type(value.get('version')) is not int:
         raise ValueError('selection request version')
     if (value['version']!=5 or set(value)!={'version','operation','target'}
-            or value['operation'] not in ('selection','target','delivery')):
+            or value['operation'] != 'selection'):
         raise ValueError('selection request version')
-    operation=value['operation']
     target = value['target']
     keys = {'hwnd', 'focus', 'pid', 'thread', 'process_created', 'control_class', 'caret', 'selection', 'native_editable','package_family'}
     if not isinstance(target, dict) or set(target) != keys:
@@ -105,77 +92,17 @@ def decode_operation(data: bytes):
             if name == 'caret' and (not 0 < item[0] < 1 << 64 or any(not -(1 << 31) <= part < 1 << 31 for part in item[1:])):
                 raise ValueError('selection target caret')
             target[name] = tuple(item)
-    return operation,WindowTarget(**target)
+    return WindowTarget(**target)
 
 
-def decode_request(data:bytes)->WindowTarget:
-    return decode_operation(data)[1]
-
-
-def encode_request(target: WindowTarget,*,operation='selection') -> bytes:
+def encode_request(target: WindowTarget) -> bytes:
     if not isinstance(target,WindowTarget):raise ValueError('invalid native target')
-    fields=asdict(target.without_uia);fields.pop('uia')
-    envelope={'version':5,'operation':operation,'target':fields}
+    fields=asdict(target)
+    envelope={'version':5,'operation':'selection','target':fields}
     data = json.dumps(envelope, ensure_ascii=True,
                       separators=(',', ':')).encode('utf-8')
     decode_request(data)
     return struct.pack('!I', len(data)) + data
-
-
-def _decode_identity(value):
-    if not isinstance(value,dict) or set(value)!={'focus_id','root_id','start_id','end_id','focus_pid','selection','start_relation','end_relation'}:
-        raise ValueError('target metadata fields')
-    for name in ('focus_id','root_id','start_id','end_id','selection'):
-        parts=value[name]
-        if not isinstance(parts,list):
-            raise ValueError('target runtime identity')
-        value[name]=tuple(parts)
-    return UiaTargetIdentity(**value)
-
-
-def encode_target_response(result:TargetResult)->bytes:
-    if result.status not in TARGET_CODES:raise ValueError('target status')
-    if result.status=='target_captured':
-        if not isinstance(result.identity,UiaTargetIdentity):raise ValueError('missing target metadata')
-        if type(result.verified_at) is not float or not math.isfinite(result.verified_at) or result.verified_at<=0:
-            raise ValueError('invalid target verification time')
-        data=json.dumps({'identity':asdict(result.identity),'verified_at':result.verified_at},
-            separators=(',',':')).encode('ascii')
-        _decode_identity(json.loads(data)['identity'])
-        if len(data)>REQUEST_LIMIT:raise ValueError('target metadata limit')
-    else:
-        if result.identity is not None or result.verified_at is not None:raise ValueError('unexpected target metadata')
-        data=b''
-    return HEADER.pack(4,TARGET_CODES[result.status],len(data))+data
-
-
-def read_target_frame(stream)->TargetResult:
-    version,code,length=HEADER.unpack(read_exact(stream,HEADER.size))
-    codes={code:status for status,code in TARGET_CODES.items()}
-    if version!=4 or code not in codes or length>REQUEST_LIMIT or (code==0)!=(length>0):
-        raise ValueError('invalid target frame')
-    def unique(pairs):
-        value={}
-        for name,item in pairs:
-            if name in value:raise ValueError('duplicate target metadata')
-            value[name]=item
-        return value
-    identity,verified_at=None,None
-    if length:
-        value=json.loads(read_exact(stream,length),object_pairs_hook=unique)
-        if not isinstance(value,dict) or set(value)!={'identity','verified_at'}:
-            raise ValueError('target attestation fields')
-        verified_at=value['verified_at']
-        if type(verified_at) is not float or not math.isfinite(verified_at) or verified_at<=0:
-            raise ValueError('invalid target verification time')
-        identity=_decode_identity(value['identity'])
-    return TargetResult(codes[code],identity,verified_at)
-
-
-def decode_target_response(stream)->TargetResult:
-    result=read_target_frame(stream)
-    if stream.read(1)!=b'':raise ValueError('trailing target metadata')
-    return result
 
 
 def encode_response(status: str, text: str | None = None) -> bytes:
@@ -209,133 +136,6 @@ def decode_response(stream) -> SelectionResult:
     return SelectionResult(status, text)
 
 
-class DeliveryLease:
-    """Prepare off-owner; consume one <=50ms-old attestation without I/O.
-
-    The worker owns prepare()/close(); confirmation consumes parsed facts only.
-    This is never reused across delivery transactions or retained as a cache.
-    """
-    def __init__(self,probe,cancelled):
-        self._probe=probe;self._cancelled=cancelled
-        self.result=TargetResult('target_probe_failed')
-        self._confirmation=TargetResult('target_probe_failed')
-        self._initial=threading.Event();self._confirmed=threading.Event()
-        self._request=threading.Event();self._sent=threading.Event();self._stderr=threading.Event()
-        self._stop=threading.Event();self._gate=threading.Lock()
-        self._fault=False;self._closed=False;self._used=False;self._lock_held=True
-        self._preparing=False;self._prepared=None;self._channel_complete=False
-        self._expires=0
-
-    def _failed(self):
-        if self._stop.is_set():
-            self._initial.set();self._confirmed.set();return
-        self._fault=True;self.result=TargetResult('target_probe_failed')
-        self._confirmation=TargetResult('target_probe_failed')
-        self._initial.set();self._confirmed.set()
-
-    def start(self,target):
-        probe=self._probe;deadline=time.monotonic()+probe.timeout
-        request=encode_request(target,operation='delivery')
-        try:probe._process=probe._spawn_process()
-        except Exception as error:
-            self.result=TargetResult(probe._spawn_failure(error,'target_probe_failed','target_cleanup_failed'))
-            return
-        process=probe._process
-        def write():
-            try:
-                write_all(process.stdin,request)
-                self._request.wait()
-                if self._stop.is_set():return
-                write_all(process.stdin,b'\x01');process.stdin.close();self._sent.set()
-            except Exception:self._failed()
-        def read():
-            try:
-                self.result=read_target_frame(process.stdout);self._initial.set()
-                if self.result.status!='target_captured':return
-                self._confirmation=decode_target_response(process.stdout)
-                # Immutable frame/EOF barriers precede native process unwind.
-                # Ownership remains with the probe until close(), off-owner.
-                if not self._stderr.wait(1) or self._fault:self._failed()
-                else:
-                    code=process.poll()
-                    if code is not None and code!=0:self._failed()
-                    else:self._channel_complete=True
-                self._confirmed.set()
-            except Exception:self._failed()
-        def drain():
-            try:
-                if process.stderr.read(4096):self._failed()
-            except Exception:self._failed()
-            finally:self._stderr.set()
-        probe._threads=[]
-        for name,function in (('write',write),('read',read),('stderr',drain)):
-            thread=threading.Thread(target=function,daemon=True,name='hugin-delivery-'+name)
-            probe._threads.append(thread);thread.start()
-        while not self._initial.wait(.005):
-            if self._cancelled():self.result=TargetResult('cancelled');return
-            if time.monotonic()>=deadline:self.result=TargetResult('target_probe_timeout');return
-        if self._cancelled():self.result=TargetResult('cancelled')
-        if self._fault:self.result=TargetResult('target_probe_failed')
-        self._expires=deadline
-
-    def prepare(self):
-        """Provider and private pipe waits belong to the delivery worker."""
-        with self._gate:
-            if self._closed or self._preparing:return TargetResult('commit_rejected')
-            self._preparing=True
-            if self.result.status!='target_captured' or self._fault:return TargetResult('target_probe_failed')
-            if self._cancelled():return TargetResult('cancelled')
-            deadline=self._expires
-            if time.monotonic()>=deadline:return TargetResult('target_probe_timeout')
-            self._request.set()
-            while not (self._confirmed.is_set() and self._sent.is_set()):
-                if self._fault:return TargetResult('target_probe_failed')
-                if self._cancelled():return TargetResult('cancelled')
-                remaining=deadline-time.monotonic()
-                if remaining<=0:return TargetResult('target_probe_timeout')
-                pending=self._sent if self._confirmed.is_set() else self._confirmed
-                pending.wait(min(.002,remaining))
-            if time.monotonic()>deadline:return TargetResult('target_probe_timeout')
-            if self._fault:return TargetResult('target_probe_failed')
-            if self._cancelled():return TargetResult('cancelled')
-            result=self._confirmation
-            if result.status=='target_captured' and result.identity!=self.result.identity:
-                return TargetResult('target_changed')
-            self._prepared=result
-            return result
-
-    def confirm(self):
-        """Single owner commit: no COM, pipe, thread join or process wait."""
-        with self._gate:
-            if self._closed or self._used:return TargetResult('commit_rejected')
-            self._used=True
-            if self._fault:return TargetResult('target_probe_failed')
-            if self._cancelled():return TargetResult('cancelled')
-            result=self._prepared
-            if result is None:return TargetResult('commit_rejected')
-            if result.status!='target_captured':return result
-            stamp=result.verified_at;now=time.monotonic()
-            if type(stamp) is not float or not math.isfinite(stamp) or stamp>now or stamp<=0:
-                return TargetResult('target_probe_failed')
-            if now-stamp>.05 or now>=self._expires:return TargetResult('target_probe_timeout')
-            return result
-
-    def abort_io(self):
-        with self._gate:
-            self._closed=True;self._cancelled=None
-            self._stop.set();self._request.set()
-
-    def close(self):
-        self.abort_io()
-        if not self._lock_held:return
-        try:
-            self._probe._cleanup()
-        except Exception:raise ClipboardFailure('target_cleanup_failed') from None
-        finally:
-            self._lock_held=False;self._probe._lock.release()
-        if self._fault:raise ClipboardFailure('target_probe_failed')
-
-
 class SelectionProbe:
     def __init__(self, *, spawn=None, timeout=2.0, cleanup_timeout=3.0):
         if not 0 < timeout <= 5 or not 0 < cleanup_timeout <= 5:
@@ -343,14 +143,7 @@ class SelectionProbe:
         self.spawn, self.timeout, self.cleanup_timeout = spawn, timeout, cleanup_timeout
         self._lock = threading.Lock()
         self._process = None
-        self._delivery:DeliveryLease|None=None
         self._threads: list[threading.Thread] = []
-
-    def read(self, target: WindowTarget, cancelled) -> SelectionResult:
-        return self._read(target,cancelled,operation='selection')
-
-    def capture_target(self,target:WindowTarget,cancelled)->TargetResult:
-        return self._read(target,cancelled,operation='target')
 
     def _spawn_process(self):
         if self.spawn is None:
@@ -371,17 +164,6 @@ class SelectionProbe:
             stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
             close_fds=True,creationflags=0x08000000,memory_limit=PROBE_MEMORY,env=environment)
 
-    def begin_delivery(self,target:WindowTarget,cancelled)->DeliveryLease:
-        if not self._lock.acquire(blocking=False):raise ClipboardFailure('target_probe_busy')
-        if self._process is not None:
-            self._lock.release();raise ClipboardFailure('target_cleanup_pending')
-        lease=DeliveryLease(self,cancelled);self._delivery=lease
-        try:lease.start(target)
-        except BaseException:
-            lease.close()
-            raise
-        return lease
-
     def _spawn_failure(self,error,failed,cleanup_failed):
         """Retain partial ownership before normalizing known launch failures."""
         self._process=getattr(error,'owner',None)
@@ -391,14 +173,13 @@ class SelectionProbe:
             return 'dependency_unavailable'
         return failed
 
-    def _read(self,target,cancelled,*,operation):
-        target_mode=operation=='target'
-        result_type=TargetResult if target_mode else SelectionResult
-        failed='target_probe_failed' if target_mode else 'selection_failed'
-        busy='target_probe_busy' if target_mode else 'selection_busy'
-        pending='target_cleanup_pending' if target_mode else 'selection_cleanup_pending'
-        cleanup_failed='target_cleanup_failed' if target_mode else 'selection_cleanup_failed'
-        timeout='target_probe_timeout' if target_mode else 'selection_timeout'
+    def read(self,target:WindowTarget,cancelled)->SelectionResult:
+        result_type=SelectionResult
+        failed='selection_failed'
+        busy='selection_busy'
+        pending='selection_cleanup_pending'
+        cleanup_failed='selection_cleanup_failed'
+        timeout='selection_timeout'
         if not self._lock.acquire(blocking=False):
             return result_type(busy)
         try:
@@ -407,7 +188,7 @@ class SelectionProbe:
             if cancelled():
                 return result_type('cancelled')
             try:
-                request = encode_request(target,operation=operation)
+                request = encode_request(target)
             except (ValueError, TypeError, UnicodeError):
                 return result_type('target_changed')
             deadline = time.monotonic() + self.timeout
@@ -431,7 +212,7 @@ class SelectionProbe:
 
             def read():
                 try:
-                    outcome['result'] = decode_target_response(stdout) if target_mode else decode_response(stdout)
+                    outcome['result'] = decode_response(stdout)
                 except Exception:
                     outcome['fault'] = True
                     outcome['result'] = result_type(failed)
@@ -485,12 +266,9 @@ class SelectionProbe:
             self._lock.release()
 
     def _cleanup(self):
-        if self._delivery is not None:self._delivery.abort_io()
         if self._process is None:
-            self._delivery=None
             return
-        attested=bool(self._delivery is not None and self._delivery._channel_complete)
-        if self._process.poll() is None and not attested:
+        if self._process.poll() is None:
             self._process.kill()
         try:code=self._process.wait(self.cleanup_timeout)
         except subprocess.TimeoutExpired:
@@ -507,8 +285,6 @@ class SelectionProbe:
         self._process.close()
         self._process = None
         self._threads = []
-        self._delivery=None
-        if attested and code!=0:raise ClipboardFailure('target_cleanup_failed')
 
     def close(self):
         with self._lock:

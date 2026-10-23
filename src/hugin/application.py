@@ -85,13 +85,6 @@ class _DeliveryCommit:
 
 
 @dataclass(frozen=True)
-class _CapturedTarget:
-    """One parsed capture outcome, passed opaquely through the reducer."""
-    status: str
-    target: object = None
-
-
-@dataclass(frozen=True)
 class _PanelInterruption:
     """An already accepted cancellation must finish for this exact job."""
     job: c.Job
@@ -99,6 +92,7 @@ class _PanelInterruption:
 
 
 _INPUT_STATUSES=frozenset(('not_run','not_attempted','native_target_captured',
+    'not_required',
     'target_captured','target_changed','target_unverifiable','target_unverified',
     'target_probe_timeout','target_probe_failed','target_probe_busy','target_cleanup_pending',
     'target_cleanup_failed','dependency_unavailable','unsupported','cancelled','submitted',
@@ -187,16 +181,6 @@ class Controller:
             if self._snapshot.job==job:self._input_checks[phase]=status
         return status
 
-    def _capture_target_outcome(self,job,phase,action):
-        """Field failures never reinterpret an already valid microphone capture."""
-        try:
-            result=action();value=getattr(result,'status',None);target=getattr(result,'target',None)
-            if type(value) is str and value in ('native_target_captured','target_captured') and target is None:
-                value='target_probe_failed'
-        except Exception:
-            value,target='target_probe_failed',None
-        status=self._input_status(job,phase,value)
-        return _CapturedTarget(status,target if status in ('native_target_captured','target_captured') else None)
 
     def _voice(self):
         path = self.settings.paths['state']/'preferences.json'
@@ -554,7 +538,7 @@ class Controller:
     def _effect(self, effect, audio_ack=None):
         if isinstance(effect,c.StartRecording):
             with self._lock:
-                self._input_checks=dict(capture_native='not_run',capture_field='not_run',clipboard='not_run',delivery='not_run')
+                self._input_checks=dict(capture_native='not_run',capture_field='not_required',clipboard='not_run',delivery='not_run')
             token=self._token(effect.job)
             def start():
                 try:
@@ -580,10 +564,6 @@ class Controller:
                     else: self._post(c.RecordingStarted(effect.job,_safe_error(error,'capture')))
             self._capture_submit(start)
         elif isinstance(effect,c.StopRecording):
-            target=None;native_status='not_attempted'
-            if not effect.discard:
-                native=self._capture_target_outcome(effect.job,'capture_native',self.clipboard.capture_native_target)
-                native_status,target=native.status,native.target
             token = self._token(effect.job)
             if effect.discard:
                 token.set()
@@ -592,7 +572,6 @@ class Controller:
                     except HuginError as error:self._post(_CueFailure(error,effect.job))
             def stop():
                 data,error = None,None
-                bound_target=_CapturedTarget(native_status,target)
                 try:
                     if effect.discard: self.microphone.cancel()
                     else:
@@ -602,15 +581,13 @@ class Controller:
                                 if not self.cues.play('end',effect.job,token.is_set) and not token.is_set():
                                     raise HuginError('audio_failed','capture_end_cue')
                             except Exception:self._post(_CueFailure(HuginError('audio_failed','capture_end_cue'),effect.job))
-                        if target is None:
-                            self._input_status(effect.job,'capture_field','not_attempted')
                 except Exception as cause:
                     error = _safe_error(cause,'capture')
                     try: self.microphone.cancel()
                     except HuginError: pass
                 if self.microphone.owned:
                     self._post(_Failure(HuginError('microphone_failed','capture_cleanup')))
-                else: self._post(c.RecordingStopped(effect.job,data,bound_target,error))
+                else: self._post(c.RecordingStopped(effect.job,data,error=error))
             self._capture_submit(stop)
         elif isinstance(effect,c.CaptureSelection):
             token = self._token(effect.job)
@@ -726,27 +703,14 @@ class Controller:
                 acknowledgement.result()
             def deliver():
                 try:
-                    captured=effect.target
-                    # Recognition may outlast a focus transition. Keep only the
-                    # native stop basis until final text exists; bind the field
-                    # once here, immediately before the existing commit proof.
-                    if (isinstance(captured,_CapturedTarget)
-                            and captured.status=='native_target_captured'
-                            and captured.target is not None and current()):
-                        native_target=captured.target
-                        captured=self._capture_target_outcome(effect.job,'capture_field',
-                            lambda:self.clipboard.capture_target(expected=native_target,
-                                cancelled=lambda:not current()))
-                    eligible=isinstance(captured,_CapturedTarget) and captured.status=='target_captured' and captured.target is not None
-                    result=self.clipboard.deliver(effect.text,captured.target if eligible else None,current,
+                    # Destination belongs to the native commit, after the
+                    # owner queue. No earlier field/UIA identity is retained.
+                    result=self.clipboard.deliver(effect.text,current,
                         authorize=authorize,commit=commit)
+                    self._input_status(effect.job,'capture_native',result.capture_status)
                     self._input_status(effect.job,'clipboard','copied' if result.copied else result.status)
-                    if not eligible and result.copied:
-                        self._input_status(effect.job,'delivery','not_attempted')
-                        error=_input_error(captured.status if isinstance(captured,_CapturedTarget) else 'unknown','target_capture')
-                    else:
-                        status=self._input_status(effect.job,'delivery',result.status)
-                        error=None if result.status=='submitted' and result.submitted and result.copied else _input_error(status,'delivery')
+                    status=self._input_status(effect.job,'delivery',result.status)
+                    error=None if result.status=='submitted' and result.submitted and result.copied else _input_error(status,'delivery')
                 except BaseException as cause:error=_safe_error(cause,'delivery')
                 self._post(c.DeliveryFinished(effect.job,error))
             ticket=Future()
@@ -1071,8 +1035,8 @@ class Application:
                 clipboard.approve_target_class(approval.control_class,approval.restore_delay_seconds,
                     package_family=approval.package_family)
             for name in approvals.capture_fallback: clipboard.approve_capture_target_class(name)
-            if approvals.verified_edit is not None:
-                clipboard.approve_verified_edits(approvals.verified_edit.restore_delay_seconds)
+            if approvals.current_focus is not None:
+                clipboard.approve_current_focus(approvals.current_focus.restore_delay_seconds)
             controller = Controller(self.settings,inputs=inputs,
                 microphone=Microphone(self.settings.limits['capture_bytes']),
                 output=PCMOutput(buffer_ms=max(1,self.settings.limits['audio_buffer_ms']//2)),

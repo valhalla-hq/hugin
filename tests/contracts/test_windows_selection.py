@@ -225,7 +225,7 @@ class ProbeProcessContracts(unittest.TestCase):
             root=Path(directory);base=root/'base';base.mkdir()
             foreign=root/'foreign-python.exe';foreign.touch()
             for executable in (base/'missing-python.exe',foreign):
-                for operation in ('read','capture_target','begin_delivery'):
+                for operation in ('read',):
                     with self.subTest(executable=executable.name,operation=operation):
                         spawn=Mock(side_effect=AssertionError('invalid runtime must not spawn'))
                         probe=SelectionProbe(spawn=spawn);lease=None
@@ -245,7 +245,7 @@ class ProbeProcessContracts(unittest.TestCase):
     def test_unknown_spawn_failure_status_is_not_forwarded(self):
         from hugin.windows.clipboard import ClipboardFailure
         for failure in (ClipboardFailure('captured'),ClipboardFailure('PRIVATE'),OSError('PRIVATE')):
-            for operation in ('read','capture_target','begin_delivery'):
+            for operation in ('read',):
                 probe=SelectionProbe();lease=None
                 try:
                     with patch.object(probe,'_spawn_process',side_effect=failure):
@@ -259,7 +259,7 @@ class ProbeProcessContracts(unittest.TestCase):
 
     def test_partial_spawn_owner_takes_precedence_and_survives_failed_cleanup(self):
         from hugin.windows.clipboard import ClipboardFailure
-        for operation in ('read','capture_target','begin_delivery'):
+        for operation in ('read',):
             owner=FakeProcess(b'',blocked=True,kill_fails=True)
             failure=ClipboardFailure('dependency_unavailable');failure.owner=owner
             probe=SelectionProbe();lease=None
@@ -271,7 +271,7 @@ class ProbeProcessContracts(unittest.TestCase):
                 with self.assertRaises(ClipboardFailure):
                     lease.close() if lease is not None else probe.close()
                 self.assertIs(probe._process,owner)
-                self.assertEqual(probe.capture_target(TARGET,lambda:False).status,'target_cleanup_pending')
+                self.assertEqual(probe.read(TARGET,lambda:False).status,'selection_cleanup_pending')
             finally:
                 owner.kill_fails=False
                 if lease is not None:lease.close()

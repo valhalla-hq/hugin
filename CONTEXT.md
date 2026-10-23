@@ -1,5 +1,50 @@
 # Hugin Context
 
+Current task23October2026: current-cursor-delivery on Mjolnir. Brian reports
+target_unverifiable again in installed1.0.0 after switching targets. Transcript
+is copied but the UIA field gate prevents paste. He requests Whispering-style
+insertion at the current cursor. Source candidate1.0.1 selects native focus at
+serialized commit; no earlier target/UIA delivery proof is retained.531 full
+checks, independent review, native clipboard/reading probes and43 candidate
+checks pass. App-only1.0.1 is built at Hugin-Releases/1.0.1-9b2b40c586ac/app;
+Brian confirms Codex and Google search, but Teams still rejects. A22-second
+native-only probe observes110/110 samples with a focused cross-process child
+of TeamsWebView (Chrome_WidgetWin_1);1.0.1's same-PID gate rejects all. Source
+candidate1.0.2 replaces it with the native HWND child relationship, preserving
+the final commit guard. Two new repros red before;46 focused and536 full tests
+pass, docs valid, both independent reviews clear. Immutable app-only1.0.2 is
+built from3fd3ca9988c20eb530d62f427e73ce78ce14e6d3 at
+C:/Users/brian/Hugin-Releases/1.0.2-3fd3ca9988c2/app.48 actual-candidate tests
+pass without skips, including two normal hidden input-profile startups. State,
+40 DSP caches and startup preserved; candidate opened09:10:34CEST after Brian's
+normal Quit. Own child/window observed. Brian confirms Teams paste via Alt+Y;
+rear mouse button has no effect only in Teams, still works in Codex. Read-only
+Logi Options+ settings show a Teams override: rear=microphone toggle,
+front=camera toggle; global assignments are WIN_BACK/WIN_FORWARD. No hook/code
+change is justified by that configuration. Two original Teams assignments are
+backed up outside Git. Brian changed both Teams assignments and confirms
+dictation start/stop/insertion via rear mouse now works. Read-only database
+readback confirms persisted Teams and global WIN_BACK/WIN_FORWARD. Forward
+reading in Teams was not separately repeated. This bounded cursor fix is
+accepted; final checked private integration is tracked by PR50 and its exact
+handoff. Never write Options+' live SQLite database directly.
+Installed1.0.0/startup remain unchanged.
+New installer preparation is blocked by automatic approval review of missing
+Inno compiler provisioning (only reason: blocked by policy); no retry through
+another launcher. Details and exact current handoff:
+handoffs/2026-10-23-current-cursor-delivery.md.
+
+CI budget constraint reported by Brian23October:1,802/2,000 organization Actions
+minutes consumed at report time (198 left, possibly less now), reset1November.
+No live billing readback claimed. Bundle pushes, prefer relevant local checks,
+keep required hosted gates, no paid extra minutes or blanket CI disablement.
+
+Separate checkpoint PR49 preserves Brian's successful manual restart and four
+physical mouse/hotkey tests on22October. Actual Windows-login startup remains
+unproven and separately open; no logout/reboot is requested by this bug fix.
+
+## Previous production result (22October2026)
+
 Status am22.10.2026: Hugin1.0.0 ist als privater Offline-Installer gebaut,
 im regulären Benutzerordner installiert und nach Reparaturinstallation geprüft.
 Ergebnis abgeschlossen: hugin-production-build, Mjolnir. PR47 ist checked als
@@ -66,24 +111,23 @@ Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
 
 ## Current intent and authorization
 
-Build the productive Windows app and offline installer from main5140213.
-Verify per-user installation, startup readback, repeated starts/reinstallation
-and permanent input profile while preserving accepted clipboard/UI/audio timing.
-Specifications: specs/2026-10-22-production-build/. Routine checked private
-integration and the final local installation switch are authorized. Actual
-next-login evidence remains separate; no sign-out is implied.
+Correct dictation target selection to follow the current cursor even after
+window/field switches, compare pinned Whispering source, verify guards and
+prepare an additive update. Preserve voices/timing/input/startup/preferences
+and immutable1.0.0 rollback. Routine checked private completion is authorized;
+actual login acceptance remains separate. Spec: specs/2026-10-23-current-cursor/.
 
 ## Active Handoff
 
-- `handoffs/2026-10-22-production-build.md`
-- Branch: codex/hugin-production-build-mjolnir.
-- Worktree: C:/Users/brian/brian-projects/worktrees/hugin/hugin-production-build-mjolnir.
-- Base: 5140213e6019f3b9f47025cd2f6ce08ba15cbce7.
-- Spec/plan/tasks: specs/2026-10-22-production-build/.
-- Evidence/limits: docs/review-fixes-2026-10-22.md.
-- PR: https://github.com/valhalla-hq/hugin/pull/47 (Draft).
-- Control: 05181f9a99374ff8b298c626f903304f36ac8926.
-- Ownership active for production-build implementation and verification.
+- `handoffs/2026-10-23-current-cursor-delivery.md`
+- Branch: codex/current-cursor-delivery-mjolnir.
+- Worktree: C:/Users/brian/brian-projects/worktrees/hugin/current-cursor-delivery-mjolnir.
+- Base: e82e9a625f897a0eda33479637a3a802bd2d2636.
+- Spec/plan/tasks: specs/2026-10-23-current-cursor/.
+- Evidence/limits: docs/current-cursor-2026-10-23.md.
+- PR: https://github.com/valhalla-hq/hugin/pull/50 (Draft).
+- Control:46e362d1d3284d712757fc2f0e67a165dbf3a41c.
+- Ownership active for current-cursor-delivery; PR49 checkpoint untouched.
 - Prior completed review-fixes handoff: handoffs/2026-10-22-review-fixes.md.
 - Prior accepted natural-sections result: handoffs/2026-10-22-natural-sections.md.
 - Prior accepted codec optimization: handoffs/2026-10-22-tts-throughput.md.

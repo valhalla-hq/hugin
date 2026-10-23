@@ -42,6 +42,7 @@ class WindowsAbiContracts(unittest.TestCase):
             name='Edit';style=0;enabled=True;caret=200;selection=(7,10);reply=True
             after_selection=lambda self:None
             def GetForegroundWindow(self):return 100
+            def IsChild(self,parent,child):return (parent,child)==(100,200)
             def GetWindowThreadProcessId(self,hwnd,pointer):
                 ctypes.cast(pointer,ctypes.POINTER(W.DWORD))[0]=3;return 4
             def GetGUIThreadInfo(self,thread,pointer):
@@ -75,7 +76,7 @@ class WindowsAbiContracts(unittest.TestCase):
             elif kind=='inverted':user.selection=(10,7)
             elif kind=='timeout':user.reply=False
             target=backend.capture_native_target()
-            self.assertEqual((target.native_editable,target.verifiable),(kind in ('edit','rich'),)*2,kind)
+            self.assertEqual((target.native_editable,target.native_editable),(kind in ('edit','rich'),)*2,kind)
         backend,user=self.native_target_fixture();user.style=0x20
         with self.assertRaises(ClipboardFailure) as failure:backend.capture_native_target()
         self.assertEqual(failure.exception.status,'target_unverifiable')
@@ -83,7 +84,7 @@ class WindowsAbiContracts(unittest.TestCase):
     def test_native_readonly_change_during_selection_query_is_not_proven_editable(self):
         backend,user=self.native_target_fixture()
         user.after_selection=lambda:setattr(user,'style',0x800)
-        self.assertFalse(backend.capture_native_target().verifiable)
+        self.assertFalse(backend.capture_native_target().native_editable)
 
     def test_x64_layouts_match_win32_headers(self):
         if ctypes.sizeof(ctypes.c_void_p) != 8:
@@ -390,6 +391,7 @@ class WindowsAbiContracts(unittest.TestCase):
         target=WindowTarget(100,200,3,4,500,'Edit',(200,1,2,3,4),(2,2))
         backend.capture_target = lambda **kwargs: events.append('target') or target
         backend.capture_native_target=lambda:events.append('native') or target
+        backend.user.GetWindowLongPtrW=lambda *args:0
         backend._native_focus=lambda:events.append('focus') or (
             target.hwnd,target.focus,target.pid,target.thread,target.caret)
         backend.modifiers_down = lambda: events.append('modifiers') or False
@@ -399,8 +401,8 @@ class WindowsAbiContracts(unittest.TestCase):
             self.assertIs(transaction, sentinel)
             events.append('authorize')
             return True
-        backend.commit_paste(10,target,lambda:events.append('current') or True,authorize,sentinel)
-        self.assertEqual(events,['lock','sequence','native','sequence','modifiers','current','authorize','focus','send','unlock'])
+        backend.commit_paste(10,lambda:events.append('current') or True,authorize,sentinel)
+        self.assertEqual(events,['lock','sequence','current','native','sequence','modifiers','current','authorize','focus','send','unlock'])
 
     def test_failed_close_after_send_keeps_possible_submission_fact(self):
         backend = object.__new__(NativeClipboard)
@@ -424,10 +426,11 @@ class WindowsAbiContracts(unittest.TestCase):
         target=WindowTarget(100,200,3,4,500,'Edit',(200,1,2,3,4),(2,2))
         backend.capture_target,backend.modifiers_down=lambda **kwargs:target,lambda:False
         backend.capture_native_target=lambda:target
+        backend.user.GetWindowLongPtrW=lambda *args:0
         backend._native_focus=lambda:(target.hwnd,target.focus,target.pid,target.thread,target.caret)
         backend._chord = lambda _: None
         with self.assertRaises(ClipboardFailure) as failure:
-            backend.commit_paste(10,target,lambda:True)
+            backend.commit_paste(10,lambda:True)
         self.assertTrue(failure.exception.submitted)
 
     def test_partial_write_does_not_claim_later_user_sequence(self):

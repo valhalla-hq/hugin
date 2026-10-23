@@ -110,13 +110,13 @@ class PresentationFactsContracts(unittest.TestCase):
     def test_failed_copy_recovers_on_success_or_new_reading(self):
         self.finish(self.recognize())
         original=self.clipboard.copy
-        self.clipboard.copy=lambda text:NS(status='clipboard_busy')
+        self.clipboard.copy=lambda text:NS(capture_status='native_target_captured',status='clipboard_busy')
         self.controller.command('copy');self.pump()
         self.assertTrue(self.controller.view().error)
         self.clipboard.copy=original
         self.controller.command('copy');self.pump()
         self.assertFalse(self.controller.view().error)
-        self.clipboard.copy=lambda text:NS(status='clipboard_busy')
+        self.clipboard.copy=lambda text:NS(capture_status='native_target_captured',status='clipboard_busy')
         self.controller.command('diagnose');self.pump()
         self.assertTrue(self.controller.view().error)
         self.controller.command('read');self.pump()
@@ -144,7 +144,7 @@ class PresentationFactsContracts(unittest.TestCase):
         self.controller.handle(_CueFailure(HuginError('audio_failed','fixture_cue'),self.operation.job))
         self.controller.handle(c.EngineFault(self.operation,HuginError('worker_failed','fixture_engine')))
         self.assertEqual(json.loads(self.controller.diagnostic())['error_code'],'worker_failed')
-        self.clipboard.copy=lambda text:NS(status='clipboard_busy')
+        self.clipboard.copy=lambda text:NS(capture_status='native_target_captured',status='clipboard_busy')
         self.controller.command('diagnose');self.pump()
         self.assertEqual(json.loads(self.controller.diagnostic())['error_code'],'worker_failed')
 
@@ -217,9 +217,9 @@ class PresentationFactsContracts(unittest.TestCase):
             with self.subTest(failure=failure):
                 self.setUp()
                 if failure=='capture':
-                    self.clipboard.capture_target=lambda **_:NS(status='target_unverifiable',target=None)
+                    self.clipboard.deliver=lambda *a,**k:NS(capture_status='target_unverifiable',status='target_unverifiable',copied=True,submitted=False)
                 elif failure=='partial':
-                    self.clipboard.deliver=lambda *a,**k:NS(status='clipboard_failed',submitted=True,copied=failure=='partial')
+                    self.clipboard.deliver=lambda *a,**k:NS(capture_status='native_target_captured',status='clipboard_failed',submitted=True,copied=failure=='partial')
                 else:self.clipboard.cancel_at_commit=lambda:self.controller.command('cancel')
                 self.finish(self.recognize())
                 if failure!='cancel':self.assertEqual(self.controller.core.snapshot().error.code,

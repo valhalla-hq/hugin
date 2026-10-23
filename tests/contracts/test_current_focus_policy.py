@@ -1,4 +1,4 @@
-"""Delivery policy follows proven field capabilities, independently of app names."""
+"""Current-focus paste policy and bounded app-specific settling delays."""
 from dataclasses import replace
 import json
 from pathlib import Path
@@ -11,22 +11,22 @@ from hugin.windows.clipboard import ClipboardService
 from test_windows_clipboard import FakeClipboard
 
 
-class VerifiedEditPolicy(unittest.TestCase):
+class CurrentFocusPolicy(unittest.TestCase):
     def test_parsed_generic_policy_delivers_unknown_app_and_retains_dictation(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory);(root/'config').mkdir()
             (root/'proof.md').write_text('Synthetic capability pilot proof',encoding='utf-8')
             (root/'config/targets.json').write_text(json.dumps({
-                'schema_version':2,'delivery':[],'capture_fallback':[],
-                'verified_edit':{'restore_delay_seconds':.25,'evidence':'proof.md'}}),encoding='utf-8')
+                'schema_version':3,'delivery':[],'capture_fallback':[],
+                'current_focus':{'restore_delay_seconds':.25,'evidence':'proof.md'}}),encoding='utf-8')
             profile=load_target_approvals(root)
             backend=FakeClipboard()
             backend.target=replace(backend.target,control_class='UnknownEditableApp',package_family=None)
             delays=[]
             backend.sleep=delays.append
             service=ClipboardService(backend=backend)
-            service.approve_verified_edits(profile.verified_edit.restore_delay_seconds)
-            result=service.deliver('synthetic',backend.target,lambda:True)
+            service.approve_current_focus(profile.current_focus.restore_delay_seconds)
+            result=service.deliver('synthetic',lambda:True)
             self.assertEqual((result.status,result.submitted,result.copied),('submitted',True,True))
             self.assertEqual((backend.pastes,delays,backend.data),(1,[.25],{13:'synthetic\0'.encode('utf-16-le')}))
 
@@ -35,24 +35,22 @@ class VerifiedEditPolicy(unittest.TestCase):
         backend.target=replace(backend.target,control_class='Chrome_WidgetWin_1',
             package_family='OpenAI.Codex_2p2nqsd0c76g0')
         service=ClipboardService(backend=backend)
-        service.approve_verified_edits(.25)
+        service.approve_current_focus(.25)
         service.approve_target_class('Chrome_WidgetWin_1',.15,
             package_family='OpenAI.Codex_2p2nqsd0c76g0')
-        self.assertTrue(service.deliver('synthetic',backend.target,lambda:True).submitted)
+        self.assertTrue(service.deliver('synthetic',lambda:True).submitted)
         self.assertEqual(delays,[.15])
 
-    def test_unknown_field_and_changed_focus_publish_without_paste(self):
-        for invalid in ('no_target','no_range','changed_focus'):
-            with self.subTest(invalid=invalid):
+    def test_current_focus_without_native_caret_or_range_receives_paste(self):
+        for current in ('no_range','changed_focus'):
+            with self.subTest(current=current):
                 backend=FakeClipboard();service=ClipboardService(backend=backend)
-                service.approve_verified_edits(.25)
-                target=backend.target
-                if invalid=='no_target':target=None
-                elif invalid=='no_range':target=replace(target,caret=None,selection=None)
-                else:backend.target=replace(target,focus=201)
-                result=service.deliver('synthetic',target,lambda:True)
-                self.assertEqual(result.status,'target_changed' if invalid=='changed_focus' else 'target_unverifiable')
-                self.assertEqual((backend.mutations,backend.pastes),(1,0))
+                service.approve_current_focus(.25)
+                if current=='no_range':backend.target=replace(backend.target,caret=None,selection=None,native_editable=False)
+                else:backend.target=replace(backend.target,focus=201)
+                result=service.deliver('synthetic',lambda:True)
+                self.assertEqual(result.status,'submitted')
+                self.assertEqual((backend.mutations,backend.pastes),(1,1))
 
     def test_generic_policy_requires_bounded_delay_and_existing_evidence(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -66,14 +64,14 @@ class VerifiedEditPolicy(unittest.TestCase):
                     {'restore_delay_seconds':.25,'evidence':'../proof.md'},
                     {'restore_delay_seconds':.25,'evidence':'proof.md','wildcard':True}):
                 (root/'config/targets.json').write_text(json.dumps({
-                    'schema_version':2,'delivery':[],'capture_fallback':[],
-                    'verified_edit':policy}),encoding='utf-8')
+                    'schema_version':3,'delivery':[],'capture_fallback':[],
+                    'current_focus':policy}),encoding='utf-8')
                 with self.assertRaises(HuginError):load_target_approvals(root)
 
     def test_internal_seam_rejects_nonfinite_or_boolean_delay(self):
         service=ClipboardService(backend=FakeClipboard())
         for delay in (True,float('nan'),float('inf'),10**400,0,2.01,'0.25'):
-            with self.assertRaises(ValueError):service.approve_verified_edits(delay)
+            with self.assertRaises(ValueError):service.approve_current_focus(delay)
 
 
 if __name__=='__main__':unittest.main()
