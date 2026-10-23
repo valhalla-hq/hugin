@@ -12,8 +12,12 @@ native-only probe observes110/110 samples with a focused cross-process child
 of TeamsWebView (Chrome_WidgetWin_1);1.0.1's same-PID gate rejects all. Source
 candidate1.0.2 replaces it with the native HWND child relationship, preserving
 the final commit guard. Two new repros red before;46 focused and536 full tests
-pass, docs valid, both independent reviews clear. A new immutable app-only
-candidate and physical Teams acceptance remain pending.
+pass, docs valid, both independent reviews clear. Immutable app-only1.0.2 is
+built from3fd3ca9988c20eb530d62f427e73ce78ce14e6d3 at
+C:/Users/brian/Hugin-Releases/1.0.2-3fd3ca9988c2/app.48 actual-candidate tests
+pass without skips, including two normal hidden input-profile startups. State,
+40 DSP caches and startup preserved; candidate opened09:10:34CEST after Brian's
+normal Quit. Own child/window observed; actual Teams acceptance is pending.
 Installed1.0.0/startup remain unchanged.
 New installer preparation is blocked by automatic approval review of missing
 Inno compiler provisioning (only reason: blocked by policy); no retry through
@@ -94,7 +98,7 @@ Owner: Brian. Private repository valhalla-hq/hugin; runtime Mjolnir.
 
 Correct dictation target selection to follow the current cursor even after
 window/field switches, compare pinned Whispering source, verify guards and
-prepare an additive1.0.1 update. Preserve voices/timing/input/startup/preferences
+prepare an additive update. Preserve voices/timing/input/startup/preferences
 and immutable1.0.0 rollback. Routine checked private completion is authorized;
 actual login acceptance remains separate. Spec: specs/2026-10-23-current-cursor/.
 

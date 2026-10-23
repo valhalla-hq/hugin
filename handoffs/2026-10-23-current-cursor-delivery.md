@@ -87,8 +87,25 @@ Independent spec and standards followups clear this exact source diff against
 An additional inactive-Teams structural probe could not obtain focus and is
 not a pass; a later parallel22s sample was Codex only, also not Teams acceptance.
 No content or clipboard reads and no focus/input changes by these probes.
-New app-only candidate build and actual Teams paste remain pending. Normal
-Quit request sent before native candidate lifecycle checks/state preparation.
+Brian confirmed normal Quit. New immutable app-only candidate is built at
+C:/Users/brian/Hugin-Releases/1.0.2-3fd3ca9988c2/app from
+3fd3ca9988c20eb530d62f427e73ce78ce14e6d3, src13be3f870ab797c8ea6ebbd061821727c59a4be9.
+40365 payload files,11596016330bytes; build226.692s wall/79.203s builder CPU.
+Family CPU/peak and agent tokens unmeasured. All private runtime imports pass
+(7/21/94 packages),35.950s wall/22.172s CPU; per-profile peak job commit
+46342144/838729728/2721583104bytes, cleanup_pending=false, no audio/mic/clipboard.
+Using actual candidate interpreter/source,48 tests pass1.590s, no skips,
+including real hidden reading fixture and two normal hidden input-profile starts.
+Activation/preferences bytes match1.0.1,40 same-producer DSP caches preserved.
+Startup link remains1.0.0, identical SHA256
+4ca885f37b7a2d001439761696ee44eacefa5e7dba41fe8daf764225e4e1db95.
+Evidence retained in the candidate's build-evidence folder with per-file hashes.
+Normal Hugin.exe --show launch09:10:34CEST observed wrapper40340 and own child
+46076 with its Hugin window. Historical PIDs are not termination authority.
+Canvas readiness labels are unknown for this visible launch; both isolated
+normal starts above did verify Ready and both input bindings. Actual Teams
+paste remains pending; async question asks for Codex-to-Teams dictation.
+All three hosted checks succeed at3fd3ca9. No installed/startup migration.
 
 Build-tool constraint: previous isolated Inno compiler was removed with the
 earlier worktree; automatic approval review rejected its re-provisioning
@@ -110,8 +127,11 @@ e9e59a66f52e7bc2c49b60967d1d1451e8c7e72c contains Brian's manual restart and
 four successful physical mouse/hotkey flows on22October. Keep its worktree and
 ownership untouched. That did not prove a new Windows login; login stays open.
 
-Next: prepare and verify the reviewed1.0.2 source as a new immutable candidate
-(never edit the running1.0.1), switch after normal Quit, then test actual Teams.
+Next: await Brian's actual Teams paste result on the running1.0.2 candidate.
+If it fails, capture only relevant native facts and reproduce the new boundary;
+never patch a live release. If it passes, record acceptance and finish checked
+private source integration under the central lifecycle. Do not promote the
+app-only candidate into installer ownership or silently change1.0.0 shortcuts.
 Preserve existing installed1.0.0/startup/profile and its installer; new installer
 blocked as above. Source fix is not fully accepted while Teams remains broken.
 Routine checked private integration is within this fix request; no check bypass.

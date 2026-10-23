@@ -11,9 +11,10 @@
   Immutable1.0.0 installer/installation/startup remain the return path (OPS-001).
 - [ ] T005 Physical target-switch acceptance: Codex/Google confirmed, Teams
   fails at same-PID native gate despite verified cross-process child focus.
-  Correct/review this boundary and repeat on a new immutable candidate. Login stays
+  Boundary corrected/reviewed;1.0.2 built,48 actual-candidate tests pass and
+  candidate is opened. Await actual Teams response. Login stays
   separately open. A new1.0.1 installer is blocked by automatic approval review
   of compiler provisioning; do not retry via another launcher (OPS-001).
 - [x] T006 Reproduce Teams cross-process child focus, replace the PID gate at
   the native producer, preserve final guard and review both lenses.46 focused,
-  536 full tests pass. Prepare new immutable1.0.2 and finish T005 separately.
+  536 full tests pass; immutable1.0.2 passes48 package checks. T005 stays separate.
