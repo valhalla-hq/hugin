@@ -35,8 +35,44 @@ with red/green password guards;41 focused current/native/ABI cases pass.
 The real hidden RichEdit selection reader passes0.502s without clipboard/focus
 changes. Coverage reinstates during-recording switches, owner/size/token
 conflicts and callback weakref release; independent follow-up clears all eight
-current-cursor cases. Final-source full check is pending. No1.0.1 runtime has
-been installed or started.
+current-cursor cases. Final-source531 cases pass34.047s on9b2b40c, docs19/17
+without problems; all three hosted checks succeed at that head. Real native
+clipboard publication/owned-Edit consumption/restoration passes0.071s after
+Brian explicitly loaned the diagnostic clipboard and quit Hugin normally.
+The diagnostic clipboard is restored and Brian was told copying is free again.
+
+App-only candidate built at
+C:/Users/brian/Hugin-Releases/1.0.1-9b2b40c586ac/app.
+Frozen source9b2b40c586ac0047ceb4bb64710368cd42233d50,
+src b5a2047fc48a7c6314e32b5947c33081889ff6f9.40365 payload files,
+11596014819bytes; build229.665s, builder CPU79.328s (family CPU/peak and agent
+tokens unmeasured). All private runtimes verify: controller7, STT21, TTS94 fixed
+packages; no mic/clipboard/audible output, no owned cleanup pending. Private
+probe59.699s, CPU30.828s; per-profile peak job commit45.8/838.3/2720.4MB.
+Using the actual candidate Python/source,43 tests pass4.960s with no skips:
+eight current-cursor, four native-focus,29 mocked Win32 ABI, one real hidden
+reading fixture, one two-start native profile/lifecycle fixture. No extra
+physical mouse, spoken words or actual Windows-login result is claimed.
+
+Candidate state preparation completed: activation/preferences bytes unchanged,
+40 exact-producer DSP cache files preserved, session mutex held during prep,
+no startup migration. Ready receipt: build-evidence/candidate-ready.json.
+Hugin.exe --show launched23October08:45:47 CEST from the candidate root.
+Own child and own Hugin window are observed; Canvas labels are not exposed by
+UIA, so visible-ready/status/binding labels are unknown, not absent. The two
+isolated real starts above did observe Ready and both binding hints. Existing
+production root/start-menu/startup stay at1.0.0; no promotion without installer.
+
+Physical feedback at06:48:57UTC: Brian confirms Codex and Google search work,
+but switching from Codex to a Teams message field rejects.1.0.1 diagnosis:
+capture_native=target_unverifiable, capture_field=not_required, clipboard=copied,
+delivery=target_unverifiable. This is a native focus boundary, not UIA. Leading
+hypothesis is a different process for Teams' focused WebView field versus outer
+frame is now proven: after Brian's ready reply,22-second native-only observation
+records110/110 samples of TeamsWebView with focused Chrome_WidgetWin_1.
+GUI focus exists; IsChild and GA_ROOT both confirm embedding, while PID and
+thread differ. All110 samples reject at the same-PID gate. No chat/title/
+clipboard text was read. Observer: .runtime/native_focus_observe.py.
 
 Build-tool constraint: previous isolated Inno compiler was removed with the
 earlier worktree; automatic approval review rejected its re-provisioning
@@ -58,9 +94,11 @@ e9e59a66f52e7bc2c49b60967d1d1451e8c7e72c contains Brian's manual restart and
 four successful physical mouse/hotkey flows on22October. Keep its worktree and
 ownership untouched. That did not prove a new Windows login; login stays open.
 
-Next: finish final full check, prepare additive1.0.1 app-only from clean pinned
-source, preserve1.0.0/preferences/startup/profile,
-then switch only after normal Quit and request physical Codex switching check.
+Next: use the captured Teams native facts to reproduce its
+specific rejecting condition in an owned Win32 fixture, fix and review that
+boundary, then prepare a new immutable candidate (never edit the running1.0.1).
+Preserve existing installed1.0.0/startup/profile and its installer; new installer
+blocked as above. Source fix is not fully accepted while Teams remains broken.
 Routine checked private integration is within this fix request; no check bypass.
 Paste still relies on target consumption of Ctrl+V and does not claim all apps.
 

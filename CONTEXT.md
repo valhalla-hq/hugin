@@ -4,9 +4,17 @@ Current task23October2026: current-cursor-delivery on Mjolnir. Brian reports
 target_unverifiable again in installed1.0.0 after switching targets. Transcript
 is copied but the UIA field gate prevents paste. He requests Whispering-style
 insertion at the current cursor. Source candidate1.0.1 selects native focus at
-serialized commit; no earlier target/UIA delivery proof is retained. Full
-verification, independent review, additive build and physical acceptance are
-pending. Installed1.0.0 has not been changed. Details and exact current handoff:
+serialized commit; no earlier target/UIA delivery proof is retained.531 full
+checks, independent review, native clipboard/reading probes and43 candidate
+checks pass. App-only1.0.1 is built at Hugin-Releases/1.0.1-9b2b40c586ac/app;
+Brian confirms Codex and Google search, but Teams still rejects. A22-second
+native-only probe observes110/110 samples with a focused cross-process child
+of TeamsWebView (Chrome_WidgetWin_1); current same-PID gate rejects all. Fix
+this producer and re-review before preparing a new immutable candidate.
+Installed1.0.0/startup remain unchanged.
+New installer preparation is blocked by automatic approval review of missing
+Inno compiler provisioning (only reason: blocked by policy); no retry through
+another launcher. Details and exact current handoff:
 handoffs/2026-10-23-current-cursor-delivery.md.
 
 Separate checkpoint PR49 preserves Brian's successful manual restart and four
