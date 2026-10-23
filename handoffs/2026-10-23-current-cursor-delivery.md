@@ -1,12 +1,13 @@
 # Hugin: aktueller Cursor statt früherer Feldbindung
 
 - Repository: valhalla-hq/hugin, private; runtime Mjolnir.
-- Task: current-cursor-delivery; ownership active.
+- Task: current-cursor-delivery; source and physical cursor result accepted.
+  Ownership active until the final checked integration/release receipt.
 - Branch: codex/current-cursor-delivery-mjolnir.
 - Worktree: C:/Users/brian/brian-projects/worktrees/hugin/current-cursor-delivery-mjolnir.
 - Base: e82e9a625f897a0eda33479637a3a802bd2d2636.
 - Control/preflight:46e362d1d3284d712757fc2f0e67a165dbf3a41c, current.
-- PR: https://github.com/valhalla-hq/hugin/pull/50 (Draft; exact branch).
+- PR: https://github.com/valhalla-hq/hugin/pull/50 (authoritative integration state).
 - Spec/plan/tasks: specs/2026-10-23-current-cursor/.
 - Evidence/limits: docs/current-cursor-2026-10-23.md.
 
@@ -125,6 +126,25 @@ Do not directly mutate its live SQLite DB or intercept Teams microphone/camera
 shortcuts. On reply, read just these two profile assignments again and record
 physical result; no new Hugin build is needed for the vendor-profile correction.
 
+Final physical acceptance: Brian confirms both Teams assignments changed and
+dictation via rear mouse works in Teams. Read-only SQLite readback23October
+09:27CEST confirms Teams c83/c86 and the global profile are WIN_BACK/WIN_FORWARD.
+No software restart was needed and no native input was injected by the agent.
+Alt+Y Teams insertion is independently confirmed earlier. Forward reading in
+Teams was not separately repeated; do not extend that physical claim. Receipt
+and the three relevant helper scripts are retained in build-evidence; exact
+receipt: teams-buttons-accepted.json. All T001..T006 are accepted for this bounded
+fix. App-only package pin/source remain3fd3ca9/13be3f8; subsequent edits are
+curated Markdown only. This final acceptance/checkpoint push is bundled;
+required exact-head checks still gate integration, without reruns/bypass.
+
+Brian's organization CI quota warning:1,802 of2,000 Actions minutes used at
+report time,198 left shared across projects, reset1November2026; fresh remaining
+amount unknown. Favor local checks and bundled pushes. No paid minutes, quota
+changes or blanket workflow disablement. Avoid another receipt-only PR/run:
+the merged state is authoritative on PR50; preserve technical integration and
+release receipts locally under this candidate's build-evidence folder.
+
 Build-tool constraint: previous isolated Inno compiler was removed with the
 earlier worktree; automatic approval review rejected its re-provisioning
 command with only "blocked by policy". Do not retry that action through a
@@ -145,15 +165,15 @@ e9e59a66f52e7bc2c49b60967d1d1451e8c7e72c contains Brian's manual restart and
 four successful physical mouse/hotkey flows on22October. Keep its worktree and
 ownership untouched. That did not prove a new Windows login; login stays open.
 
-Next: await Brian's Options+ Teams side-button change and physical mouse result,
-verify targeted configuration readback, then finish checked private source
-integration under the central lifecycle. Paste via Alt+Y is accepted. If the
-mouse still fails despite normal Back/Forward assignments, observe only bounded
-technical side-button events before changing code; never patch a live release.
-Do not promote the
+Next: final local docs/diff checks, one bundled acceptance push, exact-head
+hosted gates, then checked private PR50 integration, stable-clone fast-forward
+and central ownership release/technical cleanup. The running app uses its own
+immutable release root, not the source worktree. Preserve needed ignored
+evidence before cleanup. Source integration/release receipts go in the retained
+external build-evidence folder; inspect PR50 for final merged state. Do not promote the
 app-only candidate into installer ownership or silently change1.0.0 shortcuts.
 Preserve existing installed1.0.0/startup/profile and its installer; new installer
-blocked as above. Teams mouse acceptance remains open until verified.
+blocked as above. Teams paste and rear-mouse acceptance are complete.
 Routine checked private integration is within this fix request; no check bypass.
 Paste still relies on target consumption of Ctrl+V and does not claim all apps.
 

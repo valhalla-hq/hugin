@@ -22,13 +22,22 @@ rear mouse button has no effect only in Teams, still works in Codex. Read-only
 Logi Options+ settings show a Teams override: rear=microphone toggle,
 front=camera toggle; global assignments are WIN_BACK/WIN_FORWARD. No hook/code
 change is justified by that configuration. Two original Teams assignments are
-backed up outside Git; Options+ opened, awaiting Brian's two-button change and
-physical Teams check. Never write its live SQLite database directly.
+backed up outside Git. Brian changed both Teams assignments and confirms
+dictation start/stop/insertion via rear mouse now works. Read-only database
+readback confirms persisted Teams and global WIN_BACK/WIN_FORWARD. Forward
+reading in Teams was not separately repeated. This bounded cursor fix is
+accepted; final checked private integration is tracked by PR50 and its exact
+handoff. Never write Options+' live SQLite database directly.
 Installed1.0.0/startup remain unchanged.
 New installer preparation is blocked by automatic approval review of missing
 Inno compiler provisioning (only reason: blocked by policy); no retry through
 another launcher. Details and exact current handoff:
 handoffs/2026-10-23-current-cursor-delivery.md.
+
+CI budget constraint reported by Brian23October:1,802/2,000 organization Actions
+minutes consumed at report time (198 left, possibly less now), reset1November.
+No live billing readback claimed. Bundle pushes, prefer relevant local checks,
+keep required hosted gates, no paid extra minutes or blanket CI disablement.
 
 Separate checkpoint PR49 preserves Brian's successful manual restart and four
 physical mouse/hotkey tests on22October. Actual Windows-login startup remains

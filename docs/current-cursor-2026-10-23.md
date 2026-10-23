@@ -71,7 +71,11 @@ WIN_BACK/WIN_FORWARD. Das passt zu Logitechs dokumentierten
 [anwendungsspezifischen Belegungen](https://www.logi.com/en-us/software/logi-options-plus).
 Für Hugins Seitentasten werden auch im Teams-Profil die normalen Mausfunktionen
 Zurück/Vorwärts benötigt. Die zwei bisherigen Zuordnungen sind lokal außerhalb
-Git gesichert; Options+ ist zur gezielten manuellen Änderung geöffnet.
-Konfigurations-Readback und physischer Teams-Maustest stehen noch aus.
+Git gesichert. Brian hat beide Teams-Zuordnungen auf Zurück/Vorwärts geändert
+und bestätigt erfolgreiches Diktieren einschließlich Start/Ende/Einfügen per
+hinterer Maustaste in Teams. Der anschließende schreibgeschützte Datenbank-
+Readback bestätigt die gespeicherten WIN_BACK/WIN_FORWARD-Aktionen im Teams-
+und globalen Profil. Vorlesen per vorderer Taste in Teams wurde dabei nicht
+separat wiederholt; die vier physischen Grundabläufe vom22.10. bleiben gültig.
 Keine direkte SQLite-Änderung, kein Eingabe-Hook-Probeprogramm gestartet,
 kein weiterer App-Neubau oder Neustart durch diesen Befund erforderlich.
