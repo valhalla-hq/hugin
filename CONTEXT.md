@@ -17,7 +17,13 @@ built from3fd3ca9988c20eb530d62f427e73ce78ce14e6d3 at
 C:/Users/brian/Hugin-Releases/1.0.2-3fd3ca9988c2/app.48 actual-candidate tests
 pass without skips, including two normal hidden input-profile startups. State,
 40 DSP caches and startup preserved; candidate opened09:10:34CEST after Brian's
-normal Quit. Own child/window observed; actual Teams acceptance is pending.
+normal Quit. Own child/window observed. Brian confirms Teams paste via Alt+Y;
+rear mouse button has no effect only in Teams, still works in Codex. Read-only
+Logi Options+ settings show a Teams override: rear=microphone toggle,
+front=camera toggle; global assignments are WIN_BACK/WIN_FORWARD. No hook/code
+change is justified by that configuration. Two original Teams assignments are
+backed up outside Git; Options+ opened, awaiting Brian's two-button change and
+physical Teams check. Never write its live SQLite database directly.
 Installed1.0.0/startup remain unchanged.
 New installer preparation is blocked by automatic approval review of missing
 Inno compiler provisioning (only reason: blocked by policy); no retry through

@@ -56,8 +56,22 @@ PID/TID. Derselbe kurze Abschlussguard erkennt auch ein inzwischen abgelöstes
 Kindfenster. Es gibt keine Teams-Sonderregel oder erinnerte Zielfensterliste.
 Vorlesen behält seinen eigenen UIA-Auswahlweg; die unfreigegebene Clipboard-
 Auswahlfallback-Liste bleibt leer. Positive Fensterbeziehung ist keine allgemeine
-Textfeld-/Passworterkennung. Echte Teams-Einfügeabnahme ist noch offen.
+Textfeld-/Passworterkennung.
 
 Zwei neue Reproduktionsfälle scheitern vor der Korrektur;46 gezielte Prüfungen
-und536 vollständige Vertrags-/Integrationstests bestehen danach. Reale Eingabe
-in Teams ist damit noch nicht bewiesen; der neue Kandidat wird separat geprüft.
+und536 vollständige Vertrags-/Integrationstests bestehen danach. Die zusätzliche
+physische Eingabeprobe wird getrennt von diesen automatischen Tests bewertet.
+
+Anschließende physische Rückmeldung: Einfügen in Teams funktioniert mit Alt+Y
+problemlos. Die hintere Maustaste reagiert nur in Teams nicht, in Codex weiterhin.
+Die schreibgeschützt gelesene Options+-Konfiguration erklärt den Unterschied:
+Im Teams-Profil ist hinten Mikrofon-Umschaltung (Strg+Umschalt+M), vorne
+Kamera-Umschaltung (Strg+Umschalt+O) zugewiesen. Die globalen Zuordnungen sind
+WIN_BACK/WIN_FORWARD. Das passt zu Logitechs dokumentierten
+[anwendungsspezifischen Belegungen](https://www.logi.com/en-us/software/logi-options-plus).
+Für Hugins Seitentasten werden auch im Teams-Profil die normalen Mausfunktionen
+Zurück/Vorwärts benötigt. Die zwei bisherigen Zuordnungen sind lokal außerhalb
+Git gesichert; Options+ ist zur gezielten manuellen Änderung geöffnet.
+Konfigurations-Readback und physischer Teams-Maustest stehen noch aus.
+Keine direkte SQLite-Änderung, kein Eingabe-Hook-Probeprogramm gestartet,
+kein weiterer App-Neubau oder Neustart durch diesen Befund erforderlich.

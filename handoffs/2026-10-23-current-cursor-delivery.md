@@ -104,8 +104,26 @@ Normal Hugin.exe --show launch09:10:34CEST observed wrapper40340 and own child
 46076 with its Hugin window. Historical PIDs are not termination authority.
 Canvas readiness labels are unknown for this visible launch; both isolated
 normal starts above did verify Ready and both input bindings. Actual Teams
-paste remains pending; async question asks for Codex-to-Teams dictation.
+paste is now physically confirmed via Alt+Y. Brian reports rear mouse has no
+effect only in Teams, while it still works in Codex. This is separate from paste.
 All three hosted checks succeed at3fd3ca9. No installed/startup migration.
+
+Read-only Options+ SQLite/JSON inspection finds application_id_microsoft_teams_new
+overrides for MX Master3: c83=card_teams_win_toggle_mic (Ctrl+Shift+M),
+c86=card_teams_win_toggle_camera (Ctrl+Shift+O). Base profile has
+card_global_presets_win_back / win_forward (WIN_BACK/WIN_FORWARD).
+No change to Hugin's hook is justified by this evidence. An unstarted passive
+XBUTTON observer was removed once the profile explained the application split;
+no mouse/keyboard hook probe executed, no extra recording/input generated.
+Before-image of exactly the two relevant assignments saved outside Git at
+C:/Users/brian/Hugin-Releases/1.0.2-3fd3ca9988c2/build-evidence/logi-teams-side-buttons-before.json.
+This is not a whole user-settings DB copy. Source DB opened mode=ro/query_only.
+Options+ native UI opened via its existing executable. Native UI control is
+unavailable here; async question asks Brian to set rear=normal Back and
+front=normal Forward in the Teams profile, then test Teams dictation start/stop.
+Do not directly mutate its live SQLite DB or intercept Teams microphone/camera
+shortcuts. On reply, read just these two profile assignments again and record
+physical result; no new Hugin build is needed for the vendor-profile correction.
 
 Build-tool constraint: previous isolated Inno compiler was removed with the
 earlier worktree; automatic approval review rejected its re-provisioning
@@ -127,13 +145,15 @@ e9e59a66f52e7bc2c49b60967d1d1451e8c7e72c contains Brian's manual restart and
 four successful physical mouse/hotkey flows on22October. Keep its worktree and
 ownership untouched. That did not prove a new Windows login; login stays open.
 
-Next: await Brian's actual Teams paste result on the running1.0.2 candidate.
-If it fails, capture only relevant native facts and reproduce the new boundary;
-never patch a live release. If it passes, record acceptance and finish checked
-private source integration under the central lifecycle. Do not promote the
+Next: await Brian's Options+ Teams side-button change and physical mouse result,
+verify targeted configuration readback, then finish checked private source
+integration under the central lifecycle. Paste via Alt+Y is accepted. If the
+mouse still fails despite normal Back/Forward assignments, observe only bounded
+technical side-button events before changing code; never patch a live release.
+Do not promote the
 app-only candidate into installer ownership or silently change1.0.0 shortcuts.
 Preserve existing installed1.0.0/startup/profile and its installer; new installer
-blocked as above. Source fix is not fully accepted while Teams remains broken.
+blocked as above. Teams mouse acceptance remains open until verified.
 Routine checked private integration is within this fix request; no check bypass.
 Paste still relies on target consumption of Ctrl+V and does not claim all apps.
 

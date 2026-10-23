@@ -9,10 +9,10 @@
 - [x] T004 Prepare additive app-only candidate; verify all private runtimes,
   current-focus/native guards, two real hidden starts and preserved inputs.
   Immutable1.0.0 installer/installation/startup remain the return path (OPS-001).
-- [ ] T005 Physical target-switch acceptance: Codex/Google confirmed, Teams
-  fails at same-PID native gate despite verified cross-process child focus.
-  Boundary corrected/reviewed;1.0.2 built,48 actual-candidate tests pass and
-  candidate is opened. Await actual Teams response. Login stays
+- [ ] T005 Physical target-switch acceptance: Codex/Google confirmed; Teams
+  paste via Alt+Y now confirmed in1.0.2.48 actual-candidate tests pass.
+  Teams rear-button failure is traced to Options+ app-specific microphone/camera
+  overrides; targeted UI correction/readback/physical mouse check remain. Login stays
   separately open. A new1.0.1 installer is blocked by automatic approval review
   of compiler provisioning; do not retry via another launcher (OPS-001).
 - [x] T006 Reproduce Teams cross-process child focus, replace the PID gate at
